@@ -87,4 +87,10 @@ public class Range implements Serializable
 
 		return false;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "[" + this.min + "," + this.max + "]";
+	}
 }

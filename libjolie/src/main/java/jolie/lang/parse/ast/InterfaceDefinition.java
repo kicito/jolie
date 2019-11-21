@@ -21,6 +21,7 @@
 
 package jolie.lang.parse.ast;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import jolie.lang.parse.DocumentedNode;
@@ -82,5 +83,13 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 	public String getDocumentation()
 	{
 		return this.documentation;
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append( ": " + name + " " + Arrays.toString( this.operationsMap.entrySet().toArray() ) );
+		return sb.toString();
 	}
 }

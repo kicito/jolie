@@ -51,4 +51,15 @@ public class Program extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+    @Override
+    public String toString()
+    {
+		StringBuilder sb = new StringBuilder();
+		for( OLSyntaxNode ch :this.children ){
+			sb.append(ch);
+			sb.append("\n");
+		}
+        return sb.toString();
+    }
 }

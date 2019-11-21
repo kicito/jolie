@@ -67,4 +67,11 @@ public class RequestResponseOperationDeclaration extends OperationDeclaration
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString() 
+	{
+		// TODO Auto-generated method stub
+		return super.toString();
+	}
 }

@@ -22,6 +22,7 @@
 
 package jolie.lang.parse.ast.types;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -131,5 +132,19 @@ public class TypeInlineDefinition extends TypeDefinition
 	public void accept( OLVisitor visitor )
 	{
 		visitor.visit( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append( "TYPE: " + this.nativeType.toString() + " " + super.toString() + "\n" );
+		if ( this.untypedSubTypes ) {
+			sb.append( "?" );
+		}
+		if ( this.subTypes != null ) {
+			sb.append( Arrays.toString( this.subTypes.entrySet().toArray() ) );
+		}
+		return sb.toString();
 	}
 }

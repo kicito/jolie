@@ -265,4 +265,10 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 	public abstract NativeType nativeType();
 	public abstract boolean hasSubType( String id );
 	*/
+
+	@Override
+	public String toString()
+	{
+		return this.id + this.cardinality;
+	}
 }
