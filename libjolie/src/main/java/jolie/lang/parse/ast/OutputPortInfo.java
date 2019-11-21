@@ -72,4 +72,10 @@ public class OutputPortInfo extends PortInfo
 	{
 		return location;
 	}
+
+	@Override
+	public String toString()
+	{
+		return super.toString() + " <-@" + this.protocolId + ":" + this.location;
+	}
 }

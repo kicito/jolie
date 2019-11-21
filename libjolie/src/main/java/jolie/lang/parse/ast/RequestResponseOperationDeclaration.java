@@ -71,7 +71,6 @@ public class RequestResponseOperationDeclaration extends OperationDeclaration
 	@Override
 	public String toString() 
 	{
-		// TODO Auto-generated method stub
-		return super.toString();
+		return "\n" + super.toString() + "\nIN:" + this.requestType + "\nOUT:" + this.responseType + "\n";
 	}
 }

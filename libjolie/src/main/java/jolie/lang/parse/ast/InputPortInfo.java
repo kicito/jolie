@@ -104,4 +104,10 @@ public class InputPortInfo extends PortInfo
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return super.toString() + " ->@" + this.protocolId + ":" + this.location;
+	}
 }

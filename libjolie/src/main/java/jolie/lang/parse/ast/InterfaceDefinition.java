@@ -89,7 +89,9 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append( ": " + name + " " + Arrays.toString( this.operationsMap.entrySet().toArray() ) );
+		sb.append( "INTERFACE:" + name + "{");
+		this.operationsMap.entrySet().forEach((e)->{ sb.append("\n\t").append(e.getValue()); });
+		sb.append( "\n}");
 		return sb.toString();
 	}
 }

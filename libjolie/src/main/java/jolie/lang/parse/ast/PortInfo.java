@@ -107,4 +107,10 @@ public abstract class PortInfo extends OLSyntaxNode implements OperationCollecto
 	{
 		interfaceList.add( iface );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "PORT: \"" + this.id + "\"";
+	}
 }

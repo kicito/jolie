@@ -52,4 +52,10 @@ public abstract class OperationDeclaration extends OLSyntaxNode implements Docum
 	{
 		return this.document;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "OP: \"" + this.id + "\":";
+	}
 }
