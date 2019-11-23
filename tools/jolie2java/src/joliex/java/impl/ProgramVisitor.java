@@ -42,6 +42,7 @@ import jolie.lang.parse.ast.ForEachArrayItemStatement;
 import jolie.lang.parse.ast.ForEachSubNodeStatement;
 import jolie.lang.parse.ast.ForStatement;
 import jolie.lang.parse.ast.IfStatement;
+import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InstallFixedVariableExpressionNode;
 import jolie.lang.parse.ast.InstallStatement;
@@ -430,4 +431,8 @@ public class ProgramVisitor   extends GeneralProgramVisitor implements OLVisitor
 
 	@Override
 	public void visit(TypeChoiceDefinition typeChoiceDefinition) {}
+
+	public void visit( ImportStatement n )
+	{
+	}
 }

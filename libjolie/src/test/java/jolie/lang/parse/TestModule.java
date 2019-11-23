@@ -25,21 +25,22 @@ public class TestModule
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"import a from \"A\""})
+    @ValueSource(strings = {"include \"console.iol\""})
     void testImportStatements( String code ) throws IOException
     {
         InputStream targetStream = new ByteArrayInputStream( code.getBytes() );
-        try{
+        try {
             OLParser olParser = new OLParser(
-                new Scanner( targetStream, new URI("testImportStatements"), StandardCharsets.UTF_8.name(),
-                        false ),
-                new String[] {"dist/jolie/include"}, TestModule.class.getClassLoader() );
+                    new Scanner( targetStream, new URI( "testImportStatements" ),
+                            StandardCharsets.UTF_8.name(), false ),
+                    new String[] {},
+                    TestModule.class.getClassLoader() );
             Program p = olParser.parse();
-            
-            System.out.println(p);
-        }catch( Exception e) {
+
+            System.out.println( p );
+        } catch (Exception e) {
             e.printStackTrace();
-        }finally{
+        } finally {
             targetStream.close();
         }
 

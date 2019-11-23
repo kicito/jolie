@@ -243,6 +243,7 @@ public class OLParser extends AbstractParser
 	{		
 		parseLoop( explicitServiceBlock,
 			this::parseConstants,
+			this::parseImport,
 			this::parseExecution,
 			this::parseCorrelationSets,
 			this::parseTypes,
@@ -691,7 +692,9 @@ public class OLParser extends AbstractParser
 			} else {
 				return new URL( new URI( urlStr ).normalize().toString() );
 			}
-		} catch( MalformedURLException | URISyntaxException e ) {}
+		} catch( MalformedURLException | URISyntaxException e ) {
+			e.printStackTrace();
+		}
 		return null;
 	}
 	
@@ -722,7 +725,6 @@ public class OLParser extends AbstractParser
 				includeStr = includeStr.substring( 2 );
 			}
 		}
-
 		final URL includeURL = resourceCache.computeIfAbsent(
 			includeStr,
 			classLoader::getResource
@@ -752,6 +754,12 @@ public class OLParser extends AbstractParser
 		}
 
 		return null;
+	}
+
+	private void parseImport() 
+		throws IOException, ParserException
+	{
+
 	}
 
 	private void parseInclude()
