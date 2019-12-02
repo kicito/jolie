@@ -45,4 +45,10 @@ public class ExecutionInfo extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+	
+	@Override
+	public String toString()
+	{
+		return this.mode.name();
+	}
 }

@@ -48,4 +48,10 @@ public class TypeDefinitionUndefined extends TypeInlineDefinition
 	{
 		return LazyHolder.instance;
 	}
+
+	@Override
+	public String toString()
+	{
+		return super.id() + " = " + UNDEFINED_KEYWORD;
+	}
 }

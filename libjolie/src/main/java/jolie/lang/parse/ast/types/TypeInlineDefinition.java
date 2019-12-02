@@ -138,14 +138,11 @@ public class TypeInlineDefinition extends TypeDefinition
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append( "TYPE: " + this.nativeType.toString() + " " + super.toString() );
-		if ( this.untypedSubTypes ) {
-			sb.append( "?" );
-		}
+		sb.append( "type " + super.id() +": " + this.nativeType );
 		if ( this.subTypes != null ) {
-			sb.append( "{\n\t" );
+			sb.append( "{" );
 			sb.append( Arrays.toString( this.subTypes.entrySet().toArray() ) );
-			sb.append( "\n}" );
+			sb.append( "}" );
 		}
 
 		return sb.toString();

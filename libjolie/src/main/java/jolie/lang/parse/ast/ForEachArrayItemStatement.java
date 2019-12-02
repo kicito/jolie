@@ -73,4 +73,14 @@ public class ForEachArrayItemStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("for( " + this.keyPath + " in " + this.targetPath + " ){" );
+		sb.append(this.body);
+		sb.append(" }");
+		return sb.toString();
+	}
 }

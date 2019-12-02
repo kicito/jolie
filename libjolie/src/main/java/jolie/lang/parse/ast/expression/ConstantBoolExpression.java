@@ -46,4 +46,10 @@ public class ConstantBoolExpression extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return Boolean.toString(this.value);
+	}
 }

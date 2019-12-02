@@ -62,4 +62,14 @@ public class ForEachSubNodeStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("foreach ( " + this.keyPath + ": " + this.targetPath + " ){" );
+		sb.append(this.body);
+		sb.append(" }");
+		return sb.toString();
+	}
 }

@@ -63,4 +63,10 @@ public class IsTypeExpressionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "is_"+this.type.toString().toLowerCase() + "( " + this.variablePath + " )";
+	}
 }

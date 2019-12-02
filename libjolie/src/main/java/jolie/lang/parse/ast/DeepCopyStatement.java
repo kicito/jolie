@@ -63,4 +63,14 @@ public class DeepCopyStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+	
+	@Override
+	public String toString()
+	{
+		String sp = "<<";
+		if ( this.copyLinks ) {
+			sp += "-";
+		}
+		return this.leftPath + " " + sp + " " + this.rightExpression;
+	}
 }

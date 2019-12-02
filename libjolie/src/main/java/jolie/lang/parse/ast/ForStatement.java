@@ -69,4 +69,14 @@ public class ForStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("for(" + this.init + ", " + this.condition + ", " + this.post + "){" );
+		sb.append(this.body);
+		sb.append("}");
+		return sb.toString();
+	}
 }

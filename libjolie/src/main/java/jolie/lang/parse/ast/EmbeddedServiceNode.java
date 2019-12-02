@@ -75,4 +75,17 @@ public class EmbeddedServiceNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append( "embedded {" );
+		sb.append( this.type + ": " + "\"" + this.servicePath + "\"" );
+		if ( this.portId != null ) {
+			sb.append( "in: " + this.portId );
+		}
+		sb.append( "}" );
+		return sb.toString();
+	}
 }

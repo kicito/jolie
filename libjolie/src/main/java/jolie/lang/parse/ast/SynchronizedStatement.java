@@ -52,4 +52,10 @@ public class SynchronizedStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "synchronized( " + this.id + " ){" + this.body;
+	}
 }

@@ -46,4 +46,10 @@ public class ConstantLongExpression extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return Long.toString(value);
+	}
 }

@@ -21,6 +21,7 @@
 
 package jolie.lang.parse.ast;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -66,5 +67,24 @@ public class IfStatement extends OLSyntaxNode
 	public void accept( OLVisitor visitor )
 	{
 		visitor.visit( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		for (Pair< OLSyntaxNode, OLSyntaxNode > child : children) {
+			sb.append( "if( " );
+			sb.append( child.key() );
+			sb.append( "){" );
+			sb.append( child.value() );
+			sb.append( "}" );
+		}
+		if ( this.elseProcess != null ) {
+			sb.append( "else{" );
+			sb.append( this.elseProcess );
+			sb.append( "}" );
+		}
+		return sb.toString();
 	}
 }

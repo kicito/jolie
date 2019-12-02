@@ -69,8 +69,8 @@ public class RequestResponseOperationDeclaration extends OperationDeclaration
 	}
 
 	@Override
-	public String toString() 
+	public String toString()
 	{
-		return "\n" + super.toString() + "\nIN:" + this.requestType + "\nOUT:" + this.responseType + "\n";
+		return super.id() + "( " + this.requestType + " )" + "( " + this.responseType + " )";
 	}
 }

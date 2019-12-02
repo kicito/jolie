@@ -59,4 +59,10 @@ public class CompareConditionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return this.leftExpression + " " + this.opType + " " + this.rightExpression;
+	}
 }

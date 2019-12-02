@@ -53,4 +53,10 @@ public class TypeCastExpressionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "(" + type + ")" + this.expression;
+	}
 }

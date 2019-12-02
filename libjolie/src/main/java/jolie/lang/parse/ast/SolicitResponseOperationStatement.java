@@ -79,4 +79,14 @@ public class SolicitResponseOperationStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append( this.id + "@" + this.outputPortId + "( " + this.inputVarPath + " )( "
+				+ this.outputExpression + " )" );
+		// @TODO add install function to sb.
+		return sb.toString();
+	}
 }

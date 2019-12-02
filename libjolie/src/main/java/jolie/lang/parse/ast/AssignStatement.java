@@ -52,4 +52,10 @@ public class AssignStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return this.variablePath + " = " + this.expression;
+	}
 }

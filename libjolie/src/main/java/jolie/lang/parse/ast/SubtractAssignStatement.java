@@ -33,4 +33,10 @@ public class SubtractAssignStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return this.variablePath + " -= " + this.expression;
+	}
 }

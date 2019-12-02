@@ -22,6 +22,7 @@
 package jolie.lang.parse.ast.expression;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
@@ -53,5 +54,11 @@ public class OrConditionNode extends OLSyntaxNode
 	public void accept( OLVisitor visitor )
 	{
 		visitor.visit( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		return Arrays.toString( this.children.toArray() ).replace( ",", "||" );
 	}
 }

@@ -114,4 +114,11 @@ public class TypeDefinitionLink extends TypeDefinition
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		// TODO Auto-generated method stub
+		return super.toString();
+	}
 }

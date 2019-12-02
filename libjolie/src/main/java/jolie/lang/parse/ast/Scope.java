@@ -52,4 +52,10 @@ public class Scope extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "scope " + this.id + "{ " + this.body + " }";
+	}
 }

@@ -21,6 +21,7 @@
 
 package jolie.lang.parse.ast;
 
+import java.util.Arrays;
 import java.util.List;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
@@ -55,11 +56,6 @@ public class Program extends OLSyntaxNode
     @Override
     public String toString()
     {
-		StringBuilder sb = new StringBuilder();
-		for( OLSyntaxNode ch :this.children ){
-			sb.append(ch);
-			sb.append("\n");
-		}
-        return sb.toString();
+        return Arrays.toString(this.children.toArray()).replace(",", "\n");
     }
 }

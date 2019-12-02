@@ -45,4 +45,10 @@ public class ConstantDoubleExpression extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return Double.toString(this.value);
+	}
 }

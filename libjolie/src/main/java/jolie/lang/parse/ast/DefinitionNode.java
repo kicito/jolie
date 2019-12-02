@@ -52,4 +52,10 @@ public class DefinitionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "define " + this.id + "{ " + this.body + " }";
+	}
 }

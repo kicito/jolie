@@ -63,4 +63,10 @@ public class TypeChoiceDefinition extends TypeDefinition
 		it.forEachRemaining( pair -> path.add( pair ) );
 		return left.containsPath( path.iterator() ) && right.containsPath( path.iterator() );
 	}
+
+	@Override
+	public String toString()
+	{
+		return left + " | " + right;
+	}
 }

@@ -35,20 +35,26 @@ public class WhileStatement extends OLSyntaxNode
 		this.condition = condition;
 		this.body = body;
 	}
-	
+
 	public OLSyntaxNode condition()
 	{
 		return condition;
 	}
-	
+
 	public OLSyntaxNode body()
 	{
 		return body;
 	}
-	
+
 	@Override
 	public void accept( OLVisitor visitor )
 	{
 		visitor.visit( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		return "while(" + this.condition + "){ " + this.body + "}";
 	}
 }

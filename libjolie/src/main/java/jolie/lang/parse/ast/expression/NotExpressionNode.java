@@ -46,4 +46,10 @@ public class NotExpressionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "!" + this.expression;
+	}
 }

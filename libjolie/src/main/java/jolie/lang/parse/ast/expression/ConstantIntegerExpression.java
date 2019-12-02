@@ -46,4 +46,10 @@ public class ConstantIntegerExpression extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return Integer.toString(this.value);
+	}
 }

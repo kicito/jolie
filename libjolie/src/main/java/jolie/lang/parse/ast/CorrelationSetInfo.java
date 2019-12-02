@@ -22,6 +22,7 @@
 package jolie.lang.parse.ast;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 import jolie.lang.Constants;
 
@@ -93,5 +94,11 @@ public class CorrelationSetInfo extends OLSyntaxNode
 	public void accept( OLVisitor visitor )
 	{
 		visitor.visit( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		return "cset." + Arrays.toString(this.variables.toArray());
 	}
 }

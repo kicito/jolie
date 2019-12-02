@@ -59,4 +59,16 @@ public class ThrowStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append("throw(" + this.id);
+		if(this.expression != null){
+			sb.append(", "+ this.expression);
+		}
+		sb.append(")");
+		return sb.toString();
+	}
 }

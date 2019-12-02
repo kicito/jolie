@@ -71,4 +71,15 @@ public class SpawnStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append( "spawn" );
+		sb.append( "( " + this.indexVariablePath + " over " + this.upperBoundExpression + " ) in "
+				+ this.inVariablePath );
+		sb.append( "{ " + this.body + " }" );
+		return sb.toString();
+	}
 }

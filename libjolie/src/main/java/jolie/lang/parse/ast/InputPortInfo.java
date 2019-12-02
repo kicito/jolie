@@ -108,6 +108,14 @@ public class InputPortInfo extends PortInfo
 	@Override
 	public String toString()
 	{
-		return super.toString() + " ->@" + this.protocolId + ":" + this.location;
+		StringBuilder sb = new StringBuilder();
+		sb.append("inputPort " + super.id());
+		sb.append("{");
+		sb.append("location: " + this.location);
+		sb.append("protocol: " + this.protocolId);
+		sb.append("config: " + this.protocolConfiguration);
+		sb.append("}");
+		// TODO agregration and redirection
+		return sb.toString();
 	}
 }

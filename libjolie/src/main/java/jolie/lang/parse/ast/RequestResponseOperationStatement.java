@@ -71,4 +71,11 @@ public class RequestResponseOperationStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		// TODO add process
+		return this.id + "( " + this.inputVarPath + " )( " + this.outputExpression + " )";
+	}
 }

@@ -45,4 +45,10 @@ public class CompensateStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "comp( " + this.id + " )";
+	}
 }
