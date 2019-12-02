@@ -60,6 +60,7 @@ import jolie.lang.parse.ast.ForEachArrayItemStatement;
 import jolie.lang.parse.ast.ForEachSubNodeStatement;
 import jolie.lang.parse.ast.ForStatement;
 import jolie.lang.parse.ast.IfStatement;
+import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InstallFixedVariableExpressionNode;
 import jolie.lang.parse.ast.InstallFunctionNode;
@@ -693,7 +694,6 @@ public class OLParser extends AbstractParser
 				return new URL( new URI( urlStr ).normalize().toString() );
 			}
 		} catch( MalformedURLException | URISyntaxException e ) {
-			e.printStackTrace();
 		}
 		return null;
 	}
@@ -759,7 +759,39 @@ public class OLParser extends AbstractParser
 	private void parseImport() 
 		throws IOException, ParserException
 	{
+		if ( token.is( Scanner.TokenType.IMPORT ) ) {
+			String importTarget;
+			boolean isNamespaceImport = false;
+			String[] localNames = null;
+			getToken();
+			if ( token.is( Scanner.TokenType.ASTERISK ) ) {
+				isNamespaceImport = true;
+				getToken();
+			} else {
+				assertIdentifier( "expected Identifier or * after import" );
+				localNames = new String[]{};
+				localNames = Arrays.copyOf( localNames, localNames.length + 1 );
+				localNames[localNames.length - 1] = token.content();
+				getToken();
+				while (token.is( Scanner.TokenType.COMMA )) {
+					getToken();
+					assertIdentifier( "expected Identifier" );
+					localNames = Arrays.copyOf( localNames, localNames.length + 1 );
+					localNames[localNames.length - 1] = token.content();
+					getToken();
+				}
+			}
+			assertToken( Scanner.TokenType.FROM, "expected \"from\" for an import statement" );
+			getToken();
+			assertToken( Scanner.TokenType.STRING, "expected filename to import" );
+			importTarget = token.content();
 
+			ImportStatement stmt =
+					new ImportStatement( getContext(), localNames, importTarget, isNamespaceImport );
+			programBuilder.addChild(stmt);
+			getToken();
+
+		}
 	}
 
 	private void parseInclude()
