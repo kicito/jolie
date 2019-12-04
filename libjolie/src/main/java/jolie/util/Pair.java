@@ -51,4 +51,26 @@ public final class Pair< K, V > implements Serializable
 	{
 		return value;
 	}
+
+	@Override
+	public boolean equals( Object o )
+	{
+		// compare ignore context
+		if ( o == this ) {
+			return true;
+		}
+
+		if ( !(o instanceof Pair) ) {
+			return false;
+		}
+
+		return ((Pair< K, V >) o).key.equals( this.key )
+				&& ((Pair< K, V >) o).value.equals( this.value );
+	}
+
+	@Override
+	public String toString()
+	{
+		return "< " + this.key+","+ this.value + " >";
+	}
 }

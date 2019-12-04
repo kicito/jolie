@@ -38,4 +38,10 @@ public class VoidExpressionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	@Override
+	public String toString()
+	{
+		return "void";
+	}
 }

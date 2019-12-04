@@ -22,6 +22,7 @@
 package jolie.lang.parse.ast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
@@ -52,5 +53,11 @@ public class ParallelStatement extends OLSyntaxNode
 	public void accept( OLVisitor visitor )
 	{
 		visitor.visit( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		return Arrays.toString(children.toArray());
 	}
 }

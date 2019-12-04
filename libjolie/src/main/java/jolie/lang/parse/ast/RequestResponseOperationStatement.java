@@ -76,6 +76,6 @@ public class RequestResponseOperationStatement extends OLSyntaxNode
 	public String toString()
 	{
 		// TODO add process
-		return this.id + "( " + this.inputVarPath + " )( " + this.outputExpression + " )";
+		return this.id + "( " + this.outputExpression + " )( " + this.inputVarPath + " )";
 	}
 }

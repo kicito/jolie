@@ -118,7 +118,6 @@ public class TypeDefinitionLink extends TypeDefinition
 	@Override
 	public String toString()
 	{
-		// TODO Auto-generated method stub
-		return super.toString();
+		return this.id() + ":" + this.linkedTypeName + this.cardinality();
 	}
 }

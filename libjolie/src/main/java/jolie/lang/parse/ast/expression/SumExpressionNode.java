@@ -62,4 +62,14 @@ public class SumExpressionNode extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		for(Pair< Constants.OperandType, OLSyntaxNode >op : this.operands){
+			sb.append(op.key() + " " + op.value() );
+		}
+		return sb.toString();
+	}
 }
