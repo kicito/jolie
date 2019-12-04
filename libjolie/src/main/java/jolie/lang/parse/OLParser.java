@@ -756,39 +756,46 @@ public class OLParser extends AbstractParser
 		return null;
 	}
 
-	private void parseImport() 
-		throws IOException, ParserException
+	private void parseImport() throws IOException, ParserException
 	{
 		if ( token.is( Scanner.TokenType.IMPORT ) ) {
 			String importTarget;
 			boolean isNamespaceImport = false;
-			String[] localNames = null;
+			List< Pair< String, String > > pathNodes = null;
 			getToken();
 			if ( token.is( Scanner.TokenType.ASTERISK ) ) {
 				isNamespaceImport = true;
 				getToken();
 			} else {
 				assertIdentifier( "expected Identifier or * after import" );
-				localNames = new String[]{};
-				localNames = Arrays.copyOf( localNames, localNames.length + 1 );
-				localNames[localNames.length - 1] = token.content();
-				getToken();
-				while (token.is( Scanner.TokenType.COMMA )) {
+				pathNodes = new ArrayList< Pair< String, String > >();
+				boolean keepRun = false;
+				do{
+					String targetName = token.content();
+					String localName = targetName;
 					getToken();
-					assertIdentifier( "expected Identifier" );
-					localNames = Arrays.copyOf( localNames, localNames.length + 1 );
-					localNames[localNames.length - 1] = token.content();
-					getToken();
-				}
+					if (token.is( Scanner.TokenType.AS )){
+						getToken();
+						assertIdentifier( "expected Identifier after as" );
+						localName = token.content();
+						getToken();
+					}
+					pathNodes.add( new Pair< String, String >( targetName, localName ) );
+					if (token.is( Scanner.TokenType.COMMA)){
+						keepRun = true;
+						getToken();
+					}else{
+						keepRun = false;
+					}
+				}while(keepRun);
 			}
-			assertToken( Scanner.TokenType.FROM, "expected \"from\" for an import statement" );
-			getToken();
+			eat(Scanner.TokenType.FROM, "expected \"from\" for an import statement" );
 			assertToken( Scanner.TokenType.STRING, "expected filename to import" );
 			importTarget = token.content();
 
 			ImportStatement stmt =
-					new ImportStatement( getContext(), localNames, importTarget, isNamespaceImport );
-			programBuilder.addChild(stmt);
+					new ImportStatement( getContext(), importTarget, isNamespaceImport, pathNodes );
+			programBuilder.addChild( stmt );
 			getToken();
 
 		}

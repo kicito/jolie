@@ -132,6 +132,7 @@ public class Scanner
 		INIT,				///< init
 		PROVIDE,			///< provide
 		IMPORT,				///< import
+		AS,					///< as
 		FROM,				///< from
 		NEWLINE,			///< a newline token
 		ERROR				///< Scanner error
@@ -189,6 +190,7 @@ public class Scanner
 		unreservedKeywords.put( "provide", TokenType.PROVIDE );
 		unreservedKeywords.put( "import", TokenType.IMPORT );
 		unreservedKeywords.put( "from", TokenType.FROM );
+		unreservedKeywords.put( "as", TokenType.AS );
 	}
 
 	/**

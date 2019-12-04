@@ -1,10 +1,12 @@
 
 package jolie.lang.parse.ast;
 
-import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.util.Pair;
 
 
 public class ImportStatement extends OLSyntaxNode
@@ -13,22 +15,35 @@ public class ImportStatement extends OLSyntaxNode
     *
     */
     private static final long serialVersionUID = 5226504948641693176L;
-    private final String[] localPathNodes;
+    private final List< Pair< String, String > > pathNodes; // <target_id, local_id>
     private final String importTarget;
     private final boolean isNamespaceImport;
 
-    public ImportStatement( ParsingContext context, String[] localPathNodes, String importTarget,
-            boolean isNamespaceImport )
+    // for namespace import
+    public ImportStatement( ParsingContext context, String importTarget )
+    {
+        this( context, importTarget, true, null );
+    }
+
+    // for id import
+    public ImportStatement( ParsingContext context, String importTarget,
+            List< Pair< String, String > > pathNodes )
+    {
+        this( context, importTarget, false, pathNodes );
+    }
+
+    public ImportStatement( ParsingContext context, String importTarget, boolean isNamespaceImport,
+            List< Pair< String, String > > pathNodes )
     {
         super( context );
-        this.localPathNodes = localPathNodes;
+        this.pathNodes = pathNodes;
         this.importTarget = importTarget;
         this.isNamespaceImport = isNamespaceImport;
     }
 
-    public String[] localPathNodes()
+    public List< Pair< String, String > > pathNodes()
     {
-        return localPathNodes;
+        return pathNodes;
     }
 
     public String importTarget()
@@ -50,7 +65,8 @@ public class ImportStatement extends OLSyntaxNode
     @Override
     public String toString()
     {
-        String importID = (this.isNamespaceImport) ? "*" : Arrays.toString( this.localPathNodes );
+        String importID =
+                (this.isNamespaceImport) ? "*" : Arrays.toString( this.pathNodes.toArray() );
         return "import " + importID + " from '" + this.importTarget + "'";
     }
 
@@ -70,6 +86,7 @@ public class ImportStatement extends OLSyntaxNode
         ImportStatement c = (ImportStatement) o;
         return c.isNamespaceImport == this.isNamespaceImport
                 && c.importTarget.equals( this.importTarget )
-                && Arrays.equals( c.localPathNodes, this.localPathNodes );
+                && ((c.pathNodes == null && this.pathNodes == null) || (c.pathNodes != null
+                        && this.pathNodes != null && c.pathNodes.equals( this.pathNodes )));
     }
 }
