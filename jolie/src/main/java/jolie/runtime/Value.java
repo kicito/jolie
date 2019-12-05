@@ -584,6 +584,15 @@ public abstract class Value implements Expression, Cloneable
 	{
 		setValueObject( object );
 	}
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if (obj instanceof Value){
+			return this.equals( (Value)obj );
+		}
+		return false;
+	}
 		
 	public final synchronized boolean equals( Value val )
 	{
@@ -997,5 +1006,11 @@ public abstract class Value implements Expression, Cloneable
 	public Expression cloneExpression( TransformationReason reason )
 	{
 		return Value.createClone( this );
+	}
+
+	@Override
+	public String toString()
+	{
+		return this.valueObject().toString();
 	}
 }

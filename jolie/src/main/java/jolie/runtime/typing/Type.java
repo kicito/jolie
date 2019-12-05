@@ -24,6 +24,7 @@ package jolie.runtime.typing;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.Optional;
 import jolie.lang.NativeType;
 import jolie.runtime.Value;
@@ -267,6 +268,19 @@ class TypeImpl extends Type
 		}
 		
 		return false;
+	}
+
+	@Override
+	public String toString()
+	{
+		String subTypeStr = "";
+		if ( subTypes != null && this.subTypes.size() > 0 ) {
+
+			subTypeStr = this.subTypes.keySet().stream()
+					.map( key -> key + "=" + this.subTypes.get( key ) )
+					.collect( Collectors.joining( ", ", "{", "}" ) );
+		}
+		return this.nativeType.toString() + this.cardinality.toString() + subTypeStr;
 	}
 }
 
@@ -533,6 +547,12 @@ public abstract class Type implements Cloneable
 			throws TypeCastingException
 		{
 			return linkedType.cast( value, pathBuilder );
+		}
+
+		@Override
+		public String toString()
+		{
+			return linkedTypeName + ": " + this.linkedType + this.cardinality; 
 		}
 	}
 }
