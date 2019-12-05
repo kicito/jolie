@@ -1757,6 +1757,26 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( ImportStatement n )
 	{
+		// Todo create program from target path
+		// extract type from local;
+		// put definition to proper variable
+		ModuleLoader ml = this.interpreter.moduleLoader();
+		try {
+			File f = ml.find( n.importTarget() );
+			ml.load( f );
+			for (Pair< String, String > importNode : n.pathNodes()) {
+				String moduleID = importNode.key();
+				String localID = importNode.value();
+				Object obj = ml.get( f.toPath().toString(), moduleID );
+				if ( obj instanceof Type ) {
+					types.put( localID, (Type) obj );
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace(); // TODO remove
+			error( n.context(), e );
+		}
+		System.out.println( n );
 	}
 }
 

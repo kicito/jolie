@@ -960,7 +960,9 @@ public class OLParseTreeOptimizer
 		public void visit( DocumentationComment n ) {}
 
 		@Override
-		public void visit( ImportStatement n ) {}
+		public void visit( ImportStatement n ) {
+			programChildren.add( n );
+		}
 	}
 
 	public static Program optimize( Program originalProgram )

@@ -300,6 +300,8 @@ public class Interpreter
 	private final String programFilename;
 	private final File programDirectory;
 	private OutputPort monitor = null;
+	
+	private ModuleLoader moduleLoader;
 
 	public void setMonitor( OutputPort monitor )
 	{
@@ -926,6 +928,8 @@ public class Interpreter
 		if ( this.programDirectory == null ) {
 			throw new IOException( "Could not localize the service execution directory. This is probably a bug in the JOLIE interpreter, please report it to jolie-devel@lists.sf.net" );
 		}
+
+		this.moduleLoader = new SimpleModuleLoader(this, cmdParser.charset(), cmdParser.definedConstants());
 	}
    
     /** Constructor.
@@ -1294,6 +1298,7 @@ public class Interpreter
 			}
 
 		} catch( IOException | ParserException | ClassNotFoundException e ) {
+			e.printStackTrace();
 			throw new InterpreterException( e );
 		} finally {
 			cmdParser = null; // Free memory
@@ -1431,5 +1436,9 @@ public class Interpreter
 			}
 		}
 		return factory;
+	}
+
+	public ModuleLoader moduleLoader() {
+		return this.moduleLoader;
 	}
 }
