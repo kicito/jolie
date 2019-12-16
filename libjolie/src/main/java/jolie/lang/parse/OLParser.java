@@ -38,7 +38,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
 import jolie.lang.parse.ast.AddAssignStatement;
@@ -127,6 +126,7 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.util.ProgramBuilder;
@@ -156,6 +156,7 @@ public class OLParser extends AbstractParser
 		new HashMap<>();
 
 	private final Map< String, TypeDefinition > definedTypes;
+	private final HashMap<String, ImportStatement> importingIdentifiers;
 	private final ClassLoader classLoader;
 
 	private InterfaceExtenderDefinition currInterfaceExtender = null;
@@ -168,6 +169,8 @@ public class OLParser extends AbstractParser
 		this.includePaths = includePaths;
 		this.classLoader = classLoader;
 		this.definedTypes = createTypeDeclarationMap( context );
+		this.importingIdentifiers = new HashMap<String, ImportStatement>() ;
+
 	}
 
 	public void putConstants( Map< String, Scanner.Token > constantsToPut )
@@ -762,6 +765,7 @@ public class OLParser extends AbstractParser
 			String importTarget;
 			boolean isNamespaceImport = false;
 			List< Pair< String, String > > pathNodes = null;
+			List< String > importIDList = null;
 			getToken();
 			if ( token.is( Scanner.TokenType.ASTERISK ) ) {
 				isNamespaceImport = true;
@@ -769,32 +773,46 @@ public class OLParser extends AbstractParser
 			} else {
 				assertIdentifier( "expected Identifier or * after import" );
 				pathNodes = new ArrayList< Pair< String, String > >();
+				importIDList = new ArrayList<>();
 				boolean keepRun = false;
-				do{
+				do {
 					String targetName = token.content();
 					String localName = targetName;
 					getToken();
-					if (token.is( Scanner.TokenType.AS )){
+					if ( token.is( Scanner.TokenType.AS ) ) {
 						getToken();
 						assertIdentifier( "expected Identifier after as" );
 						localName = token.content();
 						getToken();
 					}
-					pathNodes.add( new Pair< String, String >( targetName, localName ) );
-					if (token.is( Scanner.TokenType.COMMA)){
+					importIDList.add(targetName + "," + localName);
+					if ( token.is( Scanner.TokenType.COMMA ) ) {
 						keepRun = true;
 						getToken();
-					}else{
+					} else {
 						keepRun = false;
 					}
-				}while(keepRun);
+				} while (keepRun);
 			}
-			eat(Scanner.TokenType.FROM, "expected \"from\" for an import statement" );
+			eat( Scanner.TokenType.FROM, "expected \"from\" for an import statement" );
 			assertToken( Scanner.TokenType.STRING, "expected filename to import" );
 			importTarget = token.content();
+			// this is a quick fix for resolving typeDef link when import without alias , TODO find
+			// better way
+			for (String importID : importIDList) {
+				String[] importIDSplited = importID.split( "," );
+				String moduleID = importIDSplited[0];
+				String localID = importIDSplited[1];
+				pathNodes.add(
+						new Pair< String, String >( moduleID, localID ) );
+			}
 
 			ImportStatement stmt =
 					new ImportStatement( getContext(), importTarget, isNamespaceImport, pathNodes );
+
+			for (Pair< String, String > node : pathNodes) {
+				this.importingIdentifiers.put( node.value(), stmt );
+			}
 			programBuilder.addChild( stmt );
 			getToken();
 
@@ -2552,13 +2570,21 @@ public class OLParser extends AbstractParser
 			ret = new CompareConditionNode( getContext(), expr1, expr2, opType );
 		} else if ( opType == Scanner.TokenType.INSTANCE_OF ) {
 			getToken();
-			TypeDefinition type;
+			TypeDefinition type = null;
 			NativeType nativeType = readNativeType();
 			if ( nativeType == null ) { // It's a user-defined type
 				assertToken( Scanner.TokenType.ID, "expected type name after instanceof" );
 			}
 			if ( definedTypes.containsKey( token.content() ) == false ) {
-				throwException( "invalid type: " + token.content() );
+				if ( this.importingIdentifiers.containsKey( token.content() ) ) { 
+					// It's a importing type
+					ImportStatement is = this.importingIdentifiers.get( token.content() );
+					is.setExpectedType( token.content(), ImportStatement.IDType.TYPE );
+					definedTypes.put( token.content(),
+							new TypeDefinitionImport( getContext(), token.content() ) );
+				} else {
+					throwException( "invalid type: " + token.content() );
+				}
 			}
 			type = definedTypes.get( token.content() );
 			ret = new InstanceOfExpressionNode( getContext(), expr1, type );

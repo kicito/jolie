@@ -2,6 +2,7 @@
 package jolie.lang.parse.ast;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jolie.lang.parse.OLVisitor;
@@ -14,8 +15,15 @@ public class ImportStatement extends OLSyntaxNode
     /**
     *
     */
+
+    public static enum IDType {
+        TYPE, INTERFACE, UNDEFINED
+    }
+
+
     private static final long serialVersionUID = 5226504948641693176L;
     private final List< Pair< String, String > > pathNodes; // <target_id, local_id>
+    private final Map< String, IDType > expectedIDTypeMap;// <local_id, expectedType>
     private final String importTarget;
     private final boolean isNamespaceImport;
 
@@ -39,6 +47,15 @@ public class ImportStatement extends OLSyntaxNode
         this.pathNodes = pathNodes;
         this.importTarget = importTarget;
         this.isNamespaceImport = isNamespaceImport;
+        this.expectedIDTypeMap = new HashMap< String, IDType >();
+        for (Pair< String, String > node : pathNodes) {
+            this.expectedIDTypeMap.put( node.value(), IDType.UNDEFINED );
+        }
+    }
+
+    public void setExpectedType( String id, IDType type )
+    {
+        this.expectedIDTypeMap.put( id, type );
     }
 
     public List< Pair< String, String > > pathNodes()
@@ -54,6 +71,11 @@ public class ImportStatement extends OLSyntaxNode
     public boolean isNamespaceImport()
     {
         return isNamespaceImport;
+    }
+
+    public Map< String, IDType > expectedIDTypeMap()
+    {
+        return expectedIDTypeMap;
     }
 
     @Override

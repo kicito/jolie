@@ -104,6 +104,7 @@ import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 
@@ -238,7 +239,9 @@ public class InterfaceVisitor implements OLVisitor
 	@Override
 	public void visit(TypeChoiceDefinition typeChoiceDefinition) {}
 
-	public void visit( ImportStatement n )
-	{
-	}
+	@Override
+	public void visit( ImportStatement n ) {}
+	
+	@Override
+	public void visit( TypeDefinitionImport n){}
 }

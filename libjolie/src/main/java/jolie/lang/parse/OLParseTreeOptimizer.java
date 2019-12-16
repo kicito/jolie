@@ -102,6 +102,7 @@ import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
@@ -963,6 +964,9 @@ public class OLParseTreeOptimizer
 		public void visit( ImportStatement n ) {
 			programChildren.add( n );
 		}
+	
+		@Override
+		public void visit( TypeDefinitionImport n){}
 	}
 
 	public static Program optimize( Program originalProgram )

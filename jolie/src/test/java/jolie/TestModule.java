@@ -18,14 +18,15 @@ public class TestModule
                         "dist/jolie/extensions/*:dist/jolie/javaServices/*:dist/jolie/lib/*", "-i",
                         "dist/jolie/include"};
 
+// p.children().get(11)
+
+// programChildren.get(11)
         @TestTemplate
         @ParameterizedTest
-        @ValueSource(strings = {"simple-import/types/main.ol","simple-import/interfaces/main.ol"})
+        @ValueSource(strings = {"simple-import/types/main.ol"})
         void testSimpleImportJolie( @ConvertWith(StringArrayConverter.class) String[] testArgs )
         {
-
                 try {
-
                         String[] args = new String[launcherArgs.length + testArgs.length];
                         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
                         System.arraycopy( testArgs, 0, args, launcherArgs.length, testArgs.length );

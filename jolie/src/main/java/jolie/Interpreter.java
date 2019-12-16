@@ -57,6 +57,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import jolie.lang.Constants;
+import jolie.lang.parse.ModuleSolver;
+import jolie.lang.parse.ModuleSolverSimple;
 import jolie.lang.parse.OLParseTreeOptimizer;
 import jolie.lang.parse.OLParser;
 import jolie.lang.parse.ParserException;
@@ -301,8 +303,6 @@ public class Interpreter
 	private final File programDirectory;
 	private OutputPort monitor = null;
 	
-	private ModuleLoader moduleLoader;
-
 	public void setMonitor( OutputPort monitor )
 	{
 		this.monitor = monitor;
@@ -929,7 +929,6 @@ public class Interpreter
 			throw new IOException( "Could not localize the service execution directory. This is probably a bug in the JOLIE interpreter, please report it to jolie-devel@lists.sf.net" );
 		}
 
-		this.moduleLoader = new SimpleModuleLoader(this, cmdParser.charset(), cmdParser.definedConstants());
 	}
    
     /** Constructor.
@@ -1251,6 +1250,11 @@ public class Interpreter
 					olParser.putConstants( cmdParser.definedConstants() );
 					program = olParser.parse();
 				}
+
+				ModuleSolver ms = new ModuleSolverSimple( classLoader, includePaths,
+						cmdParser.charset(), cmdParser.definedConstants() );
+
+				program = ms.solve(program);
 				program = OLParseTreeOptimizer.optimize( program );
 			}
 			
@@ -1438,7 +1442,4 @@ public class Interpreter
 		return factory;
 	}
 
-	public ModuleLoader moduleLoader() {
-		return this.moduleLoader;
-	}
 }

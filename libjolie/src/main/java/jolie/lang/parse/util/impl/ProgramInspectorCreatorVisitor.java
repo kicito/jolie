@@ -22,8 +22,13 @@
 package jolie.lang.parse.util.impl;
 
 import java.net.URI;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.AddAssignStatement;
 import jolie.lang.parse.ast.AssignStatement;
@@ -104,6 +109,7 @@ import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.util.ProgramInspector;
@@ -479,8 +485,11 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 		}
 	}
 
-
 	public void visit( ImportStatement n )
 	{
 	}
+
+	
+	@Override
+	public void visit( TypeDefinitionImport n){}
 }
