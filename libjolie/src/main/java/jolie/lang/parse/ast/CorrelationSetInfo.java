@@ -101,4 +101,38 @@ public class CorrelationSetInfo extends OLSyntaxNode
 	{
 		return "cset." + Arrays.toString(this.variables.toArray());
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((variables == null) ? 0 : variables.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		CorrelationSetInfo other = (CorrelationSetInfo) obj;
+		if ( variables == null ) {
+			if ( other.variables != null ) return false;
+		} else if ( !variables.equals( other.variables ) ) return false;
+		return true;
+	}
 }

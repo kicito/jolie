@@ -79,4 +79,50 @@ public class ForStatement extends OLSyntaxNode
 		sb.append("}");
 		return sb.toString();
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((body == null) ? 0 : body.hashCode());
+		result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+		result = prime * result + ((init == null) ? 0 : init.hashCode());
+		result = prime * result + ((post == null) ? 0 : post.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		ForStatement other = (ForStatement) obj;
+		if ( body == null ) {
+			if ( other.body != null ) return false;
+		} else if ( !body.equals( other.body ) ) return false;
+		if ( condition == null ) {
+			if ( other.condition != null ) return false;
+		} else if ( !condition.equals( other.condition ) ) return false;
+		if ( init == null ) {
+			if ( other.init != null ) return false;
+		} else if ( !init.equals( other.init ) ) return false;
+		if ( post == null ) {
+			if ( other.post != null ) return false;
+		} else if ( !post.equals( other.post ) ) return false;
+		return true;
+	}
 }

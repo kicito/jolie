@@ -82,4 +82,51 @@ public class SpawnStatement extends OLSyntaxNode
 		sb.append( "{ " + this.body + " }" );
 		return sb.toString();
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((body == null) ? 0 : body.hashCode());
+		result = prime * result + ((inVariablePath == null) ? 0 : inVariablePath.hashCode());
+		result = prime * result + ((indexVariablePath == null) ? 0 : indexVariablePath.hashCode());
+		result = prime * result
+				+ ((upperBoundExpression == null) ? 0 : upperBoundExpression.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		SpawnStatement other = (SpawnStatement) obj;
+		if ( body == null ) {
+			if ( other.body != null ) return false;
+		} else if ( !body.equals( other.body ) ) return false;
+		if ( inVariablePath == null ) {
+			if ( other.inVariablePath != null ) return false;
+		} else if ( !inVariablePath.equals( other.inVariablePath ) ) return false;
+		if ( indexVariablePath == null ) {
+			if ( other.indexVariablePath != null ) return false;
+		} else if ( !indexVariablePath.equals( other.indexVariablePath ) ) return false;
+		if ( upperBoundExpression == null ) {
+			if ( other.upperBoundExpression != null ) return false;
+		} else if ( !upperBoundExpression.equals( other.upperBoundExpression ) ) return false;
+		return true;
+	}
 }

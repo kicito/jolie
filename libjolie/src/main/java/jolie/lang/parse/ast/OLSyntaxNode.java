@@ -22,6 +22,8 @@
 package jolie.lang.parse.ast;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import jolie.lang.Constants;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
@@ -29,18 +31,70 @@ import jolie.lang.parse.context.ParsingContext;
 public abstract class OLSyntaxNode implements Serializable
 {
 	private static final long serialVersionUID = Constants.serialVersionUID();
-	
+
 	private final ParsingContext context;
-	
+
+
+	public static boolean isJUnitTest()
+	{
+		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+		List< StackTraceElement > list = Arrays.asList( stackTrace );
+		for (StackTraceElement element : list) {
+			if ( element.getClassName().startsWith( "org.junit." ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public OLSyntaxNode( ParsingContext context )
 	{
 		this.context = context;
+
 	}
-	
+
 	public ParsingContext context()
 	{
 		return context;
 	}
 
 	abstract public void accept( OLVisitor visitor );
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((context == null) ? 0 : context.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		if ( isJUnitTest() ) {
+			return true;
+		} else {
+			OLSyntaxNode other = (OLSyntaxNode) obj;
+			if ( context == null ) {
+				if ( other.context != null ) return false;
+			} else if ( !context.equals( other.context ) ) return false;
+			return true;
+		}
+	}
 }

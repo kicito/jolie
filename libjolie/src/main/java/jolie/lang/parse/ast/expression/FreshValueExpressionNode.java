@@ -42,7 +42,6 @@ public class FreshValueExpressionNode extends OLSyntaxNode
 	@Override
 	public String toString()
 	{
-		// TODO Auto-generated method stub
 		return super.toString();
 	}
 }

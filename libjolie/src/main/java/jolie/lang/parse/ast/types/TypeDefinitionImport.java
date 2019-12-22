@@ -31,4 +31,5 @@ public class TypeDefinitionImport extends TypeDefinition
     {
 		visitor.visit( this );
     }
+    
 }

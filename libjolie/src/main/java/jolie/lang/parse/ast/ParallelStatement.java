@@ -60,4 +60,38 @@ public class ParallelStatement extends OLSyntaxNode
 	{
 		return Arrays.toString(children.toArray());
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((children == null) ? 0 : children.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		ParallelStatement other = (ParallelStatement) obj;
+		if ( children == null ) {
+			if ( other.children != null ) return false;
+		} else if ( !children.equals( other.children ) ) return false;
+		return true;
+	}
 }

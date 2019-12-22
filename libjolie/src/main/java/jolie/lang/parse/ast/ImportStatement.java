@@ -48,8 +48,10 @@ public class ImportStatement extends OLSyntaxNode
         this.importTarget = importTarget;
         this.isNamespaceImport = isNamespaceImport;
         this.expectedIDTypeMap = new HashMap< String, IDType >();
-        for (Pair< String, String > node : pathNodes) {
-            this.expectedIDTypeMap.put( node.value(), IDType.UNDEFINED );
+        if (pathNodes != null){
+            for (Pair< String, String > node : pathNodes) {
+                this.expectedIDTypeMap.put( node.value(), IDType.UNDEFINED );
+            }
         }
     }
 
@@ -92,23 +94,48 @@ public class ImportStatement extends OLSyntaxNode
         return "import " + importID + " from '" + this.importTarget + "'";
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
+
     @Override
-    public boolean equals( Object o )
+    public int hashCode()
     {
-        // compare ignore context
-        if ( o == this ) {
-            return true;
-        }
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((expectedIDTypeMap == null) ? 0 : expectedIDTypeMap.hashCode());
+        result = prime * result + ((importTarget == null) ? 0 : importTarget.hashCode());
+        result = prime * result + (isNamespaceImport ? 1231 : 1237);
+        result = prime * result + ((pathNodes == null) ? 0 : pathNodes.hashCode());
+        return result;
+    }
 
-        if ( !(o instanceof ImportStatement) ) {
-            return false;
-        }
 
-        // typecast o to ImportStatement so that we can compare data members
-        ImportStatement c = (ImportStatement) o;
-        return c.isNamespaceImport == this.isNamespaceImport
-                && c.importTarget.equals( this.importTarget )
-                && ((c.pathNodes == null && this.pathNodes == null) || (c.pathNodes != null
-                        && this.pathNodes != null && c.pathNodes.equals( this.pathNodes )));
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( this == obj ) return true;
+        if ( obj == null ) return false;
+        if ( getClass() != obj.getClass() ) return false;
+        ImportStatement other = (ImportStatement) obj;
+        if ( expectedIDTypeMap == null ) {
+            if ( other.expectedIDTypeMap != null ) return false;
+        } else if ( !expectedIDTypeMap.equals( other.expectedIDTypeMap ) ) return false;
+        if ( importTarget == null ) {
+            if ( other.importTarget != null ) return false;
+        } else if ( !importTarget.equals( other.importTarget ) ) return false;
+        if ( isNamespaceImport != other.isNamespaceImport ) return false;
+        if ( pathNodes == null ) {
+            if ( other.pathNodes != null ) return false;
+        } else if ( !pathNodes.equals( other.pathNodes ) ) return false;
+        return true;
     }
 }

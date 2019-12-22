@@ -85,4 +85,47 @@ public class OutputPortInfo extends PortInfo
 		sb.append("}");
 		return sb.toString();
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((location == null) ? 0 : location.hashCode());
+		result = prime * result
+				+ ((protocolConfiguration == null) ? 0 : protocolConfiguration.hashCode());
+		result = prime * result + ((protocolId == null) ? 0 : protocolId.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		OutputPortInfo other = (OutputPortInfo) obj;
+		if ( location == null ) {
+			if ( other.location != null ) return false;
+		} else if ( !location.equals( other.location ) ) return false;
+		if ( protocolConfiguration == null ) {
+			if ( other.protocolConfiguration != null ) return false;
+		} else if ( !protocolConfiguration.equals( other.protocolConfiguration ) ) return false;
+		if ( protocolId == null ) {
+			if ( other.protocolId != null ) return false;
+		} else if ( !protocolId.equals( other.protocolId ) ) return false;
+		return true;
+	}
 }

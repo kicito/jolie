@@ -243,19 +243,46 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		return cardinality.equals( other.cardinality ) && checkTypeEqualness( this, other, recursiveTypeChecked );
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
 	@Override
-	public boolean equals( Object other )
+	public boolean equals( Object obj )
 	{
-		return this == other;
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		TypeDefinition other = (TypeDefinition) obj;
+		if ( cardinality == null ) {
+			if ( other.cardinality != null ) return false;
+		} else if ( !cardinality.equals( other.cardinality ) ) return false;
+		if ( document == null ) {
+			if ( other.document != null ) return false;
+		} else if ( !document.equals( other.document ) ) return false;
+		if ( id == null ) {
+			if ( other.id != null ) return false;
+		} else if ( !id.equals( other.id ) ) return false;
+		return true;
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
 
 	@Override
 	public int hashCode()
 	{
-		int hash = 7;
-		hash = 31 * hash + this.id.hashCode();
-		hash = 31 * hash + this.cardinality.hashCode();
-		return hash;
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((cardinality == null) ? 0 : cardinality.hashCode());
+		result = prime * result + ((document == null) ? 0 : document.hashCode());
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		return result;
 	}
 
 	/* public abstract TypeDefinition getSubType( String id );

@@ -146,4 +146,58 @@ public class CourierChoiceStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((interfaceOneWayBranches == null) ? 0 : interfaceOneWayBranches.hashCode());
+		result = prime * result + ((interfaceRequestResponseBranches == null) ? 0
+				: interfaceRequestResponseBranches.hashCode());
+		result = prime * result
+				+ ((operationOneWayBranches == null) ? 0 : operationOneWayBranches.hashCode());
+		result = prime * result + ((operationRequestResponseBranches == null) ? 0
+				: operationRequestResponseBranches.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		CourierChoiceStatement other = (CourierChoiceStatement) obj;
+		if ( interfaceOneWayBranches == null ) {
+			if ( other.interfaceOneWayBranches != null ) return false;
+		} else if ( !interfaceOneWayBranches.equals( other.interfaceOneWayBranches ) ) return false;
+		if ( interfaceRequestResponseBranches == null ) {
+			if ( other.interfaceRequestResponseBranches != null ) return false;
+		} else if ( !interfaceRequestResponseBranches
+				.equals( other.interfaceRequestResponseBranches ) )
+			return false;
+		if ( operationOneWayBranches == null ) {
+			if ( other.operationOneWayBranches != null ) return false;
+		} else if ( !operationOneWayBranches.equals( other.operationOneWayBranches ) ) return false;
+		if ( operationRequestResponseBranches == null ) {
+			if ( other.operationRequestResponseBranches != null ) return false;
+		} else if ( !operationRequestResponseBranches
+				.equals( other.operationRequestResponseBranches ) )
+			return false;
+		return true;
+	}
 }

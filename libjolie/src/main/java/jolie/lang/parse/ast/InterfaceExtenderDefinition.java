@@ -63,4 +63,46 @@ public class InterfaceExtenderDefinition extends InterfaceDefinition
 	{
 		defaultRequestResponseOperation = rrDecl;
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result
+				+ ((defaultOneWayOperation == null) ? 0 : defaultOneWayOperation.hashCode());
+		result = prime * result + ((defaultRequestResponseOperation == null) ? 0
+				: defaultRequestResponseOperation.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		InterfaceExtenderDefinition other = (InterfaceExtenderDefinition) obj;
+		if ( defaultOneWayOperation == null ) {
+			if ( other.defaultOneWayOperation != null ) return false;
+		} else if ( !defaultOneWayOperation.equals( other.defaultOneWayOperation ) ) return false;
+		if ( defaultRequestResponseOperation == null ) {
+			if ( other.defaultRequestResponseOperation != null ) return false;
+		} else if ( !defaultRequestResponseOperation
+				.equals( other.defaultRequestResponseOperation ) )
+			return false;
+		return true;
+	}
 }

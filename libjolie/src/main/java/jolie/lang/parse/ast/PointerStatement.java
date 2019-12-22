@@ -52,4 +52,42 @@ public class PointerStatement extends OLSyntaxNode
 	{
 		visitor.visit( this );
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((leftPath == null) ? 0 : leftPath.hashCode());
+		result = prime * result + ((rightPath == null) ? 0 : rightPath.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		PointerStatement other = (PointerStatement) obj;
+		if ( leftPath == null ) {
+			if ( other.leftPath != null ) return false;
+		} else if ( !leftPath.equals( other.leftPath ) ) return false;
+		if ( rightPath == null ) {
+			if ( other.rightPath != null ) return false;
+		} else if ( !rightPath.equals( other.rightPath ) ) return false;
+		return true;
+	}
 }

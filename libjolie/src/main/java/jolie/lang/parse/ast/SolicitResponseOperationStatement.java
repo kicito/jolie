@@ -89,4 +89,54 @@ public class SolicitResponseOperationStatement extends OLSyntaxNode
 		// @TODO add install function to sb.
 		return sb.toString();
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((handlersFunction == null) ? 0 : handlersFunction.hashCode());
+		result = prime * result + ((id == null) ? 0 : id.hashCode());
+		result = prime * result + ((inputVarPath == null) ? 0 : inputVarPath.hashCode());
+		result = prime * result + ((outputExpression == null) ? 0 : outputExpression.hashCode());
+		result = prime * result + ((outputPortId == null) ? 0 : outputPortId.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		SolicitResponseOperationStatement other = (SolicitResponseOperationStatement) obj;
+		if ( handlersFunction == null ) {
+			if ( other.handlersFunction != null ) return false;
+		} else if ( !handlersFunction.equals( other.handlersFunction ) ) return false;
+		if ( id == null ) {
+			if ( other.id != null ) return false;
+		} else if ( !id.equals( other.id ) ) return false;
+		if ( inputVarPath == null ) {
+			if ( other.inputVarPath != null ) return false;
+		} else if ( !inputVarPath.equals( other.inputVarPath ) ) return false;
+		if ( outputExpression == null ) {
+			if ( other.outputExpression != null ) return false;
+		} else if ( !outputExpression.equals( other.outputExpression ) ) return false;
+		if ( outputPortId == null ) {
+			if ( other.outputPortId != null ) return false;
+		} else if ( !outputPortId.equals( other.outputPortId ) ) return false;
+		return true;
+	}
 }

@@ -23,6 +23,7 @@ package jolie.lang.parse.ast;
 
 import java.io.Serializable;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Map;
 
 import jolie.lang.parse.OLVisitor;
@@ -30,42 +31,75 @@ import jolie.lang.parse.context.ParsingContext;
 
 public class InputPortInfo extends PortInfo
 {
-	public static class AggregationItemInfo implements Serializable {
+	public static class AggregationItemInfo implements Serializable
+	{
 		private final String[] outputPortList;
 		private final InterfaceExtenderDefinition interfaceExtender;
-		
+
 		public AggregationItemInfo( String[] outputPortList, InterfaceExtenderDefinition extender )
 		{
 			this.outputPortList = outputPortList;
 			this.interfaceExtender = extender;
 		}
-		
+
 		public String[] outputPortList()
 		{
-			 return outputPortList;
+			return outputPortList;
 		}
-		
+
 		public InterfaceExtenderDefinition interfaceExtender()
 		{
 			return interfaceExtender;
 		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Object#hashCode()
+		 */
+
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((interfaceExtender == null) ? 0 : interfaceExtender.hashCode());
+			result = prime * result + Arrays.hashCode( outputPortList );
+			return result;
+		}
+
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+
+		@Override
+		public boolean equals( Object obj )
+		{
+			if ( this == obj ) return true;
+			if ( obj == null ) return false;
+			if ( getClass() != obj.getClass() ) return false;
+			AggregationItemInfo other = (AggregationItemInfo) obj;
+			if ( interfaceExtender == null ) {
+				if ( other.interfaceExtender != null ) return false;
+			} else if ( !interfaceExtender.equals( other.interfaceExtender ) ) return false;
+			if ( !Arrays.equals( outputPortList, other.outputPortList ) ) return false;
+			return true;
+		}
 	}
-	
+
 	private final URI location;
 	private final String protocolId;
 	private final OLSyntaxNode protocolConfiguration;
 	private final AggregationItemInfo[] aggregationList;
 	private final Map< String, String > redirectionMap;
 
-	public InputPortInfo(
-		ParsingContext context,
-		String id,
-		URI location,
-		String protocolId,
-		OLSyntaxNode protocolConfiguration,
-		AggregationItemInfo[] aggregationList,
-		Map< String, String > redirectionMap
-	) {
+	public InputPortInfo( ParsingContext context, String id, URI location, String protocolId,
+			OLSyntaxNode protocolConfiguration, AggregationItemInfo[] aggregationList,
+			Map< String, String > redirectionMap )
+	{
 		super( context, id );
 		this.location = location;
 		this.protocolId = protocolId;
@@ -109,13 +143,62 @@ public class InputPortInfo extends PortInfo
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("inputPort " + super.id());
-		sb.append("{");
-		sb.append("location: " + this.location);
-		sb.append("protocol: " + this.protocolId);
-		sb.append("config: " + this.protocolConfiguration);
-		sb.append("}");
+		sb.append( "inputPort " + super.id() );
+		sb.append( "{" );
+		sb.append( "location: " + this.location );
+		sb.append( "protocol: " + this.protocolId );
+		sb.append( "config: " + this.protocolConfiguration );
+		sb.append( "}" );
 		// TODO agregration and redirection
 		return sb.toString();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode( aggregationList );
+		result = prime * result + ((location == null) ? 0 : location.hashCode());
+		result = prime * result
+				+ ((protocolConfiguration == null) ? 0 : protocolConfiguration.hashCode());
+		result = prime * result + ((protocolId == null) ? 0 : protocolId.hashCode());
+		result = prime * result + ((redirectionMap == null) ? 0 : redirectionMap.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		InputPortInfo other = (InputPortInfo) obj;
+		if ( !Arrays.equals( aggregationList, other.aggregationList ) ) return false;
+		if ( location == null ) {
+			if ( other.location != null ) return false;
+		} else if ( !location.equals( other.location ) ) return false;
+		if ( protocolConfiguration == null ) {
+			if ( other.protocolConfiguration != null ) return false;
+		} else if ( !protocolConfiguration.equals( other.protocolConfiguration ) ) return false;
+		if ( protocolId == null ) {
+			if ( other.protocolId != null ) return false;
+		} else if ( !protocolId.equals( other.protocolId ) ) return false;
+		if ( redirectionMap == null ) {
+			if ( other.redirectionMap != null ) return false;
+		} else if ( !redirectionMap.equals( other.redirectionMap ) ) return false;
+		return true;
 	}
 }

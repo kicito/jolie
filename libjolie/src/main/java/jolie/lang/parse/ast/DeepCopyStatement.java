@@ -73,4 +73,44 @@ public class DeepCopyStatement extends OLSyntaxNode
 		}
 		return this.leftPath + " " + sp + " " + this.rightExpression;
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (copyLinks ? 1231 : 1237);
+		result = prime * result + ((leftPath == null) ? 0 : leftPath.hashCode());
+		result = prime * result + ((rightExpression == null) ? 0 : rightExpression.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		DeepCopyStatement other = (DeepCopyStatement) obj;
+		if ( copyLinks != other.copyLinks ) return false;
+		if ( leftPath == null ) {
+			if ( other.leftPath != null ) return false;
+		} else if ( !leftPath.equals( other.leftPath ) ) return false;
+		if ( rightExpression == null ) {
+			if ( other.rightExpression != null ) return false;
+		} else if ( !rightExpression.equals( other.rightExpression ) ) return false;
+		return true;
+	}
 }

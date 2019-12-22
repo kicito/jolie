@@ -94,4 +94,46 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 		sb.append( "\n}");
 		return sb.toString();
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((documentation == null) ? 0 : documentation.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + ((operationsMap == null) ? 0 : operationsMap.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		InterfaceDefinition other = (InterfaceDefinition) obj;
+		if ( documentation == null ) {
+			if ( other.documentation != null ) return false;
+		} else if ( !documentation.equals( other.documentation ) ) return false;
+		if ( name == null ) {
+			if ( other.name != null ) return false;
+		} else if ( !name.equals( other.name ) ) return false;
+		if ( operationsMap == null ) {
+			if ( other.operationsMap != null ) return false;
+		} else if ( !operationsMap.equals( other.operationsMap ) ) return false;
+		return true;
+	}
 }

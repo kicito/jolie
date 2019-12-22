@@ -65,4 +65,44 @@ public class CompareConditionNode extends OLSyntaxNode
 	{
 		return this.leftExpression + " " + this.opType + " " + this.rightExpression;
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((leftExpression == null) ? 0 : leftExpression.hashCode());
+		result = prime * result + ((opType == null) ? 0 : opType.hashCode());
+		result = prime * result + ((rightExpression == null) ? 0 : rightExpression.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		CompareConditionNode other = (CompareConditionNode) obj;
+		if ( leftExpression == null ) {
+			if ( other.leftExpression != null ) return false;
+		} else if ( !leftExpression.equals( other.leftExpression ) ) return false;
+		if ( opType != other.opType ) return false;
+		if ( rightExpression == null ) {
+			if ( other.rightExpression != null ) return false;
+		} else if ( !rightExpression.equals( other.rightExpression ) ) return false;
+		return true;
+	}
 }

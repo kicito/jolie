@@ -59,4 +59,40 @@ public class TypeCastExpressionNode extends OLSyntaxNode
 	{
 		return "(" + type + ")" + this.expression;
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((expression == null) ? 0 : expression.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		TypeCastExpressionNode other = (TypeCastExpressionNode) obj;
+		if ( expression == null ) {
+			if ( other.expression != null ) return false;
+		} else if ( !expression.equals( other.expression ) ) return false;
+		if ( type != other.type ) return false;
+		return true;
+	}
 }

@@ -51,4 +51,38 @@ public class OneWayOperationDeclaration extends OperationDeclaration
 	{
 		visitor.visit( this );
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((requestType == null) ? 0 : requestType.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		OneWayOperationDeclaration other = (OneWayOperationDeclaration) obj;
+		if ( requestType == null ) {
+			if ( other.requestType != null ) return false;
+		} else if ( !requestType.equals( other.requestType ) ) return false;
+		return true;
+	}
 }

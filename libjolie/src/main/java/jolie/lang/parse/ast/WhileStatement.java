@@ -57,4 +57,42 @@ public class WhileStatement extends OLSyntaxNode
 	{
 		return "while(" + this.condition + "){ " + this.body + "}";
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((body == null) ? 0 : body.hashCode());
+		result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		WhileStatement other = (WhileStatement) obj;
+		if ( body == null ) {
+			if ( other.body != null ) return false;
+		} else if ( !body.equals( other.body ) ) return false;
+		if ( condition == null ) {
+			if ( other.condition != null ) return false;
+		} else if ( !condition.equals( other.condition ) ) return false;
+		return true;
+	}
 }

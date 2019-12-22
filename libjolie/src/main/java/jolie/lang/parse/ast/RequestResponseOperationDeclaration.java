@@ -73,4 +73,46 @@ public class RequestResponseOperationDeclaration extends OperationDeclaration
 	{
 		return super.id() + "( " + this.requestType + " )" + "( " + this.responseType + " )";
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
+	@Override
+	public int hashCode()
+	{
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((faults == null) ? 0 : faults.hashCode());
+		result = prime * result + ((requestType == null) ? 0 : requestType.hashCode());
+		result = prime * result + ((responseType == null) ? 0 : responseType.hashCode());
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( !super.equals( obj ) ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		RequestResponseOperationDeclaration other = (RequestResponseOperationDeclaration) obj;
+		if ( faults == null ) {
+			if ( other.faults != null ) return false;
+		} else if ( !faults.equals( other.faults ) ) return false;
+		if ( requestType == null ) {
+			if ( other.requestType != null ) return false;
+		} else if ( !requestType.equals( other.requestType ) ) return false;
+		if ( responseType == null ) {
+			if ( other.responseType != null ) return false;
+		} else if ( !responseType.equals( other.responseType ) ) return false;
+		return true;
+	}
 }
