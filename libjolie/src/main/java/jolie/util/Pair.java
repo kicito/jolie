@@ -52,25 +52,47 @@ public final class Pair< K, V > implements Serializable
 		return value;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+
 	@Override
-	public boolean equals( Object o )
+	public int hashCode()
 	{
-		// compare ignore context
-		if ( o == this ) {
-			return true;
-		}
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + ((value == null) ? 0 : value.hashCode());
+		return result;
+	}
 
-		if ( !(o instanceof Pair) ) {
-			return false;
-		}
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
 
-		return ((Pair< K, V >) o).key.equals( this.key )
-				&& ((Pair< K, V >) o).value.equals( this.value );
+	@Override
+	public boolean equals( Object obj )
+	{
+		if ( this == obj ) return true;
+		if ( obj == null ) return false;
+		if ( getClass() != obj.getClass() ) return false;
+		Pair other = (Pair) obj;
+		if ( key == null ) {
+			if ( other.key != null ) return false;
+		} else if ( !key.equals( other.key ) ) return false;
+		if ( value == null ) {
+			if ( other.value != null ) return false;
+		} else if ( !value.equals( other.value ) ) return false;
+		return true;
 	}
 
 	@Override
 	public String toString()
 	{
-		return "< " + this.key+","+ this.value + " >";
+		return "< " + this.key+", "+ this.value + " >";
 	}
 }
