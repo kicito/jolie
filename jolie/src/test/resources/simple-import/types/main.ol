@@ -1,4 +1,9 @@
 import Date from "modules/Date.ol"
+// type Date : void{
+//     .day: int
+//     .month: int
+//     .year: int
+// }
 include "console.iol"
 
 main {

@@ -799,19 +799,21 @@ public class OLParser extends AbstractParser
 			importTarget = token.content();
 			// this is a quick fix for resolving typeDef link when import without alias , TODO find
 			// better way
-			for (String importID : importIDList) {
-				String[] importIDSplited = importID.split( "," );
-				String moduleID = importIDSplited[0];
-				String localID = importIDSplited[1];
-				pathNodes.add(
-						new Pair< String, String >( moduleID, localID ) );
+			if ( importIDList != null ) {
+				for (String importID : importIDList) {
+					String[] importIDSplited = importID.split( "," );
+					String moduleID = importIDSplited[0];
+					String localID = importIDSplited[1];
+					pathNodes.add( new Pair< String, String >( moduleID, localID ) );
+				}
 			}
 
 			ImportStatement stmt =
 					new ImportStatement( getContext(), importTarget, isNamespaceImport, pathNodes );
-
-			for (Pair< String, String > node : pathNodes) {
-				this.importingIdentifiers.put( node.value(), stmt );
+			if ( pathNodes != null ) {
+				for (Pair< String, String > node : pathNodes) {
+					this.importingIdentifiers.put( node.value(), stmt );
+				}
 			}
 			programBuilder.addChild( stmt );
 			getToken();
@@ -1171,12 +1173,17 @@ public class OLParser extends AbstractParser
                 boolean keepRun = true;
                 while( keepRun ) {
                     assertToken( Scanner.TokenType.ID, "expected interface name" );
-                    InterfaceDefinition i = interfaces.get( token.content() );
-                    if ( i == null ) {
-                        throwException( "Invalid interface name: " + token.content() );
-                    }
-                    i.copyTo( iface );
-                    interfaceList.add( i );
+					InterfaceDefinition i = interfaces.get( token.content() );
+					if ( i == null ) {
+						if ( this.importingIdentifiers.containsKey( token.content() ) ) {
+							System.out.println( "importing " + token.content() );
+						} else {
+							throwException( "Invalid interface name: " + token.content() );
+						}
+					} else {
+						i.copyTo( iface );
+						interfaceList.add( i );
+					}
                     getToken();
 
                     if ( token.is( Scanner.TokenType.COMMA ) ) {

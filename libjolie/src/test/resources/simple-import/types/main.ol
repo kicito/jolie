@@ -1,4 +1,4 @@
-import Date from "modules/Date.ol"
+import Date from "modules/date.ol"
 include "console.iol"
 
 // type Date : void {
