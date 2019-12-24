@@ -41,7 +41,7 @@ public class TestDeploymentConstruct
 	{
 		String code = "include \"date.ol\"";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		TestObjectCreator oc = new TestObjectCreator( new String[] {"simple-import/types/modules"} );
+		InstanceCreator oc = new InstanceCreator( new String[] {"simple-import/types/modules"} );
 		OLParser olParser = oc.createOLParser( is );
 
 		TypeInlineDefinition expected =
@@ -69,7 +69,7 @@ public class TestDeploymentConstruct
 	{
 		String code = "type Date {day:int month:int year:int}";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		TestObjectCreator oc = new TestObjectCreator( new String[] {} );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 		TypeInlineDefinition expected =
 				new TypeInlineDefinition( null, "Date", NativeType.VOID, new Range( 1, 1 ) );
@@ -98,7 +98,7 @@ public class TestDeploymentConstruct
 	{
 		String code = "interface SumInterface { RequestResponse: sum( int )( int )}";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		TestObjectCreator oc = new TestObjectCreator( new String[] {} );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 
 		TypeDefinition intTD =
@@ -120,7 +120,7 @@ public class TestDeploymentConstruct
 		String code =
 				"inputPort SumInput { Location: \"socket://localhost:8000/\" Protocol: soap RequestResponse:sum(int)(int) }";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		TestObjectCreator oc = new TestObjectCreator( new String[] {} );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 
 
@@ -149,7 +149,7 @@ public class TestDeploymentConstruct
 		String code =
 				"outputPort SumServ { Location: \"socket://localhost:8000/\" Protocol: soap }";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		TestObjectCreator oc = new TestObjectCreator( new String[] {} );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 
 
@@ -189,7 +189,7 @@ public class TestDeploymentConstruct
 			expected = new ImportStatement( null, expectedTargetFile );
 		}
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		TestObjectCreator oc = new TestObjectCreator( new String[] {} );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 
 		Program p = olParser.parse();

@@ -38,7 +38,7 @@ public class TestProcessParser
 	{
 		String code = "define a{ nullProcess }";
 		is = new ByteArrayInputStream( code.getBytes() );
-        TestObjectCreator oc = new TestObjectCreator( new String[] {"dist/jolie/include"} );
+        InstanceCreator oc = new InstanceCreator( new String[] {"dist/jolie/include"} );
 
 		OLParser olParser = oc.createOLParser( is );
 
@@ -57,7 +57,7 @@ public class TestProcessParser
 
 		String code = "define a{ println@Console(\"hi\")() }";
 		is = new ByteArrayInputStream( code.getBytes() );
-        TestObjectCreator oc = new TestObjectCreator( new String[] {"dist/jolie/include"} );
+        InstanceCreator oc = new InstanceCreator( new String[] {"dist/jolie/include"} );
 
 		OLParser olParser = oc.createOLParser( is );
 
@@ -81,7 +81,7 @@ public class TestProcessParser
 	void testAssignment() throws Exception
 	{
 		String code = "define a {a = b}";
-        TestObjectCreator oc = new TestObjectCreator( new String[] {"dist/jolie/include"} );
+        InstanceCreator oc = new InstanceCreator( new String[] {"dist/jolie/include"} );
 		is = new ByteArrayInputStream( code.getBytes() );
 
 		OLParser olParser = oc.createOLParser( is );
@@ -109,7 +109,7 @@ public class TestProcessParser
 				+ "y = person .( key );" + "z = person .(\"a\" + \"ge\")}";
 
 		is = new ByteArrayInputStream( code.getBytes() );
-        TestObjectCreator oc = new TestObjectCreator( new String[] {"dist/jolie/include"} );
+        InstanceCreator oc = new InstanceCreator( new String[] {"dist/jolie/include"} );
 		OLParser olParser = oc.createOLParser( is );
 		List< OLSyntaxNode > nodes = new ArrayList< OLSyntaxNode >();
 

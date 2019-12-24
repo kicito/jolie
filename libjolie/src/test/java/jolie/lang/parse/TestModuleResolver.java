@@ -16,11 +16,10 @@ class TestModuleResolver
     @Test
     void testInstanceOf() throws IOException, URISyntaxException, ParserException
     {
-        // File fileTarget = new File( "simple-import/types/main.ol" );
         is = getClass().getClassLoader().getResourceAsStream( "simple-import/types/main.ol" );
         String resourcePath =
                 getClass().getClassLoader().getResource( "." ).getPath() + "simple-import/types/";
-        TestObjectCreator oc = new TestObjectCreator( new String[] {resourcePath} );
+        InstanceCreator oc = new InstanceCreator( new String[] {resourcePath} );
         OLParser olParser = oc.createOLParser( is );
         Program p = olParser.parse();
 

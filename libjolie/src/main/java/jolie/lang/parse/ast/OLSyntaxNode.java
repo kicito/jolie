@@ -34,19 +34,6 @@ public abstract class OLSyntaxNode implements Serializable
 
 	private final ParsingContext context;
 
-
-	public static boolean isJUnitTest()
-	{
-		StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-		List< StackTraceElement > list = Arrays.asList( stackTrace );
-		for (StackTraceElement element : list) {
-			if ( element.getClassName().startsWith( "org.junit." ) ) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	public OLSyntaxNode( ParsingContext context )
 	{
 		this.context = context;
@@ -87,14 +74,10 @@ public abstract class OLSyntaxNode implements Serializable
 		if ( this == obj ) return true;
 		if ( obj == null ) return false;
 		if ( getClass() != obj.getClass() ) return false;
-		if ( isJUnitTest() ) {
-			return true;
-		} else {
-			OLSyntaxNode other = (OLSyntaxNode) obj;
-			if ( context == null ) {
-				if ( other.context != null ) return false;
-			} else if ( !context.equals( other.context ) ) return false;
-			return true;
-		}
+		OLSyntaxNode other = (OLSyntaxNode) obj;
+		if ( context == null ) {
+			if ( other.context != null ) return false;
+		} else if ( !context.equals( other.context ) ) return false;
+		return true;
 	}
 }

@@ -8,12 +8,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import jolie.lang.parse.Scanner.Token;
 
-class TestObjectCreator
+class InstanceCreator
 {
 
     String[] includePaths;
 
-    public TestObjectCreator( String[] includePaths )
+    public InstanceCreator( String[] includePaths )
     {
         if ( this.includePaths == null ) {
             this.includePaths = new String[] {};
@@ -25,12 +25,12 @@ class TestObjectCreator
     {
         return new OLParser(
                 new Scanner( codeSteam, new URI( "test" ), StandardCharsets.UTF_8.name(), false ),
-                this.includePaths, TestObjectCreator.class.getClassLoader() );
+                this.includePaths, InstanceCreator.class.getClassLoader() );
     }
 
     ModuleSolverSimple createModuleSolver( Map< String, Token > constants )
     {
-        return new ModuleSolverSimple( TestObjectCreator.class.getClassLoader(), this.includePaths,
+        return new ModuleSolverSimple( InstanceCreator.class.getClassLoader(), this.includePaths,
                 StandardCharsets.UTF_8.name(), constants );
     }
 

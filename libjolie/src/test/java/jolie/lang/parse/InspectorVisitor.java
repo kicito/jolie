@@ -84,8 +84,10 @@ import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.util.Pair;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.lang.reflect.Field;
 
 class InspectorVisitor implements OLVisitor
@@ -95,20 +97,102 @@ class InspectorVisitor implements OLVisitor
     private Class< ? > targetClass;
     private Map< Class< ? >, Boolean > inpectLog;
 
-    public static void removeNodeContext( OLSyntaxNode n ) 
+    /**
+     * getInstanceNestedOLSyntaxNode traverse through fields of receiving parameter
+     * using reflection, returns all OLSyntax node associate to it
+     * 
+     * @param object
+     * @return List< OLSyntaxNode >
+     */
+    private static List< OLSyntaxNode > getInstanceNestedOLSyntaxNode( OLSyntaxNode object )
     {
-        Class< ? > cls = n.getClass();
-        while(cls != null &&cls != OLSyntaxNode.class){
-            cls.getSuperclass();
+        Class< ? > cls = object.getClass();
+        List< OLSyntaxNode > ret = new ArrayList<>();
+        for (Field field : cls.getDeclaredFields()) {
+            field.setAccessible( true );
+            Class c = field.getType();
+            try {
+                if ( OLSyntaxNode.class.isAssignableFrom( c ) ) {
+                    if ( field.get( object ) != null ) {
+                        ret.add( (OLSyntaxNode) field.get( object ) );
+                    }
+                } else if ( c == List.class ) {
+                    if ( field.get( object ) == null ) {
+                        continue;
+                    }
+                    List< ? > list = (List< ? >) field.get( object );
+                    if ( list.size() > 0 ) {
+                        if ( list.get( 0 ) instanceof OLSyntaxNode ) {
+                            ret.addAll( (List< OLSyntaxNode >) list );
+                        }
+                        if ( list.get( 0 ) instanceof Pair ) {
+                            for (Pair p : (List< Pair >) list) {
+                                if ( p.key() instanceof OLSyntaxNode ) {
+                                    ret.add( (OLSyntaxNode) p.key() );
+                                }
+                                if ( p.value() instanceof OLSyntaxNode ) {
+                                    ret.add( (OLSyntaxNode) p.value() );
+                                }
+                            }
+                        }
+                    }
+                } else if ( c == Map.class ) {
+                    if ( field.get( object ) == null ) {
+                        continue;
+                    }
+                    Map< Object, Object > m = (Map) field.get( object );
+                    for (Map.Entry< Object, Object > entry : m.entrySet()) {
+                        if ( entry.getKey() instanceof OLSyntaxNode ) {
+                            ret.add( (OLSyntaxNode) entry.getKey() );
+                        }
+                        if ( entry.getValue() instanceof OLSyntaxNode ) {
+                            ret.add( (OLSyntaxNode) entry.getValue() );
+                        }
+                    }
+                } else if ( c == Pair.class ) {
+                    if ( field.get( object ) == null ) {
+                        continue;
+                    }
+                    Pair p = (Pair) field.get( object );
+                    if ( p.key() instanceof OLSyntaxNode ) {
+                        ret.add( (OLSyntaxNode) p.key() );
+                    }
+                    if ( p.value() instanceof OLSyntaxNode ) {
+                        ret.add( (OLSyntaxNode) p.value() );
+                    }
+                }
+            } catch (IllegalArgumentException | IllegalAccessException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
         }
+        return ret;
+    }
+
+    /**
+     * removeNodeContext set context field of the receiving parameter to null, include it's
+     * children/ operand or body
+     */
+    public static boolean removeNodeContext( OLSyntaxNode n )
+    {
         try {
-            final Field field =
-                    cls.getDeclaredField( "context" );
+            List< OLSyntaxNode > children = getInstanceNestedOLSyntaxNode( n );
+            if ( children != null ) {
+                for (OLSyntaxNode child : children) {
+                    removeNodeContext( child );
+                }
+            }
+            Class< ? > cls = n.getClass();
+            while (cls != null && cls != OLSyntaxNode.class) {
+                cls = cls.getSuperclass();
+            }
+            final Field field = cls.getDeclaredField( "context" );
             field.setAccessible( true );
             field.set( n, null );
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return true;
     }
 
     public boolean programHasOLSyntaxNode( Program p, OLSyntaxNode node )
@@ -125,7 +209,7 @@ class InspectorVisitor implements OLVisitor
     public void visit( Program n )
     {
         for (OLSyntaxNode node : n.children()) {
-            // InspectorVisitor.removeNodeContext( node );
+            InspectorVisitor.removeNodeContext( node );
             if ( isFound ) {
                 return;
             }
@@ -152,7 +236,7 @@ class InspectorVisitor implements OLVisitor
         if ( isFound ) {
             return;
         }
-        n.body().accept(this);
+        n.body().accept( this );
     }
 
     @Override
