@@ -78,7 +78,6 @@ import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
-import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
@@ -186,9 +185,9 @@ class InspectorVisitor implements OLVisitor
             while (cls != null && cls != OLSyntaxNode.class) {
                 cls = cls.getSuperclass();
             }
-            final Field field = cls.getDeclaredField( "context" );
-            field.setAccessible( true );
-            field.set( n, null );
+            final Field ctxField = cls.getDeclaredField( "context" );
+            ctxField.setAccessible( true );
+            ctxField.set( n, null );
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -724,12 +723,6 @@ class InspectorVisitor implements OLVisitor
 
     @Override
     public void visit( ImportStatement n )
-    {
-        isFound = n.equals( target );
-    }
-
-    @Override
-    public void visit( TypeDefinitionImport n )
     {
         isFound = n.equals( target );
     }

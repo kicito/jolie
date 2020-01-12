@@ -85,7 +85,6 @@ import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
-import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.util.ProgramInspector;
@@ -538,9 +537,9 @@ class ModuleSolverVisitor implements OLVisitor
         }
     }
     
-	public void visit( TypeDefinitionImport n){
-        TypeDefinition td = importedTypes.get(n.id());
-        currType = td;
+    private InterfaceDefinition findInterfaceFromInspector( ProgramInspector pi, String ifaceName )
+            throws Exception
+    {
     }
 
 }

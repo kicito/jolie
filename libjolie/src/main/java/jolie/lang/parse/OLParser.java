@@ -2587,8 +2587,7 @@ public class OLParser extends AbstractParser
 					// It's a importing type
 					ImportStatement is = this.importingIdentifiers.get( token.content() );
 					is.setExpectedType( token.content(), ImportStatement.IDType.TYPE );
-					definedTypes.put( token.content(),
-							new TypeDefinitionImport( getContext(), token.content() ) );
+					definedTypes.put( token.content(), new TypeInlineDefinition(getContext(), token.content(), NativeType.ANY, Constants.RANGE_ONE_TO_ONE) );
 				} else {
 					throwException( "invalid type: " + token.content() );
 				}

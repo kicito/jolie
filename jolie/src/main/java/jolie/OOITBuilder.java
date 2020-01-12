@@ -124,7 +124,6 @@ import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
-import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
@@ -1781,10 +1780,6 @@ public class OOITBuilder implements OLVisitor
 	}
 
 	
-	@Override
-	public void visit( TypeDefinitionImport n){
-		// currType = types.get(n.id());
-		// System.out.println(n);
-	}
+}
 }
 
