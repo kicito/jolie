@@ -23,6 +23,7 @@ package jolie.lang.parse.util.impl;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,8 @@ public class ProgramInspectorImpl implements ProgramInspector
 	private final Map< URI, List< InputPortInfo > > inputPorts;
 	private final Map< URI, List< OutputPortInfo > > outputPorts;
 	private final Map< URI, List< EmbeddedServiceNode > > embeddedServices;
-	private final Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode>>> behaviouralDependencies;
+	private final Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies;
+	private final Map< URI, List< ImportStatement > > importStatements;
 
 	public ProgramInspectorImpl(
 		URI[] sources,
@@ -52,7 +54,8 @@ public class ProgramInspectorImpl implements ProgramInspector
 		Map< URI, List< InputPortInfo > > inputPorts,
 		Map< URI, List< OutputPortInfo > > outputPorts,
 		Map< URI, List< EmbeddedServiceNode > > embeddedServices,
-		Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode>>> behaviouralDependencies
+		Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies,
+		Map< URI, List< ImportStatement > > importStatements
 	) {
 		this.sources = sources;
 		this.interfaces = interfaces;
@@ -61,6 +64,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 		this.outputPorts = outputPorts;
 		this.embeddedServices = embeddedServices;
 		this.behaviouralDependencies = behaviouralDependencies;
+		this.importStatements = importStatements;
 	}
 
 	@Override
@@ -209,5 +213,35 @@ public class ProgramInspectorImpl implements ProgramInspector
 			return new EmbeddedServiceNode[ 0 ];
 		}
 		return list.toArray( new EmbeddedServiceNode[ 0 ] );
+	}
+
+	@Override
+	public ImportStatement[] getImportStatements()
+	{
+		List< ImportStatement > result = new ArrayList<>();
+		List< ImportStatement > list;
+		for (URI source : sources) {
+			list = importStatements.get( source );
+			if ( list != null ) {
+				result.addAll( list );
+			}
+		}
+		return result.toArray( new ImportStatement[ 0 ] );
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
+
+	@Override
+	public String toString()
+	{
+		return "ProgramInspectorImpl [behaviouralDependencies=" + behaviouralDependencies
+				+ ", embeddedServices=" + embeddedServices + ", importStatements="
+				+ importStatements + ", inputPorts=" + inputPorts + ", interfaces=" + interfaces
+				+ ", outputPorts=" + outputPorts + ", sources=" + Arrays.toString( sources )
+				+ ", types=" + types + "]";
 	}
 }

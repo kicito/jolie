@@ -118,4 +118,11 @@ public interface ProgramInspector
 	 * defined in the specific source
 	 */
 	public Map<OLSyntaxNode, List<OLSyntaxNode>> getBehaviouralDependencies( URI source );
+
+	/**
+	 * Returns an array of all the ImportStatement defined in the program.
+	 * @return an array of all the ImportStatement defined in the program
+	 */
+	public ImportStatement[] getImportStatements( );
+
 }

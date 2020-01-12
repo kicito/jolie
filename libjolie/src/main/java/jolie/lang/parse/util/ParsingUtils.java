@@ -24,7 +24,10 @@ package jolie.lang.parse.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.Map;
+import jolie.lang.parse.ModuleSolver;
+import jolie.lang.parse.ModuleSolverExceptions;
 import jolie.lang.parse.OLParseTreeOptimizer;
 import jolie.lang.parse.OLParser;
 import jolie.lang.parse.ParserException;
@@ -87,6 +90,35 @@ public class ParsingUtils
 
 		return program;
 	}
+
+	/**
+	 * method for module system
+	 * 
+	 * @throws IOException
+	 * @throws ParserException
+	 * @throws SemanticException
+	 * @throws ModuleSolverExceptions
+	 */
+	public static Program parseProgram( InputStream inputStream, URI source, String charset,
+			String[] includePaths, ClassLoader classLoader,
+			Map< String, Scanner.Token > definedConstants,
+			SemanticVerifier.Configuration configuration, boolean includeDocumentation,
+			ModuleSolver ms )
+			throws IOException, ParserException, SemanticException, ModuleSolverExceptions
+	{
+		OLParser olParser =
+				new OLParser( new Scanner( inputStream, source, charset, includeDocumentation ),
+						includePaths, classLoader );
+		olParser.putConstants( definedConstants );
+		Program program = olParser.parse();
+		// module resolve
+		program = ms.solve( program, Paths.get(URI.create(source.toString()) ).getParent().toString() );
+		SemanticVerifier semanticVerifier = new SemanticVerifier( program, configuration );
+		semanticVerifier.validate();
+
+		return program;
+	}
+	
 	
 	/**
 	 * Creates a {@link ProgramInspector} for the specified {@link jolie.lang.parse.ast.Program}.

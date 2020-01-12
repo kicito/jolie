@@ -2,10 +2,12 @@ package jolie.lang.parse;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import jolie.lang.Constants;
+import jolie.lang.parse.ModuleSolverExceptions.ModuleException;
 import jolie.lang.parse.ast.AddAssignStatement;
 import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.CompareConditionNode;
@@ -39,6 +41,7 @@ import jolie.lang.parse.ast.NullProcessStatement;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.OneWayOperationDeclaration;
 import jolie.lang.parse.ast.OneWayOperationStatement;
+import jolie.lang.parse.ast.OperationDeclaration;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
 import jolie.lang.parse.ast.PointerStatement;
@@ -87,28 +90,35 @@ import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.util.ProgramInspector;
 import jolie.util.Pair;
 
 class ModuleSolverVisitor implements OLVisitor
 {
 
-    private ModuleSolver ms;
+    private ModuleSolverSimple ms;
+
 
     private final List< OLSyntaxNode > programChildren = new ArrayList<>();
 
-    private final Map<String,TypeDefinition> importedTypes = new HashMap<>();
+    private final Map< String, TypeDefinition > importedTypes = new HashMap<>();
+    private final Map< String, InterfaceDefinition > importedInterfaces = new HashMap<>();
 
     private OLSyntaxNode currNode;
     private TypeDefinition currType;
-        
-    public ModuleSolverVisitor(ModuleSolver ms){
+    private ProgramInspector currProgramInspector;
+    private Pair< String, String > currImportPair;
+
+    public ModuleSolverVisitor( ModuleSolverSimple ms )
+    {
         this.ms = ms;
     }
 
-    public Program parse(Program p){
-        this.visit(p);
-        return new Program(p.context(), programChildren);
+    public Program parse( Program p )
+    {
+        this.visit( p );
+        return new Program( p.context(), programChildren );
     }
 
     private OLSyntaxNode parse( OLSyntaxNode n )
@@ -121,15 +131,17 @@ class ModuleSolverVisitor implements OLVisitor
     @Override
     public void visit( Program n )
     {
-		for( OLSyntaxNode node : n.children() ) {
-            if( node instanceof ImportStatement){
+        for (OLSyntaxNode node : n.children()) {
+            if ( node instanceof ImportStatement ) {
                 node.accept( this );
-            }else if (node instanceof DefinitionNode){
+            } else if ( node instanceof DefinitionNode ) {
                 node.accept( this );
-            }else{
-                programChildren.add(node);
+            } else if ( node instanceof InputPortInfo ) {
+                node.accept( this );
+            } else {
+                programChildren.add( node );
             }
-		}
+        }
     }
 
     @Override
@@ -145,14 +157,15 @@ class ModuleSolverVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( ParallelStatement n ){
+    public void visit( ParallelStatement n )
+    {
         ParallelStatement tmp = new ParallelStatement( n.context() );
         for (OLSyntaxNode node : n.children()) {
             node.accept( this );
             tmp.addChild( currNode );
         }
         currNode = tmp;
-     }
+    }
 
     @Override
     public void visit( SequenceStatement n )
@@ -179,10 +192,16 @@ class ModuleSolverVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( OneWayOperationStatement n ){ }
+    public void visit( OneWayOperationStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
-    public void visit( RequestResponseOperationStatement n ){ }
+    public void visit( RequestResponseOperationStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
     public void visit( NotificationOperationStatement n ){ }
@@ -196,20 +215,25 @@ class ModuleSolverVisitor implements OLVisitor
             outputExpression = currNode;
         }
         currNode = new SolicitResponseOperationStatement( n.context(), n.id(), n.outputPortId(),
-                outputExpression, n.inputVarPath(),
-                n.handlersFunction() );
+                outputExpression, n.inputVarPath(), n.handlersFunction() );
     }
-    
-    @Override
-    public void visit( LinkInStatement n ){ currNode = n; }
 
     @Override
-    public void visit( LinkOutStatement n ){ currNode = n; }
+    public void visit( LinkInStatement n )
+    {
+        currNode = n;
+    }
+
+    @Override
+    public void visit( LinkOutStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
     public void visit( AssignStatement n )
     {
-        
+
         currNode = new AssignStatement( n.context(), n.variablePath(), parse( n.expression() ) );
     }
 
@@ -246,7 +270,8 @@ class ModuleSolverVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( DefinitionCallStatement n ){ 
+    public void visit( DefinitionCallStatement n )
+    {
         currNode = n;
     }
 
@@ -258,7 +283,7 @@ class ModuleSolverVisitor implements OLVisitor
     {
         OrConditionNode ret = new OrConditionNode( n.context() );
         for (OLSyntaxNode child : n.children()) {
-            ret.addChild( parse(child) );
+            ret.addChild( parse( child ) );
         }
         currNode = ret;
     }
@@ -268,7 +293,7 @@ class ModuleSolverVisitor implements OLVisitor
     {
         AndConditionNode ret = new AndConditionNode( n.context() );
         for (OLSyntaxNode child : n.children()) {
-            ret.addChild( parse(child) );
+            ret.addChild( parse( child ) );
         }
         currNode = ret;
     }
@@ -289,19 +314,32 @@ class ModuleSolverVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( ConstantIntegerExpression n ) { currNode = n; }
-    
-    @Override
-    public void visit( ConstantLongExpression n ) { currNode = n; }
-    
-    @Override
-    public void visit( ConstantBoolExpression n ) { currNode = n; }
+    public void visit( ConstantIntegerExpression n )
+    {
+        currNode = n;
+    }
 
     @Override
-    public void visit( ConstantDoubleExpression n ) { currNode = n; }
+    public void visit( ConstantLongExpression n )
+    {
+        currNode = n;
+    }
 
     @Override
-    public void visit( ConstantStringExpression n ){ 
+    public void visit( ConstantBoolExpression n )
+    {
+        currNode = n;
+    }
+
+    @Override
+    public void visit( ConstantDoubleExpression n )
+    {
+        currNode = n;
+    }
+
+    @Override
+    public void visit( ConstantStringExpression n )
+    {
         currNode = new ConstantStringExpression( n.context(), n.value().intern() );
 
     }
@@ -337,15 +375,16 @@ class ModuleSolverVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( VariableExpressionNode n ){ 
-        currNode = new VariableExpressionNode(
-            n.context(),
-            n.variablePath()
-        );
+    public void visit( VariableExpressionNode n )
+    {
+        currNode = new VariableExpressionNode( n.context(), n.variablePath() );
     }
 
     @Override
-    public void visit( NullProcessStatement n ){ currNode = n; }
+    public void visit( NullProcessStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
     public void visit( Scope n )
@@ -362,16 +401,26 @@ class ModuleSolverVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( CompensateStatement n ){ currNode = n; }
+    public void visit( CompensateStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
-    public void visit( ThrowStatement n ){ currNode = n; }
+    public void visit( ThrowStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
-    public void visit( ExitStatement n ){ currNode = n; }
+    public void visit( ExitStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
-    public void visit( ExecutionInfo n ){ 
+    public void visit( ExecutionInfo n )
+    {
         programChildren.add( n );
     }
 
@@ -379,7 +428,21 @@ class ModuleSolverVisitor implements OLVisitor
     public void visit( CorrelationSetInfo n ){ }
 
     @Override
-    public void visit( InputPortInfo n ){ }
+    public void visit( InputPortInfo n )
+    {
+        for (InterfaceDefinition iface : n.getInterfaceList()) {
+            if ( importedInterfaces.containsKey( iface.name() ) ) { // interface is imported
+                InterfaceDefinition imported = importedInterfaces.get( iface.name() );
+                imported.copyTo( iface );
+
+                for (Map.Entry< String, OperationDeclaration > entry : imported.operationsMap()
+                        .entrySet()) {
+                    n.addOperation( entry.getValue() );
+                }
+            }
+        }
+        programChildren.add( n );
+    }
 
     @Override
     public void visit( OutputPortInfo n ){ }
@@ -391,7 +454,10 @@ class ModuleSolverVisitor implements OLVisitor
     public void visit( DeepCopyStatement n ){ }
 
     @Override
-    public void visit( RunStatement n ){ currNode = n; }
+    public void visit( RunStatement n )
+    {
+        currNode = n;
+    }
 
     @Override
     public void visit( UndefStatement n ){ }
@@ -429,10 +495,10 @@ class ModuleSolverVisitor implements OLVisitor
     @Override
     public void visit( InstanceOfExpressionNode n )
     {
-        if (n.type() instanceof TypeDefinitionImport){
-            n.type().accept(this);
-            currNode = new InstanceOfExpressionNode( n.context(), n.expression() , currType );
-        }else{
+        if ( importedTypes.containsKey( n.type().id() ) ) {
+            currNode = new InstanceOfExpressionNode( n.context(), n.expression(),
+                    importedTypes.get( n.type().id() ) );
+        } else {
             currNode = n;
         }
     }
@@ -447,7 +513,8 @@ class ModuleSolverVisitor implements OLVisitor
     public void visit( CurrentHandlerStatement n ){ }
 
     @Override
-    public void visit( EmbeddedServiceNode n ){
+    public void visit( EmbeddedServiceNode n )
+    {
         programChildren.add( n );
     }
 
@@ -458,13 +525,50 @@ class ModuleSolverVisitor implements OLVisitor
     public void visit( VariablePathNode n ){ }
 
     @Override
-    public void visit( TypeInlineDefinition n ){ }
+    public void visit( TypeInlineDefinition n )
+    {
+        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+
+        if ( n.subTypes() != null ) {
+            System.out.println( "checking subtype of " + n.id() );
+            for (Map.Entry< String, TypeDefinition > subType : n.subTypes()) {
+                if ( subType.getValue() instanceof TypeDefinitionLink ) {
+                    subType.getValue().accept( this );
+                }
+            }
+        }
+
+        programChildren.add( n );
+        importedTypes.put( currImportPair.value(), n );
+    }
 
     @Override
-    public void visit( TypeDefinitionLink n ){ }
+    public void visit( TypeDefinitionLink n )
+    {
+        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+        try {
+            TypeDefinition linkedType =
+                    findTypeFromInspector( currProgramInspector, n.linkedTypeName() );
+            linkedType.accept( this );
+        } catch (Exception e) {
+            this.ms.moduleSolverExceptions.addException( e );
+            return;
+        }
+        programChildren.add( n );
+        importedTypes.put( currImportPair.value(), n );
+    }
 
     @Override
-    public void visit( InterfaceDefinition n ){ }
+    public void visit( InterfaceDefinition n )
+    {
+        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+
+        InterfaceDefinition iface = new InterfaceDefinition( n.context(), currImportPair.value() );
+        iface.setDocumentation( n.getDocumentation() );
+        n.copyTo( iface );
+        importedInterfaces.put( currImportPair.value(), n );
+        programChildren.add( iface );
+    }
 
     @Override
     public void visit( DocumentationComment n ){ }
@@ -497,49 +601,115 @@ class ModuleSolverVisitor implements OLVisitor
     public void visit( ProvideUntilStatement n ){ }
 
     @Override
-    public void visit( TypeChoiceDefinition n ){ }
+    public void visit( TypeChoiceDefinition n )
+    {
+        if ( !n.left().id().equals( n.id() ) ) {
+            n.left().accept( this );
+        }
+        if ( !n.right().id().equals( n.id() ) ) {
+            n.right().accept( this );
+        }
+        programChildren.add( n );
+        importedTypes.put( currImportPair.value(), n );
+    }
 
     @Override
     public void visit( ImportStatement n )
     {
+        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
         ProgramInspector pi = null;
-        Map<String, ImportStatement.IDType> expectedIDTypeMap=n.expectedIDTypeMap();
+        Map< String, ImportStatement.IDType > expectedIDTypeMap = n.expectedIDTypeMap();
         try {
             File f = ms.find( n.importTarget() );
             pi = ms.load( f );
-            ms.addInspectorToCache(pi);
-            System.out.println(pi);
+            if ( pi.getImportStatements().length > 0 ) {
+                System.out.println( "pi has import statement" );
+                System.out.println( Arrays.toString( pi.getImportStatements() ) );
+            }
+            ms.addInspectorToCache( pi );
         } catch (Exception e) {
-            e.printStackTrace();
+            this.ms.moduleSolverExceptions.addException( new ModuleException( n.context(),
+                    "Error occur during loading target file: " + n.importTarget(), e ) );
+            return;
         }
+        currProgramInspector = pi;
 
-        if (pi == null){
-            throw new Error("programinspector is null");
-        }
-
-        for(Pair<String, String> importPair:n.pathNodes()){
+        for (Pair< String, String > importPair : n.pathNodes()) {
             String moduleSymbol = importPair.key();
             String localSymbol = importPair.value();
-            ImportStatement.IDType expectedType = expectedIDTypeMap.get(localSymbol);
-            switch(expectedType){
+            ImportStatement.IDType expectedType = expectedIDTypeMap.get( localSymbol );
+            System.out.println( "Importing " + moduleSymbol + " from " + n.importTarget() );
+            currImportPair = importPair;
+
+            switch (expectedType) {
                 case TYPE:
-                for(TypeDefinition td : pi.getTypes()){
-                    if (td.id().equals(moduleSymbol)){
-                        programChildren.add(td);
-                        importedTypes.put(localSymbol, td);
+                    try {
+                        // resolveImportType( n.context(), pi, importPair );
+                        TypeDefinition modulesType = this.findTypeFromInspector( pi, moduleSymbol );
+                        if ( modulesType == null ) {
+                            throw new Exception( "unable to find " + moduleSymbol + "@"
+                                    + Arrays.toString( pi.getSources() ) );
+                        }
+
+                        modulesType.accept( this );
+                    } catch (Exception e) {
+                        this.ms.moduleSolverExceptions.addException( new ModuleException(
+                                n.context(),
+                                "Error occur during resolving type for: " + importPair.value(),
+                                e ) );
+                        return;
                     }
-                }
-                
-                break; 
-                default: throw new Error("expected type of " + localSymbol + "< " +expectedType+ "> " + " is not support");
+                    break;
+                case INTERFACE:
+                    try {
+                        InterfaceDefinition modulesIface =
+                                this.findInterfaceFromInspector( pi, moduleSymbol );
+
+                        if ( modulesIface == null ) {
+                            return;
+                        }
+                        modulesIface.accept( this );
+
+                    } catch (Exception e) {
+                        this.ms.moduleSolverExceptions.addException( new ModuleException(
+                                n.context(),
+                                "Error occur during resolving interface for: " + localSymbol, e ) );
+                        return;
+                    }
+                    break;
+
+                default:
+
+                    this.ms.moduleSolverExceptions.addException(
+                            new ModuleException( n.context(), "expected type of " + localSymbol
+                                    + "< " + expectedType + "> " + " is not support" ) );
             }
 
         }
     }
-    
+
+    private TypeDefinition findTypeFromInspector( ProgramInspector pi, String typeName )
+            throws Exception
+    {
+        for (TypeDefinition modulesType : pi.getTypes()) {
+            if ( modulesType.id().equals( typeName ) ) {
+                return modulesType;
+            }
+        }
+        throw new Exception(
+                "type " + typeName + " is not defined in " + Arrays.toString( pi.getSources() ) );
+    }
+
     private InterfaceDefinition findInterfaceFromInspector( ProgramInspector pi, String ifaceName )
             throws Exception
     {
+        for (InterfaceDefinition modulesInterfaces : pi.getInterfaces()) {
+            if ( modulesInterfaces.name().equals( ifaceName ) ) {
+                return modulesInterfaces;
+            }
+        }
+        throw new Exception( "interface " + ifaceName + " is not defined in "
+                + Arrays.toString( pi.getSources() ) );
     }
 
 }

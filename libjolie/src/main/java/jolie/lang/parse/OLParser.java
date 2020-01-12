@@ -47,6 +47,7 @@ import jolie.lang.parse.ast.CompensateStatement;
 import jolie.lang.parse.ast.CorrelationSetInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationAliasInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationVariableInfo;
+import jolie.lang.parse.ast.ImportStatement.IDType;
 import jolie.lang.parse.ast.CurrentHandlerStatement;
 import jolie.lang.parse.ast.DeepCopyStatement;
 import jolie.lang.parse.ast.DefinitionCallStatement;
@@ -126,7 +127,6 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
-import jolie.lang.parse.ast.types.TypeDefinitionImport;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.util.ProgramBuilder;
@@ -156,7 +156,7 @@ public class OLParser extends AbstractParser
 		new HashMap<>();
 
 	private final Map< String, TypeDefinition > definedTypes;
-	private final HashMap<String, ImportStatement> importingIdentifiers;
+	private final HashMap<String, ImportStatement> importingSymbols;
 	private final ClassLoader classLoader;
 
 	private InterfaceExtenderDefinition currInterfaceExtender = null;
@@ -169,7 +169,7 @@ public class OLParser extends AbstractParser
 		this.includePaths = includePaths;
 		this.classLoader = classLoader;
 		this.definedTypes = createTypeDeclarationMap( context );
-		this.importingIdentifiers = new HashMap<String, ImportStatement>() ;
+		this.importingSymbols = new HashMap<String, ImportStatement>() ;
 
 	}
 
@@ -282,7 +282,6 @@ public class OLParser extends AbstractParser
 					prependToken( new Scanner.Token( Scanner.TokenType.ID, NativeType.VOID.id() ) );
 					getToken();
 				}
-
 				currentType = parseType( typeName );
 
 				if( haveComment ){ haveComment = false; }
@@ -311,6 +310,10 @@ public class OLParser extends AbstractParser
 
 		NativeType nativeType = readNativeType();
 		if ( nativeType == null ) { // It's a user-defined type
+			if ( this.importingSymbols.containsKey( token.content() ) ) {  // It's a importing type
+				ImportStatement is = this.importingSymbols.get( token.content() );
+				is.setExpectedType( token.content(), ImportStatement.IDType.TYPE );
+			}
 			currentType = new TypeDefinitionLink( getContext(), typeName, Constants.RANGE_ONE_TO_ONE, token.content() );
 			getToken();
 		} else {
@@ -405,6 +408,11 @@ public class OLParser extends AbstractParser
 		// SubType id
 
 		if ( nativeType == null ) { // It's a user-defined type
+			if ( this.importingSymbols.containsKey( token.content() ) ) { 
+				// It's a importing type
+				ImportStatement is = this.importingSymbols.get( token.content() );
+				is.setExpectedType( token.content(), ImportStatement.IDType.TYPE );
+			}
 			subType = new TypeDefinitionLink( getContext(), id, cardinality, token.content() );
 			getToken();
 		} else {
@@ -812,7 +820,7 @@ public class OLParser extends AbstractParser
 					new ImportStatement( getContext(), importTarget, isNamespaceImport, pathNodes );
 			if ( pathNodes != null ) {
 				for (Pair< String, String > node : pathNodes) {
-					this.importingIdentifiers.put( node.value(), stmt );
+					this.importingSymbols.put( node.value(), stmt );
 				}
 			}
 			programBuilder.addChild( stmt );
@@ -1175,8 +1183,13 @@ public class OLParser extends AbstractParser
                     assertToken( Scanner.TokenType.ID, "expected interface name" );
 					InterfaceDefinition i = interfaces.get( token.content() );
 					if ( i == null ) {
-						if ( this.importingIdentifiers.containsKey( token.content() ) ) {
-							System.out.println( "importing " + token.content() );
+						if ( this.importingSymbols.containsKey( token.content() ) ) {
+							this.importingSymbols.get( token.content() )
+									.setExpectedType( token.content(), IDType.INTERFACE );
+							InterfaceDefinition importingIface =
+									new InterfaceDefinition( getContext(), token.content() );
+
+							interfaceList.add( importingIface );
 						} else {
 							throwException( "Invalid interface name: " + token.content() );
 						}
@@ -1247,7 +1260,7 @@ public class OLParser extends AbstractParser
 		if ( inputPortLocation == null ) {
 			throwException( "expected location URI for " + inputPortName );
 		} else if ( iface.operationsMap().isEmpty() && redirectionMap.isEmpty() && aggregationList.isEmpty() ) {
-			throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
+			// throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
 		} else if ( protocolId == null && !inputPortLocation.toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) && !inputPortLocation.getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
 			throwException( "expected protocol for inputPort " + inputPortName );
 		}
@@ -2583,9 +2596,9 @@ public class OLParser extends AbstractParser
 				assertToken( Scanner.TokenType.ID, "expected type name after instanceof" );
 			}
 			if ( definedTypes.containsKey( token.content() ) == false ) {
-				if ( this.importingIdentifiers.containsKey( token.content() ) ) { 
+				if ( this.importingSymbols.containsKey( token.content() ) ) {
 					// It's a importing type
-					ImportStatement is = this.importingIdentifiers.get( token.content() );
+					ImportStatement is = this.importingSymbols.get( token.content() );
 					is.setExpectedType( token.content(), ImportStatement.IDType.TYPE );
 					definedTypes.put( token.content(), new TypeInlineDefinition(getContext(), token.content(), NativeType.ANY, Constants.RANGE_ONE_TO_ONE) );
 				} else {

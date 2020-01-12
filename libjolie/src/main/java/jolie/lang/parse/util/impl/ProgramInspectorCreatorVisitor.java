@@ -126,6 +126,7 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 	private final Map< URI, List< TypeDefinition > > types = new HashMap<>();
 	private final Map< URI, List< EmbeddedServiceNode > > embeddedServices = new HashMap<>();
 	private final Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode>>> behaviouralDependencies = new HashMap<>();
+	private final Map< URI, List< ImportStatement > > importStatements = new HashMap<>();
 	private final Set< URI > sources = new HashSet<>();
 
 	private OLSyntaxNode currentFirstInput = null;
@@ -144,7 +145,8 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 			inputPorts,
 			outputPorts,
 			embeddedServices,
-			behaviouralDependencies
+			behaviouralDependencies,
+			importStatements
 		);
 	}
 
@@ -471,6 +473,18 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 		encounteredNode( n );
 	}
 
+	@Override
+	public void visit( ImportStatement n )
+	{
+		List< ImportStatement > list = importStatements.get( n.context().source() );
+		if ( list == null ) {
+			list = new LinkedList<>();
+			importStatements.put( n.context().source(), list );
+		}
+		list.add( n );
+		encounteredNode( n );
+	}
+	
 	private void addOlSyntaxNodeToBehaviouralDependencies( OLSyntaxNode n ) {
 		if ( currentFirstInput != null ) {
 			if (behaviouralDependencies.get(n.context().source()) == null) {
@@ -484,9 +498,4 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 		}
 	}
 
-	public void visit( ImportStatement n )
-	{
-	}
-
-	
 }
