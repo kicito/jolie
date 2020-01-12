@@ -1,0 +1,1 @@
+type CustomType: void | bool | int

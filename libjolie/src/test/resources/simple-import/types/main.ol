@@ -1,22 +1,9 @@
 import Date from "modules/date.ol"
-include "console.iol"
-
-// type Date : void {
-//     day: int
-//     month: int
-//     year: int
-// }
-
-// type holiday:Date
 
 main {
-
-    with(today){
-        .day = 1
-        .month = 2
-        .year = 3
-    }
-
-    println@Console(today instanceof Date)()
-
+    today = void;
+    today.day = 1;
+    today.month = 1;
+    today.year = 2112;
+    t = today instanceof Date
 }

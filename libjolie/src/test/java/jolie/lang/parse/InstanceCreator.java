@@ -28,6 +28,11 @@ class InstanceCreator
                 this.includePaths, InstanceCreator.class.getClassLoader() );
     }
 
+    OLParser createOLParser( Scanner source ) throws IOException, URISyntaxException
+    {
+        return new OLParser( source, this.includePaths, InstanceCreator.class.getClassLoader() );
+    }
+
     ModuleSolverSimple createModuleSolver( Map< String, Token > constants )
     {
         return new ModuleSolverSimple( InstanceCreator.class.getClassLoader(), this.includePaths,
