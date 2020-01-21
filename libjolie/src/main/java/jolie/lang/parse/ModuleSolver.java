@@ -10,7 +10,7 @@ import jolie.lang.parse.util.ProgramInspector;
 
 public interface ModuleSolver
 {
-    public Program solve( Program program, String programFilePath ) throws ModuleSolverExceptions;
+    public Program solve( Program program ) throws ModuleSolverExceptions;
 
     public ProgramInspector load( File targetFile ) throws Exception;
 
@@ -20,4 +20,7 @@ public interface ModuleSolver
 
     public ProgramInspector getInspectorFromCache( URI source );
 
+    public void setCurrDirectory(String dir);
+
+    public String currDirectory();
 }

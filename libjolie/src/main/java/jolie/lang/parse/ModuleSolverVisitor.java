@@ -110,8 +110,11 @@ class ModuleSolverVisitor implements OLVisitor
     private ProgramInspector currProgramInspector;
     private Pair< String, String > currImportPair;
 
+    private final String prefix;
+
     public ModuleSolverVisitor( ModuleSolverSimple ms )
     {
+        this.prefix = ms.currDirectory();
         this.ms = ms;
     }
 
@@ -527,13 +530,42 @@ class ModuleSolverVisitor implements OLVisitor
     @Override
     public void visit( TypeInlineDefinition n )
     {
-        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+        System.out.println( "[" + this.prefix + "]" + " ModuleSolverVisitor @ " + n + ", "
+                + n.context().sourceName() );
+
+
+        if (isDuplicate(n.id())){
+            if (!importedTypes.get(n.id()).equals(n) ){ // already import
+                this.ms.moduleSolverExceptions.addException( new Exception( n.id() + " is already added with different value") );
+                return;
+            }else{
+                System.out.println( "[" + this.prefix + "]" +  " " + n.id() + " is already added" );
+                return;
+            }
+        }else{
+            System.out.println( "[" + this.prefix + "]" +  " " + n.id() + " is not added, adding node" );
+        }
 
         if ( n.subTypes() != null ) {
-            System.out.println( "checking subtype of " + n.id() );
+            System.out.println( "[" + this.prefix + "]" + " checking subtype of " + n.id() );
             for (Map.Entry< String, TypeDefinition > subType : n.subTypes()) {
                 if ( subType.getValue() instanceof TypeDefinitionLink ) {
-                    subType.getValue().accept( this );
+                    System.out.println( "[" + this.prefix + "]" + " found " + subType.getKey()
+                            + " which is TypeDefinitionLink" );
+                    TypeDefinitionLink tdl = (TypeDefinitionLink)subType.getValue();
+                    TypeDefinition moduleType;
+                    try {
+                        moduleType =
+                                findTypeFromInspector( currProgramInspector, tdl.linkedTypeName() );
+                    } catch (Exception e) {
+                        this.ms.moduleSolverExceptions.addException( e );
+                        return;
+                    }
+                    Pair<String, String> prevImportPair = currImportPair;
+                    currImportPair = new Pair<String, String>(moduleType.id(), moduleType.id());
+                    moduleType.accept( this );
+
+                    currImportPair = prevImportPair;
                 }
             }
         }
@@ -545,7 +577,20 @@ class ModuleSolverVisitor implements OLVisitor
     @Override
     public void visit( TypeDefinitionLink n )
     {
-        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+        System.out.println( "[" + this.prefix + "]" + " ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+
+        if (isDuplicate(n.id())){
+            if (!importedTypes.get(n.id()).equals(n) ){ // already import
+                this.ms.moduleSolverExceptions.addException( new Exception( n.id() + " is already added with different value") );
+                return;
+            }else{
+                System.out.println( "[" + this.prefix + "]" +  " " + n.id() + " is already added, skip" );
+                return;
+            }
+        }else{
+            System.out.println( "[" + this.prefix + "]" +  " " + n.id() + " is not added, adding node" );
+        }
+
         try {
             TypeDefinition linkedType =
                     findTypeFromInspector( currProgramInspector, n.linkedTypeName() );
@@ -561,7 +606,14 @@ class ModuleSolverVisitor implements OLVisitor
     @Override
     public void visit( InterfaceDefinition n )
     {
-        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+        System.out.println( "[" + this.prefix + "]" + " ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+
+        if (isDuplicate(n.name())){
+            if (!importedInterfaces.get(n.name()).equals(n) ){ // already import
+                this.ms.moduleSolverExceptions.addException( new Exception( n.name() + " is already added with different value") );
+                return;
+            }
+        }
 
         InterfaceDefinition iface = new InterfaceDefinition( n.context(), currImportPair.value() );
         iface.setDocumentation( n.getDocumentation() );
@@ -592,7 +644,9 @@ class ModuleSolverVisitor implements OLVisitor
     public void visit( InterfaceExtenderDefinition n ){ }
 
     @Override
-    public void visit( InlineTreeExpressionNode n ){ }
+    public void visit( InlineTreeExpressionNode n ){ 
+        currNode = n;
+    }
 
     @Override
     public void visit( VoidExpressionNode n ){ }
@@ -616,16 +670,12 @@ class ModuleSolverVisitor implements OLVisitor
     @Override
     public void visit( ImportStatement n )
     {
-        System.out.println( "ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
+        System.out.println( "[" + this.prefix + "]" + " ModuleSolverVisitor @ " + n + ", " + n.context().sourceName() );
         ProgramInspector pi = null;
         Map< String, ImportStatement.IDType > expectedIDTypeMap = n.expectedIDTypeMap();
         try {
             File f = ms.find( n.importTarget() );
             pi = ms.load( f );
-            if ( pi.getImportStatements().length > 0 ) {
-                System.out.println( "pi has import statement" );
-                System.out.println( Arrays.toString( pi.getImportStatements() ) );
-            }
             ms.addInspectorToCache( pi );
         } catch (Exception e) {
             this.ms.moduleSolverExceptions.addException( new ModuleException( n.context(),
@@ -638,13 +688,12 @@ class ModuleSolverVisitor implements OLVisitor
             String moduleSymbol = importPair.key();
             String localSymbol = importPair.value();
             ImportStatement.IDType expectedType = expectedIDTypeMap.get( localSymbol );
-            System.out.println( "Importing " + moduleSymbol + " from " + n.importTarget() );
+            System.out.println( "[" + this.prefix + "]" + " Importing " + moduleSymbol + " from " + n.importTarget() );
             currImportPair = importPair;
 
             switch (expectedType) {
                 case TYPE:
                     try {
-                        // resolveImportType( n.context(), pi, importPair );
                         TypeDefinition modulesType = this.findTypeFromInspector( pi, moduleSymbol );
                         if ( modulesType == null ) {
                             throw new Exception( "unable to find " + moduleSymbol + "@"
@@ -652,6 +701,8 @@ class ModuleSolverVisitor implements OLVisitor
                         }
 
                         modulesType.accept( this );
+
+
                     } catch (Exception e) {
                         this.ms.moduleSolverExceptions.addException( new ModuleException(
                                 n.context(),
@@ -668,6 +719,7 @@ class ModuleSolverVisitor implements OLVisitor
                         if ( modulesIface == null ) {
                             return;
                         }
+
                         modulesIface.accept( this );
 
                     } catch (Exception e) {
@@ -686,6 +738,18 @@ class ModuleSolverVisitor implements OLVisitor
             }
 
         }
+    }
+
+    private boolean isDuplicate( String name )
+    {
+        System.out.println( "[" + this.prefix + "]" + " Check " + name + " is already add" );
+
+        if ( importedTypes.containsKey( name ) ) {
+            return true;
+        } else if ( importedInterfaces.containsKey( name ) ) {
+            return true;
+        }
+        return false;
     }
 
     private TypeDefinition findTypeFromInspector( ProgramInspector pi, String typeName )

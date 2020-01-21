@@ -112,7 +112,10 @@ public class ParsingUtils
 		olParser.putConstants( definedConstants );
 		Program program = olParser.parse();
 		// module resolve
-		program = ms.solve( program, Paths.get(URI.create(source.toString()) ).getParent().toString() );
+		String parentPath = ms.currDirectory();
+		ms.setCurrDirectory(Paths.get(URI.create(source.toString()) ).getParent().toString());
+		program = ms.solve( program );
+		ms.setCurrDirectory(parentPath);
 		SemanticVerifier semanticVerifier = new SemanticVerifier( program, configuration );
 		semanticVerifier.validate();
 

@@ -33,10 +33,10 @@ class InstanceCreator
         return new OLParser( source, this.includePaths, InstanceCreator.class.getClassLoader() );
     }
 
-    ModuleSolverSimple createModuleSolver( Map< String, Token > constants )
+    ModuleSolverSimple createModuleSolver( String dir, Map< String, Token > constants )
     {
         return new ModuleSolverSimple( InstanceCreator.class.getClassLoader(), this.includePaths,
-                StandardCharsets.UTF_8.name(), constants );
+                dir, StandardCharsets.UTF_8.name(), constants );
     }
 
 }

@@ -10,9 +10,15 @@ import org.junit.jupiter.api.Test;
 
 public class TestJolieSimple
 {
+
+	static {
+		JolieURLStreamHandlerFactory.registerInVM();
+	}
     private static final String[] launcherArgs = new String[] {"-l",
-            "dist/jolie/extensions/*:dist/jolie/javaServices/*:dist/jolie/lib/*", "-i",
-            "dist/jolie/include"};
+    "../dist/jolie/lib:../dist/jolie/javaServices/*"};
+
+    // private static final String[] launcherArgs = new String[] {"-l",
+    // "../lib/*:../dist/jolie/lib:../dist/jolie/javaServices/*:../dist/jolie/extensions/*"};
 
     private PrintStream originalSystemOut;
     private ByteArrayOutputStream systemOutContent;
@@ -55,6 +61,30 @@ public class TestJolieSimple
                 interpreter.exit( -1 );
             }
         } );
-        assertTrue( systemOutContent.toString().contains( "true" ) );
+        assertTrue( systemOutContent.toString().contains( "sodep" ) );
+    }
+
+
+
+    @Test
+    void testInternalServiceJolie() throws Exception
+    {
+        String filePath = "jolie-simple/serviceAsATree.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+        final Interpreter interpreter =
+                new Interpreter( args, this.getClass().getClassLoader(), null );
+        // Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
+        interpreter.run();
+
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+        assertTrue( systemOutContent.toString().contains( "target/jolie-1.9.0-git.jar" ) );
     }
 }

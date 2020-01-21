@@ -38,7 +38,7 @@ public class ModuleSolverSimple implements ModuleSolver
     private static final Logger logger = Logger.getLogger( "JOLIE_MODULE" );
 
 
-    public ModuleSolverSimple( ClassLoader classLoader, String[] includePaths, String charset,
+    public ModuleSolverSimple( ClassLoader classLoader, String[] includePaths, String currDirectory, String charset,
             Map< String, Token > definedConstants )
     {
         this.moduleCache =
@@ -46,13 +46,13 @@ public class ModuleSolverSimple implements ModuleSolver
         this.classLoader = classLoader;
         this.includePaths = includePaths;
         this.charset = charset;
+        this.currDirectory = currDirectory;
         this.definedConstants = definedConstants;
     }
 
     @Override
-    public Program solve( Program program, String path ) throws ModuleSolverExceptions
+    public Program solve( Program program ) throws ModuleSolverExceptions
     {
-        this.setCurrDirectory( path );
         ModuleSolverVisitor visitor = new ModuleSolverVisitor( this );
         Program importResolvedProgram = visitor.parse( program );
 
@@ -67,23 +67,24 @@ public class ModuleSolverSimple implements ModuleSolver
         return importResolvedProgram;
     }
 
-    private void setCurrDirectory( String path )
+    public void setCurrDirectory( String path )
     {
         currDirectory = path;
+    }
+
+    public String currDirectory(){
+        return currDirectory;
     }
 
     public ProgramInspector load( File targetFile ) throws ModuleSolverExceptions
     {
         // check if the targetFile already loaded
         if ( moduleCache.containsKey( targetFile.toURI() ) ) {
+            System.out.println( targetFile.toPath() + " is already loaded, retrieve from cache");
             return moduleCache.get( targetFile.toURI() );
         }
         try {
             ProgramInspector pi = parseAST( targetFile );
-            ImportStatement[] importStatements = pi.getImportStatements();
-            if ( importStatements.length > 0 ) {
-                System.out.println( importStatements );
-            }
             return pi;
         } catch (ModuleSolverExceptions e) {
             this.moduleSolverExceptions
@@ -118,7 +119,6 @@ public class ModuleSolverSimple implements ModuleSolver
         // TODO symlink module folder
         Path pTemp = Paths.get( this.currDirectory, target );
         pTemp = pTemp.normalize();
-        System.out.println(pTemp);
         File f = pTemp.toFile();
         if ( !f.exists() ) {
             throw new FileNotFoundException( pTemp.toString() );

@@ -1251,19 +1251,18 @@ public class Interpreter
 					olParser.putConstants( cmdParser.definedConstants() );
 					program = olParser.parse();
 				}
+				program = OLParseTreeOptimizer.optimize( program );
 
 				ModuleSolver ms = new ModuleSolverSimple( classLoader, includePaths,
-						cmdParser.charset(), cmdParser.definedConstants() );
+				programDirectory.getPath(),cmdParser.charset(), cmdParser.definedConstants() );
 
 				try {
-					program = ms.solve( program,
-							programDirectory.getPath() );
+					program = ms.solve( program );
 				} catch (ModuleSolverExceptions e) {
 					logger.severe( e.getErrorMessages() );
 					throw new InterpreterException( "Exiting" );
 				}
 
-				program = OLParseTreeOptimizer.optimize( program );
 			}
 			
 			cmdParser.close();
