@@ -24,10 +24,8 @@ package jolie.lang.parse.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Map;
-import jolie.lang.parse.ModuleSolver;
-import jolie.lang.parse.ModuleSolverExceptions;
+import jolie.lang.parse.Importer;
 import jolie.lang.parse.OLParseTreeOptimizer;
 import jolie.lang.parse.OLParser;
 import jolie.lang.parse.ParserException;
@@ -103,19 +101,14 @@ public class ParsingUtils
 			String[] includePaths, ClassLoader classLoader,
 			Map< String, Scanner.Token > definedConstants,
 			SemanticVerifier.Configuration configuration, boolean includeDocumentation,
-			ModuleSolver ms )
-			throws IOException, ParserException, SemanticException, ModuleSolverExceptions
+			Importer importer )
+			throws IOException, ParserException, SemanticException
 	{
 		OLParser olParser =
 				new OLParser( new Scanner( inputStream, source, charset, includeDocumentation ),
-						includePaths, classLoader );
+						includePaths, classLoader, importer );
 		olParser.putConstants( definedConstants );
 		Program program = olParser.parse();
-		// module resolve
-		String parentPath = ms.currDirectory();
-		ms.setCurrDirectory(Paths.get(URI.create(source.toString()) ).getParent().toString());
-		program = ms.solve( program );
-		ms.setCurrDirectory(parentPath);
 		SemanticVerifier semanticVerifier = new SemanticVerifier( program, configuration );
 		semanticVerifier.validate();
 

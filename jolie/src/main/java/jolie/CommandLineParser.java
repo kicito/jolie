@@ -780,7 +780,7 @@ public class CommandLineParser implements Closeable
 					olURL = classLoader.getResource( olFilepath );
 					if ( olURL != null ) {
 						result.stream = olURL.openStream();
-						result.source = olFilepath;
+						result.source = olURL.getPath();
 					}
 				}
 				if ( programDirectory == null && olURL != null && olURL.getPath() != null ) {

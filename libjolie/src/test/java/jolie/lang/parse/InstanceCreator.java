@@ -33,10 +33,10 @@ class InstanceCreator
         return new OLParser( source, this.includePaths, InstanceCreator.class.getClassLoader() );
     }
 
-    ModuleSolverSimple createModuleSolver( String dir, Map< String, Token > constants )
+
+    OLParser createOLParser( Scanner source, Importer importer ) throws IOException, URISyntaxException
     {
-        return new ModuleSolverSimple( InstanceCreator.class.getClassLoader(), this.includePaths,
-                dir, StandardCharsets.UTF_8.name(), constants );
+        return new OLParser( source, this.includePaths, InstanceCreator.class.getClassLoader() );
     }
 
 }

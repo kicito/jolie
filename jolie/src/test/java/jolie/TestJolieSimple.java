@@ -17,9 +17,6 @@ public class TestJolieSimple
     private static final String[] launcherArgs = new String[] {"-l",
     "../dist/jolie/lib:../dist/jolie/javaServices/*"};
 
-    // private static final String[] launcherArgs = new String[] {"-l",
-    // "../lib/*:../dist/jolie/lib:../dist/jolie/javaServices/*:../dist/jolie/extensions/*"};
-
     private PrintStream originalSystemOut;
     private ByteArrayOutputStream systemOutContent;
 

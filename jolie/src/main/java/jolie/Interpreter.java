@@ -57,9 +57,6 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import jolie.lang.Constants;
-import jolie.lang.parse.ModuleSolver;
-import jolie.lang.parse.ModuleSolverExceptions;
-import jolie.lang.parse.ModuleSolverSimple;
 import jolie.lang.parse.OLParseTreeOptimizer;
 import jolie.lang.parse.OLParser;
 import jolie.lang.parse.ParserException;
@@ -1253,15 +1250,6 @@ public class Interpreter
 				}
 				program = OLParseTreeOptimizer.optimize( program );
 
-				ModuleSolver ms = new ModuleSolverSimple( classLoader, includePaths,
-				programDirectory.getPath(),cmdParser.charset(), cmdParser.definedConstants() );
-
-				try {
-					program = ms.solve( program );
-				} catch (ModuleSolverExceptions e) {
-					logger.severe( e.getErrorMessages() );
-					throw new InterpreterException( "Exiting" );
-				}
 
 			}
 			
