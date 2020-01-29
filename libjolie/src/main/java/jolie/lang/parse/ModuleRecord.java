@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
@@ -47,6 +48,16 @@ public class ModuleRecord
         return null;
     }
 
+    private DefinitionNode findProcedureDefinition( String id )
+    {
+        for (DefinitionNode procedureDef : programInspector.getProcedureDefinitions()) {
+            if ( procedureDef.id().equals( id ) ) {
+                return procedureDef;
+            }
+        }
+        return null;
+    }
+
     public OLSyntaxNode find( String id )
     {
         TypeDefinition moduleTypeDef = this.findType( id );
@@ -57,7 +68,28 @@ public class ModuleRecord
         if ( moduleInterfaceDef != null ) {
             return moduleInterfaceDef;
         }
+        DefinitionNode moduleProcedureDef = this.findProcedureDefinition( id );
+        if ( moduleProcedureDef != null ) {
+            return moduleProcedureDef;
+        }
         return null;
+    }
+
+
+
+    public ImportResult resolveNameSpace( ParsingContext ctx )
+    {
+        ImportResult res = new ImportResult();
+        for (TypeDefinition td : this.programInspector.getTypes()) {
+            res.nodes.add( td );
+            res.types.put( td.id(), td );
+        }
+
+        for (InterfaceDefinition interfaceDef : this.programInspector.getInterfaces()) {
+            res.nodes.add( interfaceDef );
+            res.interfaces.put( interfaceDef.name(), interfaceDef );
+        }
+        return res;
     }
 
     public ImportResult resolve( ParsingContext ctx, List< Pair< String, String > > pathNodes )
@@ -67,18 +99,22 @@ public class ModuleRecord
         for (Pair< String, String > pathNode : pathNodes) {
             OLSyntaxNode moduleNode = this.find( pathNode.key() );
             if ( moduleNode == null ) {
-                throw new ModuleParsingException( pathNode.key() + " not found in "
+                throw new ModuleParsingException( "unable to find " + pathNode.key() + " in "
                         + Arrays.toString( this.programInspector.getSources() ) );
             }
             ImportResult importResult = null;
             if ( moduleNode instanceof TypeDefinition ) {
                 importResult =
                         resolveType( ctx, (TypeDefinition) moduleNode, pathNode.value(), false );
-                res.prependResult( importResult );
+                res.addResult( importResult );
             } else if ( moduleNode instanceof InterfaceDefinition ) {
                 importResult =
                         resolveInterface( ctx, (InterfaceDefinition) moduleNode, pathNode.value() );
-                res.prependResult( importResult );
+                res.addResult( importResult );
+            }else if ( moduleNode instanceof DefinitionNode ) {
+                importResult =
+                        resolveProcedureDefinition( ctx, (DefinitionNode) moduleNode, pathNode.value() );
+                res.addResult( importResult );
             }
         }
         return res;
@@ -107,9 +143,8 @@ public class ModuleRecord
             typeResult.types.put( localType.id(), localType );
             return typeResult;
         } else if ( td instanceof TypeDefinitionLink ) {
-            
             TypeDefinitionLink moduleType = (TypeDefinitionLink) td;
-            if(!isSubType){
+            if ( !isSubType ) {
                 TypeDefinitionLink localType = new TypeDefinitionLink( ctx, localName,
                         moduleType.cardinality(), moduleType.linkedTypeName() );
                 localType.setDocumentation( moduleType.getDocumentation() );
@@ -126,7 +161,7 @@ public class ModuleRecord
             }
             TypeInlineDefinition localType = new TypeInlineDefinition( ctx, localName,
                     moduleType.nativeType(), moduleType.cardinality() );
-            if (moduleType.subTypes() != null){
+            if ( moduleType.subTypes() != null ) {
                 for (Map.Entry< String, TypeDefinition > entry : moduleType.subTypes()) {
                     ImportResult subTypeResult =
                             resolveType( ctx, entry.getValue(), entry.getKey(), true );
@@ -155,11 +190,22 @@ public class ModuleRecord
         InterfaceDefinition localIface = new InterfaceDefinition( ctx, localName );
         localIface.setDocumentation( id.getDocumentation() );
 
-        id.copyTo(localIface);
-        interfaceResult.nodes.add(localIface);
-        interfaceResult.interfaces.put(localName, localIface);
+        id.copyTo( localIface );
+        interfaceResult.nodes.add( localIface );
+        interfaceResult.interfaces.put( localName, localIface );
 
         return interfaceResult;
+    }
+
+    private ImportResult resolveProcedureDefinition( ParsingContext ctx, DefinitionNode id,
+            String localName ) throws ModuleParsingException
+    {
+        ImportResult procedureDefinitionResult = new ImportResult();
+        DefinitionNode localProcedureDefinition = new DefinitionNode( ctx, localName, id.body() );
+
+        procedureDefinitionResult.nodes.add( localProcedureDefinition );
+
+        return procedureDefinitionResult;
     }
 
 

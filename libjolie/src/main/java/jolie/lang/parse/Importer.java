@@ -46,6 +46,7 @@ public class Importer
 
     private Map< URI, ModuleRecord > cache;
     private Configuration config;
+    private Finder[] finders;
 
     public Importer( Configuration c )
     {
@@ -53,9 +54,15 @@ public class Importer
         cache = new HashMap<>();
     }
 
+    public Importer( Configuration c, Finder[] finders )
+    {
+        this( c );
+        this.finders = finders;
+    }
+
     private ModuleRecord load( Source s ) throws ModuleParsingException
     {
-        System.out.println("loading " + s.source());
+        System.out.println( "[IMPORTER] loading " + s.source() );
         SemanticVerifier.Configuration configuration = new SemanticVerifier.Configuration();
         configuration.setCheckForMain( false );
         Program program;
@@ -76,17 +83,18 @@ public class Importer
     public ImportResult importModule( URI source, ImportStatement stmt )
             throws ModuleNotFoundException, ModuleParsingException
     {
-        Finder[] finders = Finder.getFindersForTargetString( source, stmt.importTarget() );
+        this.finders = Finder.getFindersForTargetString( source, stmt.importTarget() );
         ModuleRecord rc = null;
-        for (Finder f : finders) {
-
-            // perform cache lookup
-            if ( cache.containsKey( f.target() ) ) {
-                rc = cache.get( f.target() );
-            }
+        for (Finder f : this.finders) {
 
             try {
                 Source targetSource = f.find();
+
+                // perform cache lookup
+                if ( cache.containsKey( targetSource.source() ) ) {
+                    System.out.println("[LOADER] found " + targetSource.source() + " in cache");
+                    rc = cache.get( targetSource.source() );
+                }
                 rc = load( targetSource );
 
                 if ( rc != null ) {
@@ -99,7 +107,13 @@ public class Importer
             }
         }
 
-        // retrieve import name and add to OLSyntaxNodes list
-        return rc.resolve(stmt.context(), stmt.pathNodes());
+        cache.put( rc.source(), rc );
+
+        if ( stmt.isNamespaceImport() ) {
+            return rc.resolveNameSpace( stmt.context() );
+        } else {
+            // retrieve import name and add to OLSyntaxNodes list
+            return rc.resolve( stmt.context(), stmt.pathNodes() );
+        }
     }
 }

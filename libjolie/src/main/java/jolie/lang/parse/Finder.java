@@ -25,8 +25,12 @@ public interface Finder
             throws ModuleParsingException
     {
         // check protocol
-        File file = new File( resolveTargetStringToURI( source, target ) );
-        System.out.println( "File is: " + file.toString() );
+        try {
+            File file = new File( resolveTargetStringToURI( source, target ) );
+            System.out.println( "[FINDER] File is: " + file.toString() );
+        } catch (NullPointerException | IllegalArgumentException e) {
+            throw new ModuleParsingException(e);
+        }
 
         return new Finder[] {new ProjectDirFinder( source, target )};
     }
@@ -62,6 +66,7 @@ class ProjectDirFinder implements Finder
     @Override
     public Source find() throws FileNotFoundException
     {
+        System.out.println("[ProjectDirFinder] Perform look up to " + targetFile);
         if ( !targetFile.exists() ) {
             throw new FileNotFoundException( targetFile.toPath().toString() );
         }
@@ -69,7 +74,8 @@ class ProjectDirFinder implements Finder
     }
 
     @Override
-    public URI target(){
+    public URI target()
+    {
         return targetFile.toURI();
     }
 
