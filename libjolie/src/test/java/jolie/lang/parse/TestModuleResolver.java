@@ -294,7 +294,39 @@ class TestModuleResolver
 		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
 		assertTrue( iv.programHasOLSyntaxNode( p, expected3 ) );
+	}
 
+
+
+	@Test
+	void testNameSpaceImport() throws Exception
+	{
+		URL src = getClass().getClassLoader().getResource( "simple-import/namespace/main.ol" );
+		is = src.openStream();
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		TypeInlineDefinition expected = new TypeInlineDefinition( null, "A", NativeType.STRING,
+				Constants.RANGE_ONE_TO_ONE );
+
+		InterfaceDefinition expected2 = new InterfaceDefinition( null, "B" );
+		TypeDefinition intType =
+				new TypeInlineDefinition( null, "int", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
+		RequestResponseOperationDeclaration expectedChild = new RequestResponseOperationDeclaration(
+				null, "twice", intType, intType, new HashMap< String, TypeDefinition >() );
+		expectedChild.setDocumentation( "" );
+		expected2.addOperation( expectedChild );
+
+		expected.setDocumentation( "" );
+		expected2.setDocumentation( "" );
+		Program p = olParser.parse();
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
 	}
 
 	@AfterEach
