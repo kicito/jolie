@@ -3,23 +3,27 @@ package jolie.lang.parse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.InterfaceDefinition;
+import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
+import jolie.lang.parse.ast.VariablePathNode;
+import jolie.lang.parse.ast.VariablePathNode.Type;
+import jolie.lang.parse.ast.expression.ConstantIntegerExpression;
+import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.util.Pair;
 
 class TestModuleResolver
 {
@@ -146,9 +150,7 @@ class TestModuleResolver
 	@Test
 	void testInterfaceImport() throws Exception
 	{
-		URL src = getClass().getClassLoader()
-				// .getResource( "simple-import/interfaces/modules/twiceInterface.ol" );
-				.getResource( "simple-import/interfaces/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "simple-import/interfaces/main.ol" );
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		InterfaceDefinition expected = new InterfaceDefinition( null, "TwiceInterface" );
@@ -169,6 +171,33 @@ class TestModuleResolver
 
 		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 
+	}
+
+
+
+	@Test
+	void testProcedureDefinitionImport() throws Exception
+	{
+		URL src = getClass().getClassLoader()
+				// .getResource( "simple-import/define/modules/define.ol" );
+				.getResource( "simple-import/define/main.ol" );
+		is = src.openStream();
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		VariablePathNode aPath = new VariablePathNode( null, Type.NORMAL );
+		aPath.append( new Pair< OLSyntaxNode, OLSyntaxNode >(
+				new ConstantStringExpression( null, "a" ), null ) );
+		OLSyntaxNode expectedExpression = OLSyntaxNodeCreator
+				.createNodeBasicExpression( new ConstantIntegerExpression( null, 2 ) );
+		Program p = olParser.parse();
+		AssignStatement expected = new AssignStatement( null, aPath, expectedExpression );
+
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 	@Test

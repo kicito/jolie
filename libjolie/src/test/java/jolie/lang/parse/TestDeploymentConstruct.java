@@ -1,22 +1,22 @@
 package jolie.lang.parse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
+import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
-import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.NullProcessStatement;
@@ -26,7 +26,6 @@ import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
-import jolie.util.Pair;
 import jolie.util.Range;
 
 public class TestDeploymentConstruct
@@ -61,7 +60,7 @@ public class TestDeploymentConstruct
 		expected.putSubType( expectedChild3 );
 		Program p = olParser.parse();
 
-		assertTrue( iv.programHasOLSyntaxNode(p, expected) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 	@Test
@@ -90,7 +89,7 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		assertTrue( iv.programHasOLSyntaxNode(p, expected) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 	@Test
@@ -111,7 +110,7 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		assertTrue( iv.programHasOLSyntaxNode(p, expected) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 	@Test
@@ -139,7 +138,7 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		assertTrue( iv.programHasOLSyntaxNode(p, expected) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 
@@ -160,40 +159,75 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		assertTrue( iv.programHasOLSyntaxNode(p, expected) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
-	@ParameterizedTest
-	@DisplayName("Import syntax")
-	@CsvSource({"import A from \"A.ol\", false, 'A', A.ol", "import * from \"A.ol\", true, , A.ol",
-			"'import A,B,C,D from \"mul_ID.ol\"', false, 'A,B,C,D' , mul_ID.ol",
-			"import A as local from \"mul_ID.ol\", false, 'A as local' , mul_ID.ol",
-			"'import A as local, B as localB from \"mul_ID.ol\"', false, 'A as local, B as localB' , mul_ID.ol"})
-	void testImportStatements( String code, boolean expectedNameSpaceImport,
-			String expectedPathNodes, String expectedTargetFile ) throws Exception
+	@Test
+	void testService() throws Exception
 	{
-		ImportStatement expected;
-		if ( expectedPathNodes != null && !expectedPathNodes.isEmpty() ) {
-			String[] expectedPaths = expectedPathNodes.split( "," );
-			List< Pair< String, String > > pathNodes = new ArrayList<>();
-			for (String path : expectedPaths) {
-				String[] pathSplited = path.split( "as" );
-				String targetID = pathSplited[0].trim();
-				String localID =
-						pathSplited.length == 2 ? pathSplited[1].trim() : pathSplited[0].trim();
-				pathNodes.add( new Pair< String, String >( targetID, localID ) );
-			}
-			expected = new ImportStatement( null, expectedTargetFile, expectedNameSpaceImport,
-					pathNodes );
-		} else {
-			expected = new ImportStatement( null, expectedTargetFile );
+		String code =
+				"decl service doubleService{}";
+		this.is = new ByteArrayInputStream( code.getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+		Program p = olParser.parse();
+	}
+
+	@Test
+	@MethodSource("importStatementTestProvider")
+
+	void testImportStatements( String code, OLSyntaxNode[] expectedArr ) throws Exception
+	{
+		this.is = new ByteArrayInputStream( code.getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+		Program p = olParser.parse();
+
+		for (OLSyntaxNode expected : expectedArr) {
+			assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 		}
+	}
+
+
+	@ParameterizedTest
+	@MethodSource("importStatementExceptionTestProvider")
+	void testImportStatementExceptions( String code, String errorMessage )
+			throws RuntimeException, IOException, URISyntaxException
+	{
 		this.is = new ByteArrayInputStream( code.getBytes() );
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 
-		Program p = olParser.parse();
-		assertTrue( iv.programHasOLSyntaxNode(p, expected) );
+		Exception exception = assertThrows( ParserException.class, () -> olParser.parse() );
+		assertTrue( exception.getMessage().contains( errorMessage ) );
+	}
+
+
+	private static Stream< Arguments > importStatementTestProvider()
+	{
+
+		TypeInlineDefinition expected1 =
+				new TypeInlineDefinition( null, "A", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
+		expected1.setDocumentation( "" );
+
+		TypeInlineDefinition expected2 = new TypeInlineDefinition( null, "B", NativeType.STRING,
+				Constants.RANGE_ONE_TO_ONE );
+		expected1.setDocumentation( "" );
+
+		return Stream.of(
+				Arguments.of( "import A from \"simple-import/importstatement-test.ol\"",
+						new OLSyntaxNode[] {expected1} ),
+				Arguments.of( "import A from \"simple-import/importstatement-test.ol\"",
+						new OLSyntaxNode[] {expected1, expected2} ) );
+	}
+
+	private static Stream< Arguments > importStatementExceptionTestProvider()
+	{
+		return Stream.of(
+				Arguments.of( "import AA from \"simple-import/importstatement-test.ol\"",
+						"AA not found in" ),
+				Arguments.of( "import AA from \"somewhere\"", "FileNotFoundException" ),
+				Arguments.of( "import AA \"somewhere\"", "expected \"from\" for an import statement" ) );
 	}
 
 	@AfterEach

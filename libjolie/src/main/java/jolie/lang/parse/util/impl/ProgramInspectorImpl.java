@@ -44,8 +44,8 @@ public class ProgramInspectorImpl implements ProgramInspector
 	private final Map< URI, List< InputPortInfo > > inputPorts;
 	private final Map< URI, List< OutputPortInfo > > outputPorts;
 	private final Map< URI, List< EmbeddedServiceNode > > embeddedServices;
+	private final Map< URI, List< DefinitionNode > > procedureDefinitions;
 	private final Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies;
-	private final Map< URI, List< ImportStatement > > importStatements;
 
 	public ProgramInspectorImpl(
 		URI[] sources,
@@ -55,7 +55,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 		Map< URI, List< OutputPortInfo > > outputPorts,
 		Map< URI, List< EmbeddedServiceNode > > embeddedServices,
 		Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies,
-		Map< URI, List< ImportStatement > > importStatements
+		Map< URI, List< DefinitionNode > > procedureDefinitions
 	) {
 		this.sources = sources;
 		this.interfaces = interfaces;
@@ -64,7 +64,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 		this.outputPorts = outputPorts;
 		this.embeddedServices = embeddedServices;
 		this.behaviouralDependencies = behaviouralDependencies;
-		this.importStatements = importStatements;
+		this.procedureDefinitions = procedureDefinitions;
 	}
 
 	@Override
@@ -184,6 +184,20 @@ public class ProgramInspectorImpl implements ProgramInspector
 	}
 
 	@Override
+	public DefinitionNode[] getProcedureDefinitions()
+	{
+		List< DefinitionNode > result = new ArrayList< >();
+		List< DefinitionNode > list;
+		for( URI source : sources ) {
+			list = procedureDefinitions.get( source );
+			if ( list != null ) {
+				result.addAll( list );
+			}
+		}
+		return result.toArray( new DefinitionNode[ 0 ] );
+	}
+
+	@Override
 	public Map<OLSyntaxNode, List<OLSyntaxNode>> getBehaviouralDependencies() {
 		Map<OLSyntaxNode, List<OLSyntaxNode>> result = new HashMap<>();
 		Map<OLSyntaxNode, List<OLSyntaxNode>> list;
@@ -225,8 +239,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 	public String toString()
 	{
 		return "ProgramInspectorImpl [behaviouralDependencies=" + behaviouralDependencies
-				+ ", embeddedServices=" + embeddedServices + ", importStatements="
-				+ importStatements + ", inputPorts=" + inputPorts + ", interfaces=" + interfaces
+				+ ", embeddedServices=" + embeddedServices + ", inputPorts=" + inputPorts + ", interfaces=" + interfaces
 				+ ", outputPorts=" + outputPorts + ", sources=" + Arrays.toString( sources )
 				+ ", types=" + types + "]";
 	}

@@ -119,10 +119,9 @@ public interface ProgramInspector
 	 */
 	public Map<OLSyntaxNode, List<OLSyntaxNode>> getBehaviouralDependencies( URI source );
 
-	/**
-	 * Returns an array of all the ImportStatement defined in the program.
-	 * @return an array of all the ImportStatement defined in the program
-	 */
-	public ImportStatement[] getImportStatements( );
 
+	/**
+	 * Returns an array of all the procedure definition nodes defined in the program
+	 */
+	public DefinitionNode[] getProcedureDefinitions( );
 }
