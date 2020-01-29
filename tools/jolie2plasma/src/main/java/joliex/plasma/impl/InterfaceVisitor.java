@@ -238,6 +238,4 @@ public class InterfaceVisitor implements OLVisitor
 	@Override
 	public void visit(TypeChoiceDefinition typeChoiceDefinition) {}
 
-	public void visit( ImportStatement n ) {}
-
 }

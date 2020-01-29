@@ -472,18 +472,6 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 
 		encounteredNode( n );
 	}
-
-	@Override
-	public void visit( ImportStatement n )
-	{
-		List< ImportStatement > list = importStatements.get( n.context().source() );
-		if ( list == null ) {
-			list = new LinkedList<>();
-			importStatements.put( n.context().source(), list );
-		}
-		list.add( n );
-		encounteredNode( n );
-	}
 	
 	private void addOlSyntaxNodeToBehaviouralDependencies( OLSyntaxNode n ) {
 		if ( currentFirstInput != null ) {

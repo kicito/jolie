@@ -215,20 +215,6 @@ public class ProgramInspectorImpl implements ProgramInspector
 		return list.toArray( new EmbeddedServiceNode[ 0 ] );
 	}
 
-	@Override
-	public ImportStatement[] getImportStatements()
-	{
-		List< ImportStatement > result = new ArrayList<>();
-		List< ImportStatement > list;
-		for (URI source : sources) {
-			list = importStatements.get( source );
-			if ( list != null ) {
-				result.addAll( list );
-			}
-		}
-		return result.toArray( new ImportStatement[ 0 ] );
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * 

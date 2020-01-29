@@ -187,5 +187,4 @@ public interface OLVisitor
 	public void visit( VoidExpressionNode n );
 	public void visit( ProvideUntilStatement n );
 	public void visit( TypeChoiceDefinition n );
-	public void visit( ImportStatement n );
 }

@@ -958,11 +958,6 @@ public class OLParseTreeOptimizer
 
 		@Override
 		public void visit( DocumentationComment n ) {}
-
-		@Override
-		public void visit( ImportStatement n ) {
-			programChildren.add( n );
-		}
 	
 	}
 

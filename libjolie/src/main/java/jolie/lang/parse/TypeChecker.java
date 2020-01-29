@@ -1047,8 +1047,5 @@ public class TypeChecker implements OLVisitor
 	public void visit(TypeChoiceDefinition n) {
 		//todo
 	}
-
-	@Override
-	public void visit( ImportStatement n ) {}
 	
 }

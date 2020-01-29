@@ -47,7 +47,6 @@ import jolie.lang.parse.ast.CompensateStatement;
 import jolie.lang.parse.ast.CorrelationSetInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationAliasInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationVariableInfo;
-import jolie.lang.parse.ast.ImportStatement.IDType;
 import jolie.lang.parse.ast.CurrentHandlerStatement;
 import jolie.lang.parse.ast.DeepCopyStatement;
 import jolie.lang.parse.ast.DefinitionCallStatement;

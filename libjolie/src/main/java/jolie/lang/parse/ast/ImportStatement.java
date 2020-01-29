@@ -81,12 +81,6 @@ public class ImportStatement extends OLSyntaxNode
     }
 
     @Override
-    public void accept( OLVisitor visitor )
-    {
-        visitor.visit( this );
-    }
-
-    @Override
     public String toString()
     {
         String importID =
@@ -138,4 +132,9 @@ public class ImportStatement extends OLSyntaxNode
         } else if ( !pathNodes.equals( other.pathNodes ) ) return false;
         return true;
     }
+
+    // ImportStatement is resolved at OLParser.parse(), thus this function is unused.
+    @Override
+    public void accept( OLVisitor visitor )
+    { }
 }

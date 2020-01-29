@@ -721,10 +721,4 @@ class InspectorVisitor implements OLVisitor
         isFound = n.equals( target );
     }
 
-    @Override
-    public void visit( ImportStatement n )
-    {
-        isFound = n.equals( target );
-    }
-
 }

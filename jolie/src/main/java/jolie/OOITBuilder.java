@@ -1762,7 +1762,5 @@ public class OOITBuilder implements OLVisitor
 		}
 	}
 
-	public void visit( ImportStatement n ){	}
-	
 }
 
