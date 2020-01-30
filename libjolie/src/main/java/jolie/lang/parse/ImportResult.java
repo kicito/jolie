@@ -13,10 +13,10 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 
 public class ImportResult
 {
-    public List< OLSyntaxNode > nodes;
-    public Map< String, TypeDefinition > types;
-    public Map< String, InterfaceDefinition > interfaces;
-    public Map< String, DefinitionNode > procedures;
+    private final List< OLSyntaxNode > nodes;
+    private final Map< String, TypeDefinition > types;
+    private final Map< String, InterfaceDefinition > interfaces;
+    private final Map< String, DefinitionNode > procedures;
 
     public ImportResult()
     {
@@ -58,5 +58,57 @@ public class ImportResult
         for (Map.Entry< String, DefinitionNode > entry : re.procedures.entrySet()) {
             this.procedures.put( entry.getKey(), entry.getValue() );
         }
+    }
+
+    public void addNode( OLSyntaxNode n )
+    {
+        this.nodes.add( n );
+    }
+
+    /**
+     * @return the nodes
+     */
+    public List< OLSyntaxNode > nodes()
+    {
+        return nodes;
+    }
+
+    public void addType( TypeDefinition td )
+    {
+        this.nodes.add( td );
+    }
+
+    /**
+     * @return the types
+     */
+    public Map< String, TypeDefinition > types()
+    {
+        return types;
+    }
+
+    public void addInterface( InterfaceDefinition id )
+    {
+        this.interfaces.put( id.name(), id );
+    }
+
+    /**
+     * @return the interfaces
+     */
+    public Map< String, InterfaceDefinition > interfaces()
+    {
+        return interfaces;
+    }
+
+    public void addProcedure( DefinitionNode dn )
+    {
+        this.procedures.put( dn.id(), dn );
+    }
+
+    /**
+     * @return the procedures
+     */
+    public Map< String, DefinitionNode > procedures()
+    {
+        return procedures;
     }
 }

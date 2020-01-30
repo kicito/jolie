@@ -81,13 +81,13 @@ public class ModuleRecord
     {
         ImportResult res = new ImportResult();
         for (TypeDefinition td : this.programInspector.getTypes()) {
-            res.nodes.add( td );
-            res.types.put( td.id(), td );
+            res.addNode( td );
+            res.addType( td );
         }
 
         for (InterfaceDefinition interfaceDef : this.programInspector.getInterfaces()) {
-            res.nodes.add( interfaceDef );
-            res.interfaces.put( interfaceDef.name(), interfaceDef );
+            res.addNode( interfaceDef );
+            res.addInterface( interfaceDef );
         }
         return res;
     }
@@ -139,8 +139,8 @@ public class ModuleRecord
                         resolveType( ctx, moduleType.left(), moduleType.left().id(), true );
                 typeResult.prependResult( choiceResult );
             }
-            typeResult.nodes.add( localType );
-            typeResult.types.put( localType.id(), localType );
+            typeResult.addNode( localType );
+            typeResult.addType( localType );
             return typeResult;
         } else if ( td instanceof TypeDefinitionLink ) {
             TypeDefinitionLink moduleType = (TypeDefinitionLink) td;
@@ -148,11 +148,11 @@ public class ModuleRecord
                 TypeDefinitionLink localType = new TypeDefinitionLink( ctx, localName,
                         moduleType.cardinality(), moduleType.linkedTypeName() );
                 localType.setDocumentation( moduleType.getDocumentation() );
-                typeResult.nodes.add( localType );
-                typeResult.types.put( localType.id(), localType );
+                typeResult.addNode( localType );
+                typeResult.addType( localType );
             }
             TypeDefinition linkedType = this.findType( moduleType.linkedTypeName() );
-            typeResult.nodes.add( linkedType );
+            typeResult.addNode( linkedType );
             return typeResult;
         } else if ( td instanceof TypeInlineDefinition ) {
             TypeInlineDefinition moduleType = (TypeInlineDefinition) td;
@@ -165,17 +165,17 @@ public class ModuleRecord
                 for (Map.Entry< String, TypeDefinition > entry : moduleType.subTypes()) {
                     ImportResult subTypeResult =
                             resolveType( ctx, entry.getValue(), entry.getKey(), true );
-                    for (OLSyntaxNode n : subTypeResult.nodes) {
-                        typeResult.nodes.add( n );
+                    for (OLSyntaxNode n : subTypeResult.nodes()) {
+                        typeResult.addNode( n );
                         TypeDefinition subTD = (TypeDefinition) n;
-                        typeResult.types.put( subTD.id(), subTD );
+                        typeResult.addType( subTD );
                     }
                     localType.putSubType( entry.getValue() );
                 }
             }
             localType.setDocumentation( moduleType.getDocumentation() );
-            typeResult.nodes.add( localType );
-            typeResult.types.put( localType.id(), localType );
+            typeResult.addNode( localType );
+            typeResult.addType( localType );
         } else {
             throw new ModuleParsingException( td.id() + " of type " + td.getClass().getSimpleName()
                     + " is not support for module system" );
@@ -191,8 +191,8 @@ public class ModuleRecord
         localIface.setDocumentation( id.getDocumentation() );
 
         id.copyTo( localIface );
-        interfaceResult.nodes.add( localIface );
-        interfaceResult.interfaces.put( localName, localIface );
+        interfaceResult.addNode( localIface );
+        interfaceResult.addInterface( localIface );
 
         return interfaceResult;
     }
@@ -203,7 +203,7 @@ public class ModuleRecord
         ImportResult procedureDefinitionResult = new ImportResult();
         DefinitionNode localProcedureDefinition = new DefinitionNode( ctx, localName, id.body() );
 
-        procedureDefinitionResult.nodes.add( localProcedureDefinition );
+        procedureDefinitionResult.addNode( localProcedureDefinition );
 
         return procedureDefinitionResult;
     }

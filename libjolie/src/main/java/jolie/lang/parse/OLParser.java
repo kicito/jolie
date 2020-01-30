@@ -824,15 +824,15 @@ public class OLParser extends AbstractParser
 		ImportResult importResult= null;
 		try {
 			importResult = this.importer.importModule( this.scanner().source(), stmt );
-			System.out.println("[OLPARSER] imported nodes " + Arrays.toString(importResult.nodes.toArray()));
+			System.out.println("[OLPARSER] imported nodes " + Arrays.toString(importResult.nodes().toArray()));
 		} catch (ModuleNotFoundException | ModuleParsingException e) {
 			throwException( e );
 		}
 		if (importResult != null){
-			for(OLSyntaxNode importingNode: importResult.nodes){
+			for(OLSyntaxNode importingNode: importResult.nodes()){
 				programBuilder.addChild(importingNode);
 			}
-			for(Map.Entry<String, TypeDefinition> entry: importResult.types.entrySet()){
+			for(Map.Entry<String, TypeDefinition> entry: importResult.types().entrySet()){
 				if (definedTypes.containsKey(entry.getKey())){
 					if (!definedTypes.get(entry.getKey()).equals(entry.getValue())){
 						System.out.println("[OLPARSER] warning, imported type of '" + entry.getKey() + "' is already defined, replacing definition" );
@@ -840,7 +840,7 @@ public class OLParser extends AbstractParser
 				}
 				definedTypes.put(entry.getKey(), entry.getValue());
 			}
-			for(Map.Entry<String, InterfaceDefinition> entry: importResult.interfaces.entrySet()){
+			for(Map.Entry<String, InterfaceDefinition> entry: importResult.interfaces().entrySet()){
 				if (interfaces.containsKey(entry.getKey())){
 					if (!interfaces.get(entry.getKey()).equals(entry.getValue())){
 						System.out.println("[OLPARSER] warning, imported interface '" + entry.getKey() + "' is already defined, replacing definition" );
