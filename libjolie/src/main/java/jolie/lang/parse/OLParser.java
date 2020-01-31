@@ -917,15 +917,7 @@ public class OLParser extends AbstractParser
 		if ( token.isKeyword( "inputPort" ) ) {
 			portInfo = parseInputPortInfo();
 		} else if ( token.isKeyword( "outputPort" ) ) {
-			getToken();
-			assertToken( Scanner.TokenType.ID, "expected output port identifier" );
-			OutputPortInfo p = new OutputPortInfo( getContext(), token.content() );
-			getToken();
-			eat( Scanner.TokenType.LCURLY, "expected {" );
-			parseOutputPortInfo( p );
-			programBuilder.addChild( p );
-			eat( Scanner.TokenType.RCURLY, "expected }" );
-			portInfo = p;
+			portInfo = parseOutputPortInfo();
 		}
 		return portInfo;
 	}
@@ -1389,9 +1381,16 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	private void parseOutputPortInfo( OutputPortInfo p )
+	private OutputPortInfo parseOutputPortInfo( )
 		throws IOException, ParserException
 	{
+
+		getToken();
+		assertToken( Scanner.TokenType.ID, "expected output port identifier" );
+		OutputPortInfo p = new OutputPortInfo( getContext(), token.content() );
+		getToken();
+		eat( Scanner.TokenType.LCURLY, "expected {" );
+		
 		boolean keepRun = true;
 		while ( keepRun ) {
 			if ( token.is( Scanner.TokenType.OP_OW ) ) {
@@ -1466,6 +1465,10 @@ public class OLParser extends AbstractParser
 			}
 
 		}
+		eat( Scanner.TokenType.RCURLY, "expected }" );
+
+		programBuilder.addChild( p );
+		return p;
 	}
 
 	private void parseOneWayOperations( OperationCollector oc )
