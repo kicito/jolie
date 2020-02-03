@@ -75,7 +75,7 @@ public class ImportResult
 
     public void addType( TypeDefinition td )
     {
-        this.nodes.add( td );
+        this.types.put( td.id(), td );
     }
 
     /**

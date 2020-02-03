@@ -3,14 +3,13 @@ package jolie.lang.parse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import jolie.lang.parse.Scanner.Token;
 import jolie.lang.parse.ast.ImportStatement;
-import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.Program;
-import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.util.ParsingUtils;
 import jolie.lang.parse.util.ProgramInspector;
 
@@ -47,6 +46,7 @@ public class Importer
     private Map< URI, ModuleRecord > cache;
     private Configuration config;
     private Finder[] finders;
+    List< URI > importChain = new ArrayList< URI >();
 
     public Importer( Configuration c )
     {
@@ -92,10 +92,15 @@ public class Importer
 
                 // perform cache lookup
                 if ( cache.containsKey( targetSource.source() ) ) {
-                    System.out.println("[LOADER] found " + targetSource.source() + " in cache");
+                    System.out.println( "[LOADER] found " + targetSource.source() + " in cache" );
                     rc = cache.get( targetSource.source() );
                 }
+                importChain.add( targetSource.source() );
+                System.out.println( "[IMPORTER] ImportChain " + this.importChain );
+
                 rc = load( targetSource );
+                importChain.remove( targetSource.source() );
+                System.out.println( "[IMPORTER] ImportChain " + this.importChain );
 
                 if ( rc != null ) {
                     break;
@@ -109,11 +114,13 @@ public class Importer
 
         cache.put( rc.source(), rc );
 
+        boolean importUsingLink = importChain.size() == 0;
+
         if ( stmt.isNamespaceImport() ) {
-            return rc.resolveNameSpace( stmt.context() );
+            return rc.resolveNameSpace( stmt.context(), importUsingLink );
         } else {
             // retrieve import name and add to OLSyntaxNodes list
-            return rc.resolve( stmt.context(), stmt.pathNodes() );
+            return rc.resolve( stmt.context(), stmt.pathNodes(), importUsingLink );
         }
     }
 }

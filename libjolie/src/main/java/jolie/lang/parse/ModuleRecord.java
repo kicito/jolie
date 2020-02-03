@@ -1,9 +1,11 @@
 package jolie.lang.parse;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import jolie.lang.Constants;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
@@ -77,22 +79,28 @@ public class ModuleRecord
 
 
 
-    public ImportResult resolveNameSpace( ParsingContext ctx )
+    public ImportResult resolveNameSpace( ParsingContext ctx, boolean importUsingLink )
+            throws ModuleParsingException
     {
-        ImportResult res = new ImportResult();
+        List< Pair< String, String > > importPaths = new ArrayList< Pair< String, String > >();
         for (TypeDefinition td : this.programInspector.getTypes()) {
-            res.addNode( td );
-            res.addType( td );
+            importPaths.add( new Pair< String, String >( td.id(), td.id() ) );
         }
 
         for (InterfaceDefinition interfaceDef : this.programInspector.getInterfaces()) {
-            res.addNode( interfaceDef );
-            res.addInterface( interfaceDef );
+            importPaths
+                    .add( new Pair< String, String >( interfaceDef.name(), interfaceDef.name() ) );
         }
-        return res;
+
+        for (DefinitionNode definitionNode : this.programInspector.getProcedureDefinitions()) {
+            importPaths
+                    .add( new Pair< String, String >( definitionNode.id(), definitionNode.id() ) );
+        }
+        return resolve( ctx, importPaths, importUsingLink );
     }
 
-    public ImportResult resolve( ParsingContext ctx, List< Pair< String, String > > pathNodes )
+    public ImportResult resolve( ParsingContext ctx, List< Pair< String, String > > pathNodes,
+            boolean importUsingLink ) 
             throws ModuleParsingException
     {
         ImportResult res = new ImportResult();
@@ -104,21 +112,27 @@ public class ModuleRecord
             }
             ImportResult importResult = null;
             if ( moduleNode instanceof TypeDefinition ) {
-                importResult =
-                        resolveType( ctx, (TypeDefinition) moduleNode, pathNode.value(), false );
+                if ( importUsingLink ) {
+                    importResult = resolveTypeUsingLink( ctx, (TypeDefinition) moduleNode,
+                            pathNode.value(), false );
+                } else {
+                    importResult = resolveType( ctx, (TypeDefinition) moduleNode, pathNode.value(),
+                            false );
+                }
                 res.addResult( importResult );
             } else if ( moduleNode instanceof InterfaceDefinition ) {
                 importResult =
                         resolveInterface( ctx, (InterfaceDefinition) moduleNode, pathNode.value() );
                 res.addResult( importResult );
-            }else if ( moduleNode instanceof DefinitionNode ) {
-                importResult =
-                        resolveProcedureDefinition( ctx, (DefinitionNode) moduleNode, pathNode.value() );
+            } else if ( moduleNode instanceof DefinitionNode ) {
+                importResult = resolveProcedureDefinition( ctx, (DefinitionNode) moduleNode,
+                        pathNode.value() );
                 res.addResult( importResult );
             }
         }
         return res;
     }
+
 
     private ImportResult resolveType( ParsingContext ctx, TypeDefinition td, String localName,
             boolean isSubType ) throws ModuleParsingException
@@ -180,6 +194,84 @@ public class ModuleRecord
             throw new ModuleParsingException( td.id() + " of type " + td.getClass().getSimpleName()
                     + " is not support for module system" );
         }
+        return typeResult;
+    }
+
+    private ImportResult resolveTypeUsingLink( ParsingContext ctx, TypeDefinition td,
+            String localName, boolean isADependencyType ) throws ModuleParsingException
+    {
+        ImportResult typeResult = new ImportResult();
+        String localTypeNamePrefix = ctx.sourceName() + "#";
+        if ( td instanceof TypeChoiceDefinition ) {
+            TypeChoiceDefinition moduleType = (TypeChoiceDefinition) td;
+            if ( !moduleType.left().id().equals( moduleType.id() ) ) {
+                ImportResult choiceResult =
+                        resolveTypeUsingLink( ctx, moduleType.left(), moduleType.left().id(), true );
+                typeResult.prependResult( choiceResult );
+            }
+            if ( !moduleType.right().id().equals( moduleType.id() ) ) {
+                ImportResult choiceResult =
+                        resolveTypeUsingLink( ctx, moduleType.left(), moduleType.left().id(), true );
+                typeResult.prependResult( choiceResult );
+            }
+            TypeChoiceDefinition localType =
+                    new TypeChoiceDefinition( ctx, localTypeNamePrefix + localName,
+                            moduleType.cardinality(), moduleType.left(), moduleType.right() );
+            localType.setDocumentation( moduleType.getDocumentation() );
+            typeResult.addNode( localType );
+            typeResult.addType( localType );
+        } else if ( td instanceof TypeDefinitionLink ) {
+            TypeDefinitionLink moduleType = (TypeDefinitionLink) td;
+
+            // find and resolve linked type
+            TypeDefinition linkedType = this.findType( moduleType.linkedTypeName() );
+            ImportResult linkedTypeNameResult =
+                    resolveTypeUsingLink( ctx, linkedType, linkedType.id(), false );
+            typeResult.addResult( linkedTypeNameResult );
+
+            if ( !isADependencyType ) {
+                TypeDefinitionLink localTypeLink =
+                        new TypeDefinitionLink( ctx, localTypeNamePrefix + localName,
+                                Constants.RANGE_ONE_TO_ONE, localTypeNamePrefix + linkedType.id() );
+                typeResult.addNode( localTypeLink );
+                typeResult.addType( localTypeLink );
+            }
+
+        } else if ( td instanceof TypeInlineDefinition ) {
+            TypeInlineDefinition moduleType = (TypeInlineDefinition) td;
+            if ( isADependencyType && !moduleType.hasSubTypes() ) {
+                return typeResult;
+            }
+            TypeInlineDefinition localType =
+                    new TypeInlineDefinition( ctx, localTypeNamePrefix + localName,
+                            moduleType.nativeType(), moduleType.cardinality() );
+
+            if ( moduleType.subTypes() != null ) {
+                for (Map.Entry< String, TypeDefinition > entry : moduleType.subTypes()) {
+                    ImportResult subTypeResult =
+                            resolveTypeUsingLink( ctx, entry.getValue(), entry.getKey(), true );
+                    for (OLSyntaxNode n : subTypeResult.nodes()) {
+                        typeResult.addNode( n );
+                        typeResult.addType( (TypeDefinition) n );
+                    }
+                    localType.putSubType( entry.getValue() );
+                }
+            }
+            localType.setDocumentation( moduleType.getDocumentation() );
+            typeResult.addNode( localType );
+            typeResult.addType( localType );
+        } else {
+            throw new ModuleParsingException( td.id() + " of type " + td.getClass().getSimpleName()
+                    + " is not support for module system" );
+        }
+
+        if ( !isADependencyType ) {
+            TypeDefinitionLink localTypeLink = new TypeDefinitionLink( ctx, localName,
+                    Constants.RANGE_ONE_TO_ONE, localTypeNamePrefix + localName );
+            typeResult.addNode( localTypeLink );
+            typeResult.addType( localTypeLink );
+        }
+
         return typeResult;
     }
 
