@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jolie.lang.Constants;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.util.Pair;
@@ -21,7 +22,7 @@ public class ImportStatement extends OLSyntaxNode
     }
 
 
-    private static final long serialVersionUID = 5226504948641693176L;
+    private static final long serialVersionUID = Constants.serialVersionUID();
     private final List< Pair< String, String > > pathNodes; // <target_id, local_id>
     private final Map< String, IDType > expectedIDTypeMap;// <local_id, expectedType>
     private final String importTarget;
