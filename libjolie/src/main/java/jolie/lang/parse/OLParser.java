@@ -1265,7 +1265,10 @@ public class OLParser extends AbstractParser
 			getToken();
 			if ( token.isKeyword( "extender") ) {
 				getToken();
-				node = parseInterfaceExtender();
+				InterfaceExtenderDefinition interfaceExtender = parseInterfaceExtender();
+				interfaceExtenders.put(interfaceExtender.name(),interfaceExtender );
+				programBuilder.addChild( interfaceExtender );
+				node = interfaceExtender;
 			} else {
 				InterfaceDefinition interfaceDefinition = parseInterface();
 				interfaces.put( interfaceDefinition.name(), interfaceDefinition );
@@ -1665,7 +1668,7 @@ public class OLParser extends AbstractParser
 		}
 	}
 	
-	private InterfaceDefinition parseInterfaceExtender()
+	private InterfaceExtenderDefinition parseInterfaceExtender()
 		throws IOException, ParserException
 	{
 		String name;
