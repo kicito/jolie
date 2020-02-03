@@ -985,12 +985,15 @@ public class OLParser extends AbstractParser
 				getToken();
 				node = parseInterfaceExtender();
 			} else {
-				node = parseInterface();
+				InterfaceDefinition interfaceDefinition = parseInterface();
+				interfaces.put( interfaceDefinition.name(), interfaceDefinition );
+				programBuilder.addChild( interfaceDefinition );
+				node = interfaceDefinition;
 			}
-		} else if ( token.isKeyword( "inputPort" ) ) {
-			node = parsePort();
-		} else if ( token.isKeyword( "outputPort" ) ) {
-			node = parsePort();
+		} else if ( token.isKeyword( "inputPort" ) || token.isKeyword( "outputPort" ) ) {
+			PortInfo portDefinition = parsePort();
+			programBuilder.addChild( portDefinition );
+			node = portDefinition;
 		} else {
 			node = null;
 		}
@@ -1265,7 +1268,7 @@ public class OLParser extends AbstractParser
 		if ( inputPortLocation == null ) {
 			throwException( "expected location URI for " + inputPortName );
 		} else if ( iface.operationsMap().isEmpty() && redirectionMap.isEmpty() && aggregationList.isEmpty() ) {
-			// throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
+			throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
 		} else if ( protocolId == null && !inputPortLocation.toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) && !inputPortLocation.getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
 			throwException( "expected protocol for inputPort " + inputPortName );
 		}
@@ -1274,7 +1277,6 @@ public class OLParser extends AbstractParser
 			iport.addInterface( i );
 		}
 		iface.copyTo( iport );
-		programBuilder.addChild( iport );
 		return iport;
 	}
 	
@@ -1339,8 +1341,6 @@ public class OLParser extends AbstractParser
 		InterfaceExtenderDefinition extender = currInterfaceExtender =
 				new InterfaceExtenderDefinition( getContext(), name );
 		parseOperations( currInterfaceExtender );
-		interfaceExtenders.put( name, extender );
-		programBuilder.addChild( currInterfaceExtender );
 		eat( Scanner.TokenType.RCURLY, "expected }" );
 		currInterfaceExtender = null;
 		return extender;
@@ -1357,8 +1357,6 @@ public class OLParser extends AbstractParser
 		eat( Scanner.TokenType.LCURLY, "expected {" );
 		iface = new InterfaceDefinition( getContext(), name );
 		parseOperations( iface );
-		interfaces.put( name, iface );
-		programBuilder.addChild( iface );
 		eat( Scanner.TokenType.RCURLY, "expected }" );
 
 		return iface;
@@ -1466,8 +1464,6 @@ public class OLParser extends AbstractParser
 
 		}
 		eat( Scanner.TokenType.RCURLY, "expected }" );
-
-		programBuilder.addChild( p );
 		return p;
 	}
 
