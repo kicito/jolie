@@ -281,7 +281,7 @@ public class Interpreter
 	private final String logPrefix;
 	private final Tracer tracer;
 	private final boolean printStackTraces;
-	private boolean check = false;
+	private boolean checkFlag = false;
 	private Timer timer;
 	// private long inputMessageTimeout = 24 * 60 * 60 * 1000; // 1 day
 	private final long persistentConnectionTimeout = 60 * 60 * 1000; // 1 hour
@@ -1048,10 +1048,10 @@ public class Interpreter
              * 1 - CommCore needs the OOIT to be initialized.
              * 2 - initExec must be instantiated before we can receive communications.
              */
-            if ( buildOOIT() == false && !check ) {
+            if ( buildOOIT() == false && !checkFlag ) {
                 throw new InterpreterException( "Error: service initialisation failed" );
             }
-            if ( check ){
+            if ( checkFlag ){
                 exit();
             } else {
                 sessionStarters = Collections.unmodifiableMap( sessionStarters );
@@ -1084,7 +1084,7 @@ public class Interpreter
 	
 	private void runCode()
 	{
-		if ( !check ) {
+		if ( !checkFlag ) {
 			SessionThread t;
 			synchronized( this ) {
 				t = initExecutionThread;
@@ -1250,22 +1250,18 @@ public class Interpreter
 				}
 				program = OLParseTreeOptimizer.optimize( program );
 
-
 			}
 			
 			cmdParser.close();
 
-			check = cmdParser.check();
+			checkFlag = cmdParser.check();
 
 			final SemanticVerifier semanticVerifier;
 
-			if ( check ) {
-				SemanticVerifier.Configuration conf = new SemanticVerifier.Configuration();
-				conf.setCheckForMain( false );
-				semanticVerifier = new SemanticVerifier( program, conf );
-			} else {
-				semanticVerifier = new SemanticVerifier( program );
-			}
+			SemanticVerifier.Configuration conf = new SemanticVerifier.Configuration();
+			conf.setCheckForMain( !checkFlag );
+			conf.setProgramFileName( this.programFilename );
+			semanticVerifier = new SemanticVerifier( program, conf );
 
 			try {
 				semanticVerifier.validate();
@@ -1285,7 +1281,7 @@ public class Interpreter
 				}
 			}
 
-			if ( check ) {
+			if ( checkFlag ) {
 				return false;
 			} else {
 				return (new OOITBuilder(
