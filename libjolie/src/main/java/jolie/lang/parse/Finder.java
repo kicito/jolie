@@ -3,15 +3,18 @@ package jolie.lang.parse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
-import java.nio.file.Path;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 interface Source
 {
     URI source();
 
-    InputStream stream() throws FileNotFoundException;
+    InputStream stream() throws FileNotFoundException, IOException;
 }
 
 
@@ -26,29 +29,14 @@ public interface Finder
     {
         // check protocol
         try {
-            File file = new File( resolveTargetStringToURI( source, target ) );
-            System.out.println( "[FINDER] File is: " + file.toString() );
-        } catch (NullPointerException | IllegalArgumentException e) {
-            throw new ModuleParsingException(e);
+            if ( target.startsWith( "http" ) || target.startsWith( "https" ) ) {
+                return new Finder[] {new URLFinder( target )};
+            } else {
+                return new Finder[] {new ProjectDirFinder( source, target )};
+            }
+        } catch (NullPointerException | IllegalArgumentException | MalformedURLException e) {
+            throw new ModuleParsingException( "[FINDER] Unable to resolve " + target, e );
         }
-
-        return new Finder[] {new ProjectDirFinder( source, target )};
-    }
-
-    static URI resolveTargetStringToURI( URI source, String target )
-    {
-        // if string start with ./
-        if ( target.startsWith( "./" ) ) {
-            return source.resolve( target );
-        } else if ( target.startsWith( "/" ) ) {
-            // if string start with /
-
-        } else {
-            // if string start with arbitary string
-            return source.resolve( target );
-
-        }
-        return null;
     }
 }
 
@@ -66,17 +54,17 @@ class ProjectDirFinder implements Finder
     @Override
     public Source find() throws FileNotFoundException
     {
-        System.out.println("[ProjectDirFinder] Perform look up to " + targetFile);
-        if ( !targetFile.exists() ) {
-            throw new FileNotFoundException( targetFile.toPath().toString() );
+        System.out.println( "[ProjectDirFinder] Perform look up for " + this.targetFile );
+        if ( !this.targetFile.exists() ) {
+            throw new FileNotFoundException( this.targetFile.toPath().toString() );
         }
-        return new FileSource( targetFile );
+        return new FileSource( this.targetFile );
     }
 
     @Override
     public URI target()
     {
-        return targetFile.toURI();
+        return this.targetFile.toURI();
     }
 
     class FileSource implements Source
@@ -99,6 +87,63 @@ class ProjectDirFinder implements Finder
         public InputStream stream() throws FileNotFoundException
         {
             return new FileInputStream( this.file );
+        }
+    }
+
+}
+
+
+class URLFinder implements Finder
+{
+
+    private URL targetURL;
+
+    public URLFinder( String targetURL ) throws MalformedURLException
+    {
+        this.targetURL = new URL( targetURL );
+    }
+
+    @Override
+    public Source find()
+    {
+        System.out.println( "[URLFinder] Perform look up for " + targetURL );
+        return new URLSource( this.targetURL );
+    }
+
+    @Override
+    public URI target()
+    {
+        try {
+            return this.targetURL.toURI();
+        } catch (URISyntaxException e) {
+        }
+        return null;
+    }
+
+    class URLSource implements Source
+    {
+
+        URL source;
+
+        public URLSource( URL s )
+        {
+            this.source = s;
+        }
+
+        @Override
+        public URI source()
+        {
+            try {
+                return this.source.toURI();
+            } catch (URISyntaxException e) {
+            }
+            return null;
+        }
+
+        @Override
+        public InputStream stream() throws IOException
+        {
+            return this.source.openStream();
         }
     }
 
