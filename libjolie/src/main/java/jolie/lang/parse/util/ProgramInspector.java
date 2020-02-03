@@ -123,5 +123,10 @@ public interface ProgramInspector
 	/**
 	 * Returns an array of all the procedure definition nodes defined in the program
 	 */
-	public DefinitionNode[] getProcedureDefinitions( );
+	public DefinitionNode[] getProcedureDefinitions();
+
+	/**
+	 * Returns an array of all the service definition nodes defined in the program
+	 */
+	public ServiceNode[] getServices();
 }

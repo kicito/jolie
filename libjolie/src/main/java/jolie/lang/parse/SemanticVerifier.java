@@ -1361,11 +1361,11 @@ public class SemanticVerifier implements OLVisitor
 	@Override
 	public void visit( ServiceNode n )
 	{
-		String targetServiceName = this.configuration.programFileName().split( "\\." )[0];
+		// String targetServiceName = this.configuration.programFileName().split( "\\." )[0];
 
-		if ( n.name().equals( targetServiceName ) ) {
-			n.program().accept( this );
-		}
+		// if ( n.name().equals( targetServiceName ) ) {
+		// 	n.program().accept( this );
+		// }
 	}
 
 	@Override

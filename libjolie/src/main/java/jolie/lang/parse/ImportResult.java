@@ -7,6 +7,7 @@ import java.util.Map;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.types.TypeDefinition;
 
 
@@ -17,6 +18,7 @@ public class ImportResult
     private final Map< String, TypeDefinition > types;
     private final Map< String, InterfaceDefinition > interfaces;
     private final Map< String, DefinitionNode > procedures;
+    private final Map< String, ServiceNode > services;
 
     public ImportResult()
     {
@@ -24,6 +26,7 @@ public class ImportResult
         this.types = new HashMap< String, TypeDefinition >();
         this.interfaces = new HashMap< String, InterfaceDefinition >();
         this.procedures = new HashMap< String, DefinitionNode >();
+        this.services = new HashMap< String, ServiceNode >();
     }
 
     public void prependResult( ImportResult re )
@@ -57,6 +60,9 @@ public class ImportResult
         }
         for (Map.Entry< String, DefinitionNode > entry : re.procedures.entrySet()) {
             this.procedures.put( entry.getKey(), entry.getValue() );
+        }
+        for (Map.Entry< String, ServiceNode > entry : re.services.entrySet()) {
+            this.services.put( entry.getKey(), entry.getValue() );
         }
     }
 
@@ -110,5 +116,18 @@ public class ImportResult
     public Map< String, DefinitionNode > procedures()
     {
         return procedures;
+    }
+
+    public void addService( ServiceNode s )
+    {
+        this.services.put( s.name(), s );
+    }
+
+    /**
+     * @return the Services
+     */
+    public Map< String, ServiceNode > services()
+    {
+        return services;
     }
 }

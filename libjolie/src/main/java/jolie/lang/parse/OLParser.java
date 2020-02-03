@@ -279,7 +279,7 @@ public class OLParser extends AbstractParser
 		);
 	}
 
-	Map<String, ServiceNode> services;
+	Map< String, ServiceNode > services = new HashMap< String, ServiceNode >();
 
 	private void parseService() 
 		throws IOException, ParserException
@@ -1129,6 +1129,15 @@ public class OLParser extends AbstractParser
 					}
 				}
 				interfaces.put(entry.getKey(), entry.getValue());
+			}
+
+			for(Map.Entry<String, ServiceNode> entry: importResult.services().entrySet()){
+				if (services.containsKey(entry.getKey())){
+					if (!services.get(entry.getKey()).equals(entry.getValue())){
+						System.out.println("[OLPARSER] warning, imported service '" + entry.getKey() + "' is already defined, replacing definition" );
+					}
+				}
+				services.put(entry.getKey(), entry.getValue());
 			}
 		}
 	}

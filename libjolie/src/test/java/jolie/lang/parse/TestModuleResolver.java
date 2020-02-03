@@ -203,14 +203,33 @@ class TestModuleResolver
 				new ConstantStringExpression( null, "a" ), null ) );
 		OLSyntaxNode expectedExpression = OLSyntaxNodeCreator
 				.createNodeBasicExpression( new ConstantIntegerExpression( null, 2 ) );
-		Program p = olParser.parse();
 		AssignStatement expected = new AssignStatement( null, aPath, expectedExpression );
 
+		Program p = olParser.parse();
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
 		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+	}
+
+
+	@Test
+	void testServiceImport() throws Exception
+	{
+		URL src = getClass().getClassLoader()
+				.getResource( "simple-import/service/main.ol" );
+		is = src.openStream();
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+		
+		Program p = olParser.parse();
+
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+
+		// assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 	@Test

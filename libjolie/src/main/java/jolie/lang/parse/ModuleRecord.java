@@ -6,9 +6,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import jolie.lang.Constants;
+import jolie.lang.Constants.EmbeddedServiceType;
 import jolie.lang.parse.ast.DefinitionNode;
+import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
+import jolie.lang.parse.ast.OutputPortInfo;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
@@ -60,6 +64,16 @@ public class ModuleRecord
         return null;
     }
 
+    private ServiceNode findService( String id )
+    {
+        for (ServiceNode service : programInspector.getServices()) {
+            if ( service.name().equals( id ) ) {
+                return service;
+            }
+        }
+        return null;
+    }
+
     public OLSyntaxNode find( String id )
     {
         TypeDefinition moduleTypeDef = this.findType( id );
@@ -73,6 +87,10 @@ public class ModuleRecord
         DefinitionNode moduleProcedureDef = this.findProcedureDefinition( id );
         if ( moduleProcedureDef != null ) {
             return moduleProcedureDef;
+        }
+        ServiceNode moduleService = this.findService( id );
+        if ( moduleService != null ) {
+            return moduleService;
         }
         return null;
     }
@@ -96,12 +114,15 @@ public class ModuleRecord
             importPaths
                     .add( new Pair< String, String >( definitionNode.id(), definitionNode.id() ) );
         }
+
+        for (ServiceNode service : this.programInspector.getServices()) {
+            importPaths.add( new Pair< String, String >( service.name(), service.name() ) );
+        }
         return resolve( ctx, importPaths, importUsingLink );
     }
 
     public ImportResult resolve( ParsingContext ctx, List< Pair< String, String > > pathNodes,
-            boolean importUsingLink ) 
-            throws ModuleParsingException
+            boolean importUsingLink ) throws ModuleParsingException
     {
         ImportResult res = new ImportResult();
         for (Pair< String, String > pathNode : pathNodes) {
@@ -127,6 +148,9 @@ public class ModuleRecord
             } else if ( moduleNode instanceof DefinitionNode ) {
                 importResult = resolveProcedureDefinition( ctx, (DefinitionNode) moduleNode,
                         pathNode.value() );
+                res.addResult( importResult );
+            } else if ( moduleNode instanceof ServiceNode ) {
+                importResult = resolveService( ctx, (ServiceNode) moduleNode, pathNode.value() );
                 res.addResult( importResult );
             }
         }
@@ -205,13 +229,13 @@ public class ModuleRecord
         if ( td instanceof TypeChoiceDefinition ) {
             TypeChoiceDefinition moduleType = (TypeChoiceDefinition) td;
             if ( !moduleType.left().id().equals( moduleType.id() ) ) {
-                ImportResult choiceResult =
-                        resolveTypeUsingLink( ctx, moduleType.left(), moduleType.left().id(), true );
+                ImportResult choiceResult = resolveTypeUsingLink( ctx, moduleType.left(),
+                        moduleType.left().id(), true );
                 typeResult.prependResult( choiceResult );
             }
             if ( !moduleType.right().id().equals( moduleType.id() ) ) {
-                ImportResult choiceResult =
-                        resolveTypeUsingLink( ctx, moduleType.left(), moduleType.left().id(), true );
+                ImportResult choiceResult = resolveTypeUsingLink( ctx, moduleType.left(),
+                        moduleType.left().id(), true );
                 typeResult.prependResult( choiceResult );
             }
             TypeChoiceDefinition localType =
@@ -298,6 +322,28 @@ public class ModuleRecord
         procedureDefinitionResult.addNode( localProcedureDefinition );
 
         return procedureDefinitionResult;
+    }
+
+    private ImportResult resolveService( ParsingContext ctx, ServiceNode moduleService,
+            String localName ) throws ModuleParsingException
+    {
+        ImportResult serviceResult = new ImportResult();
+        ServiceNode localService = new ServiceNode( ctx, localName, moduleService.type() );
+        if ( moduleService.type() == EmbeddedServiceType.JAVA ) {
+            localService.putParameter( "packageName", moduleService.getParameter( "packageName" ) );
+        }
+        moduleService.getInputPortInfos().forEach(
+                ( String name, InputPortInfo ip ) -> localService.addInputPortInfo( ip ) );
+
+        moduleService.getOutputPortInfos().forEach(
+            ( String name, OutputPortInfo ip ) -> localService.addOutputPortInfo( ip ) );
+
+        localService.setProgram(moduleService.program());
+
+        serviceResult.addNode(localService);
+        serviceResult.addService(localService);
+
+        return serviceResult;
     }
 
 

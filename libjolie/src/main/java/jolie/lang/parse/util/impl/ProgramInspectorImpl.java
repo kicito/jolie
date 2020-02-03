@@ -22,6 +22,7 @@
 package jolie.lang.parse.util.impl;
 
 import java.net.URI;
+import java.security.Provider.Service;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 	private final Map< URI, List< EmbeddedServiceNode > > embeddedServices;
 	private final Map< URI, List< DefinitionNode > > procedureDefinitions;
 	private final Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies;
+	private final Map< URI, List< ServiceNode > > services;
 
 	public ProgramInspectorImpl(
 		URI[] sources,
@@ -55,7 +57,8 @@ public class ProgramInspectorImpl implements ProgramInspector
 		Map< URI, List< OutputPortInfo > > outputPorts,
 		Map< URI, List< EmbeddedServiceNode > > embeddedServices,
 		Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies,
-		Map< URI, List< DefinitionNode > > procedureDefinitions
+		Map< URI, List< DefinitionNode > > procedureDefinitions,
+		Map< URI, List< ServiceNode > > services
 	) {
 		this.sources = sources;
 		this.interfaces = interfaces;
@@ -65,6 +68,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 		this.embeddedServices = embeddedServices;
 		this.behaviouralDependencies = behaviouralDependencies;
 		this.procedureDefinitions = procedureDefinitions;
+		this.services = services;
 	}
 
 	@Override
@@ -227,6 +231,20 @@ public class ProgramInspectorImpl implements ProgramInspector
 			return new EmbeddedServiceNode[ 0 ];
 		}
 		return list.toArray( new EmbeddedServiceNode[ 0 ] );
+	}
+
+	@Override
+	public ServiceNode[] getServices()
+	{
+		List< ServiceNode > result = new ArrayList< >();
+		List< ServiceNode > list;
+		for( URI source : sources ) {
+			list = services.get( source );
+			if ( list != null ) {
+				result.addAll( list );
+			}
+		}
+		return result.toArray( new ServiceNode[ 0 ] );
 	}
 
 	/*

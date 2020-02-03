@@ -128,6 +128,7 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 	private final Map< URI, List< EmbeddedServiceNode > > embeddedServices = new HashMap<>();
 	private final Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode>>> behaviouralDependencies = new HashMap<>();
 	private final Map< URI, List< DefinitionNode > > procedureDefinitions = new HashMap<>();
+	private final Map< URI, List< ServiceNode > > services = new HashMap<>();
 	private final Set< URI > sources = new HashSet<>();
 
 	private OLSyntaxNode currentFirstInput = null;
@@ -147,7 +148,8 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 			outputPorts,
 			embeddedServices,
 			behaviouralDependencies,
-			procedureDefinitions
+			procedureDefinitions,
+			services
 		);
 	}
 
@@ -495,7 +497,15 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 	}
 
 	@Override
-	public void visit( ServiceNode n ) {}
+	public void visit( ServiceNode n ) {
+		List< ServiceNode> list = this.services.get( n.context().source() );
+		if ( list == null ) {
+			list = new LinkedList< >();
+			this.services.put( n.context().source(), list );
+		}
+		list.add( n );
+		encounteredNode(n);
+	}
 
 	@Override
 	public void visit( EmbeddedServiceNode2 n ){}

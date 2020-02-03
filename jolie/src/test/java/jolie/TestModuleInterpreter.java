@@ -150,4 +150,26 @@ public class TestModuleInterpreter
         serverThread.join();
     }
 
+    @Test
+    void testEmbedConsoleService() throws  CommandLineException, IOException,
+            InterpreterException, InterruptedException
+    {
+        String filePath = "simple-import/service/main.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+        final Interpreter interpreter =
+                new Interpreter( args, this.getClass().getClassLoader(), null );
+        interpreter.run();
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+
+        assertTrue( systemOutContent.toString().contains( "Hello" ) );
+
+    }
 }
