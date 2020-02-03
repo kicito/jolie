@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.Scanner.TokenType;
 import jolie.lang.parse.ast.AddAssignStatement;
 import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.CompareConditionNode;
@@ -53,6 +54,7 @@ import jolie.lang.parse.ast.DefinitionCallStatement;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode2;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -90,6 +92,7 @@ import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -126,6 +129,9 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.binding.BindIn;
+import jolie.lang.parse.binding.BindOut;
+import jolie.lang.parse.binding.BindOutInputPort;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.util.ProgramBuilder;
@@ -147,7 +153,7 @@ public class OLParser extends AbstractParser
 	}
 
 	private Optional< String > serviceName = Optional.empty();
-	private final ProgramBuilder programBuilder;
+	private ProgramBuilder programBuilder;
 	private final Map< String, Scanner.Token > constantsMap = new HashMap<>();
 	private boolean insideInstallFunction = false;
 	private String[] includePaths;
@@ -262,6 +268,7 @@ public class OLParser extends AbstractParser
 		parseLoop( explicitServiceBlock,
 			this::parseConstants,
 			this::parseImport,
+			this::parseService,
 			this::parseExecution,
 			this::parseCorrelationSets,
 			this::parseTypes,
@@ -271,6 +278,281 @@ public class OLParser extends AbstractParser
 			this::parseCode
 		);
 	}
+
+	Map<String, ServiceNode> services;
+
+	private void parseService() 
+		throws IOException, ParserException
+	{
+		// only proceed if an service declaration
+		if ( !token.isKeyword( "decl" ) ) {
+			return;
+		}
+		getToken();
+
+		if ( !token.isKeyword( "service" ) ) {
+			return;
+		}
+		getToken();
+		_parseService();
+
+	}
+
+	private void _parseService() throws IOException, ParserException
+	{
+		Constants.EmbeddedServiceType type = Constants.EmbeddedServiceType.JOLIE;
+
+		switch (token.content()) {
+			case "Java":
+				getToken();
+				type = Constants.EmbeddedServiceType.JAVA;
+				break;
+			case "Jolie":
+				getToken();
+				type = Constants.EmbeddedServiceType.JOLIE;
+				break;
+			case "JavaScript":
+				getToken();
+				type = Constants.EmbeddedServiceType.JAVASCRIPT;
+				break;
+		}
+
+		assertToken( Scanner.TokenType.ID, "expected service name" );
+		String serviceName = token.content();
+		getToken();
+
+		ServiceNode service = new ServiceNode( getContext(), serviceName, type );
+
+		eat( Scanner.TokenType.LPAREN,
+				"expected ( after the opening clause of service " + serviceName );
+
+		// require packageName string for java type
+		if ( type == Constants.EmbeddedServiceType.JAVA ) {
+			if ( !token.is( TokenType.STRING ) ) {
+				throwException( "expected package id for Java Type service" );
+			}
+			service.putParameter( "packageName", token.content() );
+			getToken();
+		}
+		eat( Scanner.TokenType.RPAREN,
+				"expected ) after the opening clause of service " + serviceName );
+		eat( Scanner.TokenType.LCURLY,
+				"expected { after the opening clause of service " + serviceName );
+		// add service to list
+		if ( this.services == null ) {
+			this.services = new HashMap< String, ServiceNode >();
+		}
+
+		ProgramBuilder mainBuilder = this.programBuilder;
+		ProgramBuilder serviceProgramBuilder = new ProgramBuilder( getContext() );
+		this.programBuilder = serviceProgramBuilder;
+
+		// copy children of parent to service
+		for (OLSyntaxNode child : programBuilder.children()
+				.toArray( new OLSyntaxNode[programBuilder.children().size()] )) {
+			if ( child instanceof InterfaceDefinition || child instanceof DefinitionNode
+					|| child instanceof TypeDefinition ) {
+				serviceProgramBuilder.addChild( child );
+			}
+		}
+		OLSyntaxNode initSequence = null, main = null;
+		boolean keepRun = true;
+		while (keepRun) {
+			switch (token.content()) {
+				case "cset":
+					parseCorrelationSets();
+					break;
+				case "init":
+					initSequence = parseInit();
+					break;
+				case "main":
+					main = parseMain();
+					break;
+				case "inputPort":
+					InputPortInfo inputPortInfo = null;
+					if ( type == Constants.EmbeddedServiceType.JOLIE ){
+						inputPortInfo = parseInputPortInfo();
+					} else {
+						if (service.getInputPortInfos().size() > 0){
+							throwException("InputPort for foreign technology service should not be more than one");
+						}
+						inputPortInfo = parseForeignInputPortInfo();
+					}
+					service.addInputPortInfo(inputPortInfo);
+					serviceProgramBuilder.addChild( inputPortInfo );
+					break;
+				case "outputPort":
+					OutputPortInfo outputPortInfo = parseOutputPortInfo();
+					service.addOutputPortInfo(outputPortInfo);
+					serviceProgramBuilder.addChild( outputPortInfo );
+					break;
+				case "embed":
+					EmbeddedServiceNode2 node = parseEmbed();
+					serviceProgramBuilder.addChild( node );
+					break;
+				default:
+					keepRun = false;
+			}
+		}
+
+		eat( Scanner.TokenType.RCURLY,
+				"expected } at the end of the definition of service " + serviceName );
+
+		if ( initSequence != null ) {
+			programBuilder.addChild( new DefinitionNode( getContext(), "init", initSequence ) );
+		}
+
+		if ( main != null ) {
+			programBuilder.addChild( main );
+		}
+
+		service.setProgram( serviceProgramBuilder.toProgram() );
+		// add embedded service node to program that is embedding it
+		this.services.put( serviceName, service );
+		this.programBuilder = mainBuilder;
+
+		this.programBuilder.addChild( service );
+	}
+
+	// Parsing function for Jolie 2.0 embed keyword
+	private EmbeddedServiceNode2 parseEmbed() 
+		throws IOException, ParserException
+	{
+		getToken();
+
+		String embeddingServiceName = token.content();
+		ParsingContext context = getContext();
+		getToken();
+
+		ServiceNode service = services.get( embeddingServiceName );
+		if ( service == null ){
+			throwException("service " + embeddingServiceName + " not found");
+		}
+		EmbeddedServiceNode2 embedNode = new EmbeddedServiceNode2( context, service );
+		eat( Scanner.TokenType.LCURLY,
+				"expected { after the opening clause of service " + serviceName );
+
+		boolean keepRun = true;
+		while (keepRun) {
+			switch (token.content()) {
+				case "bindIn":
+					List< BindIn > bindInResult = parseBindIn();
+					embedNode.addBindIns( bindInResult );
+					break;
+				case "bindOut":
+					List< BindOut > bindOutResult = parseBindOut();
+					embedNode.addBindOut( bindOutResult );
+					break;
+				default:
+					keepRun = false;
+			}
+		}
+		eat( Scanner.TokenType.RCURLY,
+				"expected } after the opening clause of service " + serviceName );
+
+		if ( embedNode.bindIns() == null ) { // create aggregated input port at embedding service
+												// and an outputinfo at embedder service
+			// TODO
+		} else {
+			for (BindIn bi : embedNode.bindIns()) {
+				InputPortInfo ip =
+						embedNode.service().getInputPortInfo( bi.serviceInputPortName() );
+				OutputPortInfo embedderOutputPort =
+						new OutputPortInfo( context, bi.embedderOutputPortName() );
+				embedderOutputPort.setLocation( ip.location() );
+				embedderOutputPort.setProtocolId( ip.protocolId() );
+				embedderOutputPort.setProtocolConfiguration( ip.protocolConfiguration() );
+				ip.operations().forEach( op -> embedderOutputPort.addOperation( op ) );
+				ip.getInterfaceList().forEach( iface -> embedderOutputPort.addInterface( iface ) );
+				// create OutputPortInfo according to BindIn value and add to embeder's program
+				programBuilder.addChild( embedderOutputPort );
+			}
+		}
+		return embedNode;
+	}
+
+	// Parsing function for Jolie 2.0 embed keyword
+	private List<BindIn> parseBindIn() 
+		throws IOException, ParserException
+	{
+		getToken();
+		eat( Scanner.TokenType.COLON, "expected : after the opening clause of bindIn" );
+		List< BindIn > result = new ArrayList< BindIn >();
+		boolean keepRun = true;
+		while (keepRun) {
+			if ( !token.isIdentifier() ) {
+				throwException(
+						"expected a service's InputPort name after the service's InputPort of bindIn" );
+			}
+			String serviceInputPort = token.content();
+			getToken();
+
+			eat( Scanner.TokenType.POINTS_TO,
+					"expected -> after the service's InputPort of bindIn" );
+			if ( !token.isIdentifier() ) {
+				throwException(
+						"expected a service's InputPort name after the service's InputPort of bindIn" );
+			}
+			String clientOutputPort = token.content();
+			getToken();
+			result.add( new BindIn( serviceInputPort, clientOutputPort ) );
+
+			if ( token.is( Scanner.TokenType.COMMA ) ) {
+				getToken();
+			} else {
+				keepRun = false;
+			}
+		}
+		return result;
+	}
+
+	// Parsing function for Jolie 2.0 embed keyword
+	private List<BindOut> parseBindOut() 
+		throws IOException, ParserException
+	{
+
+		getToken();
+		eat( Scanner.TokenType.COLON, "expected : after the opening clause of bindOut" );
+		List<BindOut> result = new ArrayList<BindOut>();
+
+		boolean keepRun = true;
+		while (keepRun) {
+			
+			if (!token.isIdentifier()){
+				throwException("expected a service's InputPort name after the service's InputPort of bindIn");
+			}
+			String serviceInputPort = token.content();
+			getToken();
+			
+			if (token.is(Scanner.TokenType.POINTS_TO)){
+				getToken();
+				if ( !token.isIdentifier() ) {
+					throwException(
+							"expected a service's InputPort name after the service's InputPort of bindIn" );
+				}
+				String clientOutputPort = token.content();
+				getToken();
+				result.add(new BindOutInputPort(serviceInputPort, clientOutputPort));
+			} else if(token.is(Scanner.TokenType.LCURLY)){
+				getToken();
+
+				// TODO IMPLEMENT
+				eat( Scanner.TokenType.RCURLY,
+				"expected } after the opening clause of service " + serviceName );
+			} else if(token.is(Scanner.TokenType.ID)){
+				// TODO IMPLEMENT
+			}
+			
+			if ( token.is( Scanner.TokenType.COMMA ) ) {
+				getToken();
+			} else {
+				keepRun = false;
+			}
+		}
+		return result;
+
+	}
+
 
 	private void parseTypes()
 		throws IOException, ParserException
@@ -1045,7 +1327,7 @@ public class OLParser extends AbstractParser
 	private void parseInternalService()
 		throws IOException, ParserException
 	{
-		//only proceed if a service declaration
+		//only proceed if an internal service declaration
 		if ( !token.isKeyword( "service" ) ) {
 			return;
 		}
@@ -1273,6 +1555,59 @@ public class OLParser extends AbstractParser
 			throwException( "expected protocol for inputPort " + inputPortName );
 		}
 		InputPortInfo iport = new InputPortInfo( getContext(), inputPortName, inputPortLocation, protocolId, protocolConfiguration, aggregationList.toArray( new InputPortInfo.AggregationItemInfo[ aggregationList.size() ] ), redirectionMap );
+		for( InterfaceDefinition i : interfaceList ) {
+			iport.addInterface( i );
+		}
+		iface.copyTo( iport );
+		return iport;
+	}
+
+	// Parsing function for Foreign service, where it should not have protocol and location defined
+	private InputPortInfo parseForeignInputPortInfo()
+		throws IOException, ParserException
+	{
+		String inputPortName;
+		List< InterfaceDefinition > interfaceList = new ArrayList<>();
+		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
+		
+		getToken();
+		assertToken( Scanner.TokenType.ID, "expected inputPort name" );
+		inputPortName = token.content();
+		getToken();
+		eat( Scanner.TokenType.LCURLY, "{ expected" );
+		InterfaceDefinition iface = new InterfaceDefinition( getContext(), "Internal interface for: " + inputPortName );
+		while ( token.isNot( Scanner.TokenType.RCURLY ) ) {
+			if ( token.is( Scanner.TokenType.OP_OW ) ) {
+				parseOneWayOperations( iface );
+			} else if ( token.is( Scanner.TokenType.OP_RR ) ) {
+				parseRequestResponseOperations( iface );
+			} else if ( token.isKeyword( "interfaces" ) || token.isKeyword( "Interfaces" ) ) {
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected : after interfaces" );
+                boolean keepRun = true;
+                while( keepRun ) {
+                    assertToken( Scanner.TokenType.ID, "expected interface name" );
+					InterfaceDefinition i = interfaces.get( token.content() );
+					if ( i == null ) {
+						throwException( "Invalid interface name: " + token.content() );
+					} else {
+						i.copyTo( iface );
+						interfaceList.add( i );
+					}
+                    getToken();
+
+                    if ( token.is( Scanner.TokenType.COMMA ) ) {
+                        getToken();
+                    } else {
+                        keepRun = false;
+                    }
+                }
+			} else {
+				throwException( "Unrecognized token in foreign service's inputPort " + inputPortName );
+			}
+		}
+		eat( Scanner.TokenType.RCURLY, "} expected" );
+		InputPortInfo iport = new InputPortInfo( getContext(), inputPortName, null, null, protocolConfiguration, new InputPortInfo.AggregationItemInfo[0], new HashMap<String,String>() );
 		for( InterfaceDefinition i : interfaceList ) {
 			iport.addInterface( i );
 		}

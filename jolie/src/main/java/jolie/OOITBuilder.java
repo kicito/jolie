@@ -55,13 +55,13 @@ import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode2;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
 import jolie.lang.parse.ast.ForEachSubNodeStatement;
 import jolie.lang.parse.ast.ForStatement;
 import jolie.lang.parse.ast.IfStatement;
-import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InstallFixedVariableExpressionNode;
 import jolie.lang.parse.ast.InstallFunctionNode;
@@ -92,6 +92,7 @@ import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -1759,6 +1760,48 @@ public class OOITBuilder implements OLVisitor
 			);
 		} catch( InvalidIdException e ) {
 			error( n.context(), e );
+		}
+	}
+
+	@Override
+	public void visit( ServiceNode n ) {
+		System.out.println("[OOITBuilder] Service name =" + n.name() + ", programFileName = " + this.interpreter.programFilename() );
+		String targetServiceName = this.interpreter.programFilename().split( "\\." )[0];
+		
+		if ( n.name().equals(targetServiceName)){
+			System.out.println("[OOITBuilder] found target execution service " );
+			n.program().accept(this);
+		}
+	}
+
+	@Override
+	public void visit( EmbeddedServiceNode2 n )
+	{
+		try {
+			VariablePath path = null;
+			if (n.service().type() != Constants.EmbeddedServiceType.JOLIE){
+				// TODO make get(0).embedderOutputPortName type safer
+				path = interpreter.getOutputPort( n.bindIns().get(0).embedderOutputPortName() ).locationVariablePath();
+			}
+
+			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
+					n.service().type().equals( Constants.EmbeddedServiceType.JOLIE )
+							? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration(
+									n.service().name(), (Program) n.service().program() )
+							: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(
+									n.service().type(),
+									n.service().getParameter( "packageName" ).toString() );
+
+			interpreter.addEmbeddedServiceLoader(
+				EmbeddedServiceLoader.create(
+					interpreter,
+					embeddedServiceConfiguration,
+					path
+				) );
+		} catch( EmbeddedServiceLoaderCreationException e ) {
+			error( n.context(), e );
+		} catch( InvalidIdException e ) {
+			error( n.context(), "could not find port" );
 		}
 	}
 

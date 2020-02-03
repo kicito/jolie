@@ -1,6 +1,6 @@
 package jolie.lang.parse;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
@@ -17,6 +17,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.NullProcessStatement;
@@ -24,8 +25,14 @@ import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
+import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.VariablePathNode;
+import jolie.lang.parse.ast.expression.ConstantIntegerExpression;
+import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.ast.types.TypeDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.util.Pair;
 import jolie.util.Range;
 
 public class TestDeploymentConstruct
@@ -165,27 +172,31 @@ public class TestDeploymentConstruct
 	@Test
 	void testService() throws Exception
 	{
-		String code =
-				"decl service doubleService{}";
+		String code = "decl service doubleService (){ init{ a = 1 } main{a=2} }";
 		this.is = new ByteArrayInputStream( code.getBytes() );
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
+		SequenceStatement expected = new SequenceStatement( null );
+		VariablePathNode pathNodeA = new VariablePathNode( null, VariablePathNode.Type.NORMAL );
+		pathNodeA.append( new Pair<>( new ConstantStringExpression( null, "a" ), null ) );
+
+		AssignStatement assignmentNode = new AssignStatement( null, pathNodeA, OLSyntaxNodeCreator
+				.createNodeBasicExpression( new ConstantIntegerExpression( null, 1 ) ) );
+		SequenceStatement expected2 = new SequenceStatement( null );
+
+		AssignStatement assignmentNode2 = new AssignStatement( null, pathNodeA, OLSyntaxNodeCreator
+				.createNodeBasicExpression( new ConstantIntegerExpression( null, 2 ) ) );
+
+		expected.addChild( assignmentNode );
+		expected2.addChild( assignmentNode2 );
+
 		Program p = olParser.parse();
-	}
 
-	@Test
-	@MethodSource("importStatementTestProvider")
+		assertNotNull( olParser.services );
+		Program program = olParser.services.get( "doubleService" ).program();
+		assertTrue( iv.programHasOLSyntaxNode( program, expected ) );
+		assertTrue( iv.programHasOLSyntaxNode( program, expected2 ) );
 
-	void testImportStatements( String code, OLSyntaxNode[] expectedArr ) throws Exception
-	{
-		this.is = new ByteArrayInputStream( code.getBytes() );
-		InstanceCreator oc = new InstanceCreator( new String[] {} );
-		OLParser olParser = oc.createOLParser( is );
-		Program p = olParser.parse();
-
-		for (OLSyntaxNode expected : expectedArr) {
-			assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
-		}
 	}
 
 
@@ -202,32 +213,14 @@ public class TestDeploymentConstruct
 		assertTrue( exception.getMessage().contains( errorMessage ) );
 	}
 
-
-	private static Stream< Arguments > importStatementTestProvider()
-	{
-
-		TypeInlineDefinition expected1 =
-				new TypeInlineDefinition( null, "A", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-		expected1.setDocumentation( "" );
-
-		TypeInlineDefinition expected2 = new TypeInlineDefinition( null, "B", NativeType.STRING,
-				Constants.RANGE_ONE_TO_ONE );
-		expected1.setDocumentation( "" );
-
-		return Stream.of(
-				Arguments.of( "import A from \"simple-import/importstatement-test.ol\"",
-						new OLSyntaxNode[] {expected1} ),
-				Arguments.of( "import A from \"simple-import/importstatement-test.ol\"",
-						new OLSyntaxNode[] {expected1, expected2} ) );
-	}
-
 	private static Stream< Arguments > importStatementExceptionTestProvider()
 	{
 		return Stream.of(
 				Arguments.of( "import AA from \"simple-import/importstatement-test.ol\"",
-						"AA not found in" ),
+						"unable to find AA in" ),
 				Arguments.of( "import AA from \"somewhere\"", "FileNotFoundException" ),
-				Arguments.of( "import AA \"somewhere\"", "expected \"from\" for an import statement" ) );
+				Arguments.of( "import AA \"somewhere\"",
+						"expected \"from\" for an import statement" ) );
 	}
 
 	@AfterEach
