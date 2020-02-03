@@ -40,34 +40,37 @@ class TestModuleResolver
 	}
 
 	@Test
-	void testInstanceOf() throws Exception
+	void testSimpleImport() throws Exception
 	{
 		URL src = getClass().getClassLoader().getResource( "simple-import/types/main.ol" );
 		is = src.openStream();
-
+		String importPrefix = src.getPath() + "#";
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
-		// ModuleSolver ms = oc.createModuleSolver(
-		// Paths.get( URI.create( src.toString() ) ).getParent().toString(),
-		// new HashMap< String, Scanner.Token >() );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+		TypeDefinitionLink expected = new TypeDefinitionLink( null, "Date",
+				Constants.RANGE_ONE_TO_ONE, importPrefix + "Date" );
 
-		TypeInlineDefinition expected = new TypeInlineDefinition( null, "Date", NativeType.VOID,
-				Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expectedChild1 = new TypeInlineDefinition( null, "month",
-				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expectedChild2 =
-				new TypeInlineDefinition( null, "day", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expectedChild3 = new TypeInlineDefinition( null, "year",
-				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-		expected.setDocumentation( "" );
-		expectedChild1.setDocumentation( "" );
-		expectedChild2.setDocumentation( "" );
-		expectedChild3.setDocumentation( "" );
-		expected.putSubType( expectedChild1 );
-		expected.putSubType( expectedChild2 );
-		expected.putSubType( expectedChild3 );
+		Program p = olParser.parse();
 
+
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p );
+		semanticVerifier.validate();
+	}
+
+	@Test
+	void testSimpleImportAs() throws Exception
+	{
+		URL src = getClass().getClassLoader().getResource( "simple-import/types/main-as.ol" );
+		is = src.openStream();
+		String importPrefix = src.getPath() + "#";
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+		TypeDefinitionLink expected =
+				new TypeDefinitionLink( null, "d", Constants.RANGE_ONE_TO_ONE, importPrefix + "d" );
 
 		Program p = olParser.parse();
 
@@ -84,13 +87,14 @@ class TestModuleResolver
 
 		URL src = getClass().getClassLoader().getResource( "simple-import/types-linked/main.ol" );
 		is = src.openStream();
+		String importPrefix = src.getPath() + "#";
 
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		TypeInlineDefinition expected =
-				new TypeInlineDefinition( null, "d", NativeType.VOID, Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expected = new TypeInlineDefinition( null, importPrefix + "d",
+				NativeType.VOID, Constants.RANGE_ONE_TO_ONE );
 		TypeInlineDefinition expectedChild1 = new TypeInlineDefinition( null, "month",
 				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
 		TypeInlineDefinition expectedChild2 =
@@ -104,13 +108,17 @@ class TestModuleResolver
 		expected.putSubType( expectedChild1 );
 		expected.putSubType( expectedChild2 );
 		expected.putSubType( expectedChild3 );
-		TypeDefinitionLink expected2 =
-				new TypeDefinitionLink( null, "date", Constants.RANGE_ONE_TO_ONE, "d" );
+
+		TypeDefinitionLink expected2 = new TypeDefinitionLink( null, importPrefix + "date",
+				Constants.RANGE_ONE_TO_ONE, importPrefix + "d" );
+		TypeDefinitionLink expected3 = new TypeDefinitionLink( null, "date",
+				Constants.RANGE_ONE_TO_ONE, importPrefix + "date" );
 
 		Program p = olParser.parse();
 
 		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected3 ) );
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
@@ -122,6 +130,8 @@ class TestModuleResolver
 
 		URL src = getClass().getClassLoader().getResource( "simple-import/types-sum/main.ol" );
 		is = src.openStream();
+		String importPrefix = src.getPath() + "#";
+
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		TypeInlineDefinition expectedChild1 = new TypeInlineDefinition( null, "CustomType",
@@ -131,19 +141,22 @@ class TestModuleResolver
 		TypeInlineDefinition expectedChild3 = new TypeInlineDefinition( null, "CustomType",
 				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
 
-		TypeChoiceDefinition expected =
+		TypeChoiceDefinition expected = new TypeChoiceDefinition( null, importPrefix + "CustomType",
+				Constants.RANGE_ONE_TO_ONE, expectedChild1,
 				new TypeChoiceDefinition( null, "CustomType", Constants.RANGE_ONE_TO_ONE,
-						expectedChild1, new TypeChoiceDefinition( null, "CustomType",
-								Constants.RANGE_ONE_TO_ONE, expectedChild2, expectedChild3 ) );
+						expectedChild2, expectedChild3 ) );
 		expected.setDocumentation( "" );
+		TypeDefinitionLink expected2 = new TypeDefinitionLink( null, "CustomType",
+				Constants.RANGE_ONE_TO_ONE, importPrefix + "CustomType" );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
 		Program p = olParser.parse();
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
-		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 
 	}
 
@@ -205,15 +218,17 @@ class TestModuleResolver
 	{
 		URL src = getClass().getClassLoader().getResource( "nested-import/types/main.ol" );
 		is = src.openStream();
+		String importPrefix = src.getPath() + "#";
+
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
-		TypeInlineDefinition expected1 =
-				new TypeInlineDefinition( null, "day", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expected1 = new TypeInlineDefinition( null, importPrefix + "day",
+				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
 		expected1.setDocumentation( "" );
 
-		TypeInlineDefinition expected2 = new TypeInlineDefinition( null, "Date", NativeType.VOID,
-				Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expected2 = new TypeInlineDefinition( null, importPrefix + "Date",
+				NativeType.VOID, Constants.RANGE_ONE_TO_ONE );
 		TypeInlineDefinition expectedChild1 = new TypeInlineDefinition( null, "month",
 				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
 		TypeDefinitionLink expectedChild2 =
@@ -230,11 +245,12 @@ class TestModuleResolver
 
 		Program p = olParser.parse();
 
-		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
-		semanticVerifier.validate();
 
 		assertTrue( iv.programHasOLSyntaxNode( p, expected1 ) );
 		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
 
 	}
 
@@ -244,56 +260,24 @@ class TestModuleResolver
 	{
 		URL src = getClass().getClassLoader().getResource( "dag-import/main.ol" );
 		is = src.openStream();
+		String importPrefix = src.getPath() + "#";
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		TypeInlineDefinition expected = new TypeInlineDefinition( null, "Date", NativeType.VOID,
-				Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expectedChild1 = new TypeInlineDefinition( null, "month",
-				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expectedChild2 =
-				new TypeInlineDefinition( null, "day", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expectedChild3 = new TypeInlineDefinition( null, "year",
-				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
-
-		TypeDefinitionLink expectedDateLink =
-				new TypeDefinitionLink( null, "date", Constants.RANGE_ONE_TO_ONE, "Date" );
-
-		TypeInlineDefinition expected2 = new TypeInlineDefinition( null, "Birthday",
-				NativeType.VOID, Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expected2Child = new TypeInlineDefinition( null, "person_name",
-				NativeType.STRING, Constants.RANGE_ONE_TO_ONE );
-
-		TypeInlineDefinition expected3 = new TypeInlineDefinition( null, "Holiday", NativeType.VOID,
-				Constants.RANGE_ONE_TO_ONE );
-		TypeInlineDefinition expected3Child = new TypeInlineDefinition( null, "holiday_name",
-				NativeType.STRING, Constants.RANGE_ONE_TO_ONE );
-
-		expected.setDocumentation( "" );
-		expected2.setDocumentation( "" );
-		expected3.setDocumentation( "" );
-		expectedChild1.setDocumentation( "" );
-		expectedChild2.setDocumentation( "" );
-		expectedChild3.setDocumentation( "" );
-		expected2Child.setDocumentation( "" );
-		expected3Child.setDocumentation( "" );
-		expected.putSubType( expectedChild1 );
-		expected.putSubType( expectedChild2 );
-		expected.putSubType( expectedChild3 );
-		expected2.putSubType( expected2Child );
-		expected3.putSubType( expected3Child );
-		expected2.putSubType( expectedDateLink );
-		expected3.putSubType( expectedDateLink );
+		TypeDefinitionLink expected1 = new TypeDefinitionLink( null, "Birthday",
+				Constants.RANGE_ONE_TO_ONE, importPrefix + "Birthday" );
+		TypeDefinitionLink expected2 = new TypeDefinitionLink( null, "Holiday",
+				Constants.RANGE_ONE_TO_ONE, importPrefix + "Holiday" );
 
 		Program p = olParser.parse();
 
+		assertTrue( iv.programHasOLSyntaxNode( p, expected1 ) );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
+
+
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
-
-		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
-		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
-		assertTrue( iv.programHasOLSyntaxNode( p, expected3 ) );
 	}
 
 
@@ -302,15 +286,17 @@ class TestModuleResolver
 	void testNameSpaceImport() throws Exception
 	{
 		URL src = getClass().getClassLoader().getResource( "simple-import/namespace/main.ol" );
+		String importPrefix = src.getPath() + "#";
+
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		TypeInlineDefinition expected = new TypeInlineDefinition( null, "A", NativeType.STRING,
+		TypeInlineDefinition expected = new TypeInlineDefinition( null, importPrefix + "A", NativeType.STRING,
 				Constants.RANGE_ONE_TO_ONE );
 
-		InterfaceDefinition expected2 = new InterfaceDefinition( null, "B" );
+		InterfaceDefinition expected2 = new InterfaceDefinition( null, importPrefix +  "B" );
 		TypeDefinition intType =
 				new TypeInlineDefinition( null, "int", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
 		RequestResponseOperationDeclaration expectedChild = new RequestResponseOperationDeclaration(
