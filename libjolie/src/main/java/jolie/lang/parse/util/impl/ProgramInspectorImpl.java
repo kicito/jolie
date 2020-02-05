@@ -102,6 +102,17 @@ public class ProgramInspectorImpl implements ProgramInspector
 	}
 
 	@Override
+	public TypeDefinition getType( String id )
+	{
+		for (TypeDefinition td : this.getTypes()){
+			if ( td.id().equals( id ) ){
+				return td;
+			}
+		}
+		return null;
+	}
+
+	@Override
 	public InterfaceDefinition[] getInterfaces()
 	{
 		List< InterfaceDefinition > result = new ArrayList<>();
@@ -124,6 +135,18 @@ public class ProgramInspectorImpl implements ProgramInspector
 		}
 		return list.toArray( new InterfaceDefinition[ 0 ] );
 	}
+
+	@Override
+	public InterfaceDefinition getInterface( String name )
+	{
+		for (InterfaceDefinition id : this.getInterfaces()){
+			if ( id.name().equals( name ) ){
+				return id;
+			}
+		}
+		return null;
+	}
+
 
 	@Override
 	public InputPortInfo[] getInputPorts()

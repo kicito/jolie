@@ -20,7 +20,7 @@ interface Source
 
 public interface Finder
 {
-    public Source find() throws FileNotFoundException;
+    public Source find() throws ModuleNotFoundException;
 
     public URI target();
 
@@ -52,11 +52,11 @@ class ProjectDirFinder implements Finder
     }
 
     @Override
-    public Source find() throws FileNotFoundException
+    public Source find() throws ModuleNotFoundException
     {
         System.out.println( "[ProjectDirFinder] Perform look up for " + this.targetFile );
         if ( !this.targetFile.exists() ) {
-            throw new FileNotFoundException( this.targetFile.toPath().toString() );
+            throw new ModuleNotFoundException( "unable to locate " + this.targetFile.toPath().toString() );
         }
         return new FileSource( this.targetFile );
     }
@@ -84,9 +84,12 @@ class ProjectDirFinder implements Finder
         }
 
         @Override
-        public InputStream stream() throws FileNotFoundException
+        public InputStream stream()
         {
-            return new FileInputStream( this.file );
+            try {
+                return new FileInputStream( this.file );
+            } catch (FileNotFoundException e) { }
+            return null;
         }
     }
 
@@ -96,25 +99,29 @@ class ProjectDirFinder implements Finder
 class URLFinder implements Finder
 {
 
-    private URL targetURL;
+    private String targetURL;
 
     public URLFinder( String targetURL ) throws MalformedURLException
     {
-        this.targetURL = new URL( targetURL );
+        this.targetURL = targetURL;
     }
 
     @Override
-    public Source find()
+    public Source find() throws ModuleNotFoundException
     {
         System.out.println( "[URLFinder] Perform look up for " + targetURL );
-        return new URLSource( this.targetURL );
+        try {
+            return new URLSource( new URL( this.targetURL ) );
+        } catch (MalformedURLException e) {
+            throw new ModuleNotFoundException( "unable to locate " + this.targetURL , e);
+        }
     }
 
     @Override
     public URI target()
     {
         try {
-            return this.targetURL.toURI();
+            return new URI( this.targetURL );
         } catch (URISyntaxException e) {
         }
         return null;

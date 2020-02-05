@@ -32,6 +32,7 @@ import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.util.ProgramInspector;
 import jolie.util.Pair;
 import jolie.util.Range;
 
@@ -126,6 +127,23 @@ public class TypeInlineDefinition extends TypeDefinition
 	public boolean untypedSubTypes()
 	{
 		return untypedSubTypes;
+	}
+
+	@Override
+	public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
+	{
+
+		TypeInlineDefinition localType = new TypeInlineDefinition( ctx, localID,
+				this.nativeType(), this.cardinality() );
+		localType.setDocumentation(this.getDocumentation());
+		if ( this.hasSubTypes() ){
+			for (Map.Entry< String, TypeDefinition > entry : this.subTypes()) {
+				TypeDefinition subType = (TypeDefinition) entry.getValue().resolve(ctx, pi, entry.getKey());
+				localType.putSubType(subType);
+			}
+		}
+
+		return localType;
 	}
 
 	@Override

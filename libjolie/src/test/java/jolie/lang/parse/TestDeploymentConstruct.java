@@ -30,7 +30,6 @@ import jolie.lang.parse.ast.VariablePathNode;
 import jolie.lang.parse.ast.expression.ConstantIntegerExpression;
 import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.ast.types.TypeDefinition;
-import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.util.Pair;
 import jolie.util.Range;
@@ -209,7 +208,8 @@ public class TestDeploymentConstruct
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
 
-		Exception exception = assertThrows( ParserException.class, () -> olParser.parse() );
+		Exception exception = assertThrows( ParserException.class, () -> olParser.parse(),
+				"Expected parse() to throw, with " + errorMessage + " but it didn't" );
 		assertTrue( exception.getMessage().contains( errorMessage ) );
 	}
 
@@ -218,9 +218,8 @@ public class TestDeploymentConstruct
 		return Stream.of(
 				Arguments.of( "import AA from \"simple-import/importstatement-test.ol\"",
 						"unable to find AA in" ),
-				Arguments.of( "import AA from \"somewhere\"", "FileNotFoundException" ),
-				Arguments.of( "import AA \"somewhere\"",
-						"expected \"from\" for an import statement" ) );
+				Arguments.of( "import AA from \"somewhere\"", "unable to locate" ), Arguments.of(
+						"import AA \"somewhere\"", "expected \"from\" for an import statement" ) );
 	}
 
 	@AfterEach

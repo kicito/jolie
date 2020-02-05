@@ -89,11 +89,25 @@ public interface ProgramInspector
 	public InterfaceDefinition[] getInterfaces( URI source );
 
 	/**
+	 * Returns a definition of interface defined with given id
+	 * @param name interface name
+	 * @return an InterfaceDefinition defined with given name
+	 */
+	public InterfaceDefinition getInterface( String name );
+
+	/**
 	 * Returns an array of all the types defined in the specified source.
 	 * @param source the target source
 	 * @return an array of all the types defined in the specified source
 	 */
 	public TypeDefinition[] getTypes( URI source );
+
+	/**
+	 * Returns a definition of type defined with given id
+	 * @param id type identifier name
+	 * @return an TypeDefinition defined with given id
+	 */
+	public TypeDefinition getType( String id );
         
         /**
 	 * Returns an array of all the embedded service nodes in the specified source.
