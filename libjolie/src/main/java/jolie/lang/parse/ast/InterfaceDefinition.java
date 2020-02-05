@@ -21,18 +21,21 @@
 
 package jolie.lang.parse.ast;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import jolie.lang.parse.DocumentedNode;
 import jolie.lang.parse.OLVisitor;
+import jolie.lang.parse.ast.types.TypeDefinition;
+import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.module.Importable;
+import jolie.lang.parse.util.ProgramInspector;
 
 /**
  *
  * @author Fabrizio Montesi
  */
-public class InterfaceDefinition extends OLSyntaxNode implements OperationCollector, DocumentedNode
+public class InterfaceDefinition extends OLSyntaxNode implements OperationCollector, DocumentedNode, Importable
 {
 	private final Map<String, OperationDeclaration> operationsMap =
 		new HashMap<>();
@@ -83,6 +86,15 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 	public String getDocumentation()
 	{
 		return this.documentation;
+	}
+
+	@Override
+	public InterfaceDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
+	{
+        InterfaceDefinition localIface = new InterfaceDefinition( ctx, localID );
+        localIface.setDocumentation( this.getDocumentation() );
+        this.copyTo( localIface );
+		return localIface;
 	}
 
 	@Override

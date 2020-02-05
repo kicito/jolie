@@ -31,7 +31,6 @@ public class ImportResult
 
     public void prependResult( ImportResult re )
     {
-        // TODO check name crash for each type
         for (OLSyntaxNode n : re.nodes) {
             this.nodes.add( 0, n );
         }
@@ -68,6 +67,18 @@ public class ImportResult
 
     public void addNode( OLSyntaxNode n )
     {
+        if ( n instanceof TypeDefinition ) {
+            this.addType( (TypeDefinition) n );
+        }
+        if ( n instanceof InterfaceDefinition ) {
+            this.addInterface( (InterfaceDefinition) n );
+        }
+        if ( n instanceof DefinitionNode ) {
+            this.addProcedure( (DefinitionNode) n );
+        }
+        if ( n instanceof ServiceNode ) {
+            this.addService( (ServiceNode) n );
+        }
         this.nodes.add( n );
     }
 

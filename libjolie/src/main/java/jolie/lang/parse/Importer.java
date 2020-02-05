@@ -1,11 +1,8 @@
 package jolie.lang.parse;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import jolie.lang.parse.Scanner.Token;
 import jolie.lang.parse.ast.ImportStatement;
@@ -45,8 +42,6 @@ public class Importer
 
     private Map< URI, ModuleRecord > cache;
     private Configuration config;
-    private Finder[] finders;
-    List< URI > importChain = new ArrayList< URI >();
 
     public Importer( Configuration c )
     {
@@ -54,15 +49,9 @@ public class Importer
         cache = new HashMap<>();
     }
 
-    public Importer( Configuration c, Finder[] finders )
-    {
-        this( c );
-        this.finders = finders;
-    }
-
     private ModuleRecord load( Source s ) throws ModuleParsingException
     {
-        System.out.println( "[IMPORTER] loading " + s.source() );
+        System.out.println( "[LOADER] loading " + s.source() );
         SemanticVerifier.Configuration configuration = new SemanticVerifier.Configuration();
         configuration.setCheckForMain( false );
         Program program;
@@ -80,47 +69,38 @@ public class Importer
         return new ModuleRecord( s.source(), pi );
     }
 
-    public ImportResult importModule( URI source, ImportStatement stmt )
-            throws ModuleNotFoundException, ModuleParsingException
+    public ModuleRecord moduleLookUp(URI source, String target) 
+        throws ModuleParsingException, ModuleNotFoundException
     {
-        this.finders = Finder.getFindersForTargetString( source, stmt.importTarget() );
         ModuleRecord rc = null;
-        for (Finder f : this.finders) {
+        Finder[] finders = Finder.getFindersForTargetString( source, target );
 
-            try {
-                Source targetSource = f.find();
-
-                // perform cache lookup
-                if ( cache.containsKey( targetSource.source() ) ) {
-                    System.out.println( "[LOADER] found " + targetSource.source() + " in cache" );
-                    rc = cache.get( targetSource.source() );
-                }
-                importChain.add( targetSource.source() );
-                System.out.println( "[IMPORTER] ImportChain " + this.importChain );
-
+        for (Finder f : finders) {
+            Source targetSource = f.find();
+            // perform cache lookup
+            if ( cache.containsKey( targetSource.source() ) ) {
+                System.out.println( "[LOADER] found " + targetSource.source() + " in cache" );
+                rc = cache.get( targetSource.source() );
+            }else{
                 rc = load( targetSource );
-                importChain.remove( targetSource.source() );
-                System.out.println( "[IMPORTER] ImportChain " + this.importChain );
-
-                if ( rc != null ) {
-                    break;
-                }
-            } catch (FileNotFoundException e) {
-                throw new ModuleNotFoundException( e );
-            } catch (ModuleParsingException e) {
-                throw e;
             }
         }
 
+        return rc;
+    }
+
+    public ImportResult importModule( URI source, ImportStatement stmt )
+            throws ModuleNotFoundException, ModuleParsingException
+    {
+        ModuleRecord rc = moduleLookUp(source, stmt.importTarget());
+        if ( rc == null ) {
+            throw new ModuleParsingException("unable to locate from " + source + " with target" + stmt.importTarget());
+        }
         cache.put( rc.source(), rc );
-
-        boolean importUsingLink = importChain.size() == 0;
-
         if ( stmt.isNamespaceImport() ) {
-            return rc.resolveNameSpace( stmt.context(), importUsingLink );
+            return rc.resolveNameSpace( stmt.context() );
         } else {
-            // retrieve import name and add to OLSyntaxNodes list
-            return rc.resolve( stmt.context(), stmt.pathNodes(), importUsingLink );
+            return rc.resolve( stmt.context(), stmt.pathNodes() );
         }
     }
 }

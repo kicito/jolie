@@ -3,10 +3,13 @@ package jolie.lang.parse.ast;
 import java.util.HashMap;
 import java.util.Map;
 import jolie.lang.Constants;
+import jolie.lang.Constants.EmbeddedServiceType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.module.Importable;
+import jolie.lang.parse.util.ProgramInspector;
 
-public class ServiceNode extends OLSyntaxNode
+public class ServiceNode extends OLSyntaxNode implements Importable
 {
     private static final long serialVersionUID = Constants.serialVersionUID();
     private String name;
@@ -91,6 +94,23 @@ public class ServiceNode extends OLSyntaxNode
     {
         return this.outputPortInfos;
     }
+
+	@Override
+	public ServiceNode resolve( ParsingContext ctx, ProgramInspector pi, String localID )
+	{
+        ServiceNode localService = new ServiceNode( ctx, localID, this.type() );
+        if ( this.type() == EmbeddedServiceType.JAVA ) {
+            localService.putParameter( "packageName", this.getParameter( "packageName" ) );
+        }
+        this.getInputPortInfos().forEach(
+                ( String name, InputPortInfo ip ) -> localService.addInputPortInfo( ip ) );
+
+        this.getOutputPortInfos().forEach(
+            ( String name, OutputPortInfo ip ) -> localService.addOutputPortInfo( ip ) );
+
+        localService.setProgram(this.program());
+        return localService;
+	}
 
     @Override
     public void accept( OLVisitor visitor )

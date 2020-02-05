@@ -25,6 +25,7 @@ import java.util.List;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.util.ProgramInspector;
 import jolie.util.Pair;
 import jolie.util.Range;
 
@@ -68,6 +69,21 @@ public class TypeChoiceDefinition extends TypeDefinition
 	public String toString()
 	{
 		return left + " | " + right;
+	}
+
+	@Override
+	public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
+	{
+		TypeDefinition right = null;
+		if ( this.right() != null ) {
+			right = (TypeDefinition)this.right().resolve(ctx, pi, this.right().id());
+		}
+
+		TypeChoiceDefinition localType = new TypeChoiceDefinition( ctx, localID,
+				this.cardinality(), this.left(), right );
+		localType.setDocumentation( this.getDocumentation() );
+
+		return localType;
 	}
 
 	/*

@@ -27,8 +27,10 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
+import jolie.lang.Constants;
 import jolie.lang.NativeType;
 import jolie.lang.parse.DocumentedNode;
+import jolie.lang.parse.module.Importable;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.VariablePathNode;
 import jolie.lang.parse.context.ParsingContext;
@@ -39,8 +41,10 @@ import jolie.util.Range;
  * Representation for a type definition.
  * @author Fabrizio Montesi
  */
-public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedNode
+public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedNode, Importable
 {
+    private static final long serialVersionUID = Constants.serialVersionUID();
+	
 	private final String id;
 	private final Range cardinality;
 	private String document = null;
