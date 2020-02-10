@@ -1,10 +1,14 @@
 include "console.iol"
 
-decl service twiceService(){ 
+decl service twiceService( outputPort tw ){ 
     inputPort TwiceService {
         Location: "socket://localhost:8000"
         Protocol: sodep
         RequestResponse: twice
+    }
+
+    binding {
+        TwiceService -> tw
     }
 
     main
@@ -12,15 +16,13 @@ decl service twiceService(){
         twice( number )( result ) {
             result = number * 2
         }
-    } 
+    }
 }
 
 
-decl service main(){ 
+decl service twice(){ 
 
-    embed twiceService {
-        bindIn: TwiceService -> tw // an outputPort tw should be created at OOITBuilder.build
-    }
+    embed twiceService ("tw")
     
     main {
         twice@tw(5)(res);

@@ -1,8 +1,9 @@
 package jolie;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +16,7 @@ public class TestJolieSimple
 		JolieURLStreamHandlerFactory.registerInVM();
 	}
     private static final String[] launcherArgs = new String[] {"-l",
-    "../dist/jolie/lib:../dist/jolie/javaServices/*"};
+    "../lib/*:../dist/jolie/lib:../dist/jolie/javaServices/*:../dist/jolie/extensions/*"};
 
     private PrintStream originalSystemOut;
     private ByteArrayOutputStream systemOutContent;
@@ -83,5 +84,48 @@ public class TestJolieSimple
             }
         } );
         assertTrue( systemOutContent.toString().contains( "target/jolie-1.9.0-git.jar" ) );
+    }
+
+    
+    @Test
+    void testTwiceService() throws FileNotFoundException, CommandLineException, IOException,
+            InterpreterException, InterruptedException
+    {
+        String serverFilePath = "jolie-simple/twice/TwiceService.ol";
+        String clientFilePath = "jolie-simple/twice/TwiceClient.ol";
+        String[] serverArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+        serverArgs[serverArgs.length - 1] = serverFilePath;
+        final Interpreter serverInterpreter =
+                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+
+        String[] clientArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, clientArgs, 0, launcherArgs.length );
+        clientArgs[clientArgs.length - 1] = clientFilePath;
+        final Interpreter clientInterpreter =
+                new Interpreter( clientArgs, this.getClass().getClassLoader(), null );
+
+        Thread serverThread = new Thread( () -> {
+            try {
+                serverInterpreter.run();
+            } catch (InterpreterException | IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        } );
+
+        Thread clientThread = new Thread( () -> {
+            try {
+                clientInterpreter.run();
+                assertTrue( systemOutContent.toString().contains( "10" ) );
+            } catch (InterpreterException | IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        } );
+        serverThread.start();
+        clientThread.start();
+        clientThread.join();
+        serverThread.join();
     }
 }

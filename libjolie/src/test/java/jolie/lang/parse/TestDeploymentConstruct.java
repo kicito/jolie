@@ -41,6 +41,9 @@ public class TestDeploymentConstruct
 	InspectorVisitor iv = new InspectorVisitor();
 
 
+
+	static SemanticVerifier.Configuration configuration = new SemanticVerifier.Configuration();
+
 	@Test
 	void testInclude() throws Exception
 	{
@@ -112,6 +115,7 @@ public class TestDeploymentConstruct
 		RequestResponseOperationDeclaration od = new RequestResponseOperationDeclaration( null,
 				"sum", intTD, intTD, new HashMap<>() );
 		expected.addOperation( od );
+		od.setDocumentation("");
 		expected.setDocumentation( "" );
 
 		Program p = olParser.parse();
@@ -195,6 +199,34 @@ public class TestDeploymentConstruct
 		Program program = olParser.services.get( "doubleService" ).program();
 		assertTrue( iv.programHasOLSyntaxNode( program, expected ) );
 		assertTrue( iv.programHasOLSyntaxNode( program, expected2 ) );
+
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+
+	}
+
+	@Test
+	void testJavaService() throws Exception
+	{
+		StringBuilder code = new StringBuilder();
+		code.append("decl service Java ConsoleService (\"joliex.io.ConsoleService\", outputPort fromClient, inputPort toClient)");
+		code.append("{");
+		code.append("inputPort IP { OneWay: test(int)}");
+		code.append("outputPort Receiver { location: \"local\" OneWay: test(int) }");
+		code.append("binding {IP -> fromClient Receiver -> toClient}");
+		code.append("}");
+
+		this.is = new ByteArrayInputStream( code.toString().getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+
+		Program p = olParser.parse();
+
+		assertNotNull( olParser.services );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
 
 	}
 

@@ -11,14 +11,13 @@ decl service twiceService(){
         twice( number )( result ) {
             result = number * 2
         }
-    } }
+    }
+}
 
 
 decl service main(){ 
 
-    embed twiceService {
-        bindIn: TwiceService -> tw
-    }
+    embed twiceService ("tw")
     
     main {
         a=2

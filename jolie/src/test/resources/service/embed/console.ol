@@ -49,19 +49,35 @@ RequestResponse:
 	unsubscribeSessionListener(UnsubscribeSessionListener)(void)
 }
 
-decl service Java Console ("joliex.io.ConsoleService") {
+interface IReceiver {
+	OneWay: in(InRequest)
+}
+
+decl service Java ConsoleService ("joliex.io.ConsoleService", outputPort fromClient) {
 	inputPort IP {
 		interfaces: IConsole
 	}
+
+	// outputPort Receiver {
+	// 	interfaces: IReceiver
+	// }
+	
+	binding {
+		IP -> fromClient
+		// Receiver -> toClient
+	}
 }
 
+decl service console () {
 
-decl service console (){
-    embed Console {
-        bindIn: IP -> Console 
-    }
-    
-    main {
-        println@Console("Hello")()
-    }
+	// inputPort ConsoleInput {
+	// 	location: "local:/MyConsoleInput"
+	// 	interfaces: IReceiver
+	// }
+
+    embed ConsoleService ( "Console" )
+
+	main{
+		println@Console("Hello")()
+	}
 }

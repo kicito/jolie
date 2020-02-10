@@ -62,53 +62,12 @@ public class TestService
         assertTrue( systemOutContent.toString().contains( "2" ) );
     }
 
-    @Test
-    void testTwiceService() throws FileNotFoundException, CommandLineException, IOException,
-            InterpreterException, InterruptedException
-    {
-        String serverFilePath = "service/twice/TwiceService.ol";
-        String clientFilePath = "service/twice/TwiceClient.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter serverInterpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-
-        String[] clientArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, clientArgs, 0, launcherArgs.length );
-        clientArgs[clientArgs.length - 1] = clientFilePath;
-        final Interpreter clientInterpreter =
-                new Interpreter( clientArgs, this.getClass().getClassLoader(), null );
-
-        Thread serverThread = new Thread( () -> {
-            try {
-                serverInterpreter.run();
-            } catch (InterpreterException | IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        } );
-
-        Thread clientThread = new Thread( () -> {
-            try {
-                clientInterpreter.run();
-                assertTrue( systemOutContent.toString().contains( "10" ) );
-            } catch (InterpreterException | IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        } );
-        serverThread.start();
-        clientThread.start();
-        clientThread.join();
-        serverThread.join();
-    }
 
     @Test
     void testEmbedTwiceService() throws FileNotFoundException, CommandLineException, IOException,
             InterpreterException, InterruptedException
     {
-        String serverFilePath = "service/embed/main.ol";
+        String serverFilePath = "service/embed/twice.ol";
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
@@ -131,6 +90,32 @@ public class TestService
             InterpreterException, InterruptedException
     {
         String serverFilePath = "service/embed/console.ol";
+        String[] serverArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+        serverArgs[serverArgs.length - 1] = serverFilePath;
+        final Interpreter interpreter =
+                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+        interpreter.run();
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+
+        
+        assertTrue( systemOutContent.toString().contains( "Hello" ) );
+
+    }
+
+    
+    @Test
+    void testEmbedEchoService() throws FileNotFoundException, CommandLineException, IOException,
+            InterpreterException, InterruptedException
+    {
+        
+        String serverFilePath = "service/embed/echo.ol";
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;

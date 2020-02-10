@@ -239,8 +239,6 @@ class TestModuleResolver
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
-
-		// assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 	@Test
