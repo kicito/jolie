@@ -1,4 +1,4 @@
-package jolie.lang.parse;
+package jolie.lang.parse.module;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.context.ParsingContext;
-import jolie.lang.parse.module.Importable;
+import jolie.lang.parse.module.exception.ModuleParsingException;
 import jolie.lang.parse.util.ProgramInspector;
 import jolie.util.Pair;
 

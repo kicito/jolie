@@ -1,4 +1,4 @@
-package jolie.lang.parse;
+package jolie.lang.parse.module;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,6 +9,8 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import jolie.lang.parse.module.exception.ModuleNotFoundException;
+import jolie.lang.parse.module.exception.ModuleParsingException;
 
 interface Source
 {

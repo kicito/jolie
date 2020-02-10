@@ -1,4 +1,4 @@
-package jolie.lang.parse;
+package jolie.lang.parse.module.exception;
 
 import jolie.lang.Constants;
 

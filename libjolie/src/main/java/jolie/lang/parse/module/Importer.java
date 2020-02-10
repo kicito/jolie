@@ -1,12 +1,18 @@
-package jolie.lang.parse;
+package jolie.lang.parse.module;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import jolie.lang.parse.ParserException;
+import jolie.lang.parse.Scanner;
 import jolie.lang.parse.Scanner.Token;
+import jolie.lang.parse.SemanticException;
+import jolie.lang.parse.SemanticVerifier;
 import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.module.exception.ModuleNotFoundException;
+import jolie.lang.parse.module.exception.ModuleParsingException;
 import jolie.lang.parse.util.ParsingUtils;
 import jolie.lang.parse.util.ProgramInspector;
 

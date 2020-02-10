@@ -1,4 +1,4 @@
-package jolie.lang.parse;
+package jolie.lang.parse.module;
 
 import java.util.ArrayList;
 import java.util.HashMap;

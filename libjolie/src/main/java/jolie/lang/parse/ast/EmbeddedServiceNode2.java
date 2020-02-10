@@ -1,58 +1,40 @@
 package jolie.lang.parse.ast;
 
-import java.util.ArrayList;
-import java.util.List;
 import jolie.lang.Constants;
 import jolie.lang.parse.OLVisitor;
-import jolie.lang.parse.binding.BindIn;
-import jolie.lang.parse.binding.BindOut;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.module.argument.Argument;
 
 public class EmbeddedServiceNode2 extends OLSyntaxNode
 {
     private static final long serialVersionUID = Constants.serialVersionUID();
-    private ServiceNode service;
-    private List< BindIn > bindIns;
-    private List< BindOut > bindOuts;
+    private ServiceNode clientService, embedingService;
+    private Argument[] args;
 
-    public EmbeddedServiceNode2( ParsingContext context, ServiceNode service )
+    public EmbeddedServiceNode2( ParsingContext context, ServiceNode clientService, ServiceNode embedingService )
     {
         super( context );
-        this.service = service;
+        this.clientService = clientService;
+        this.embedingService = embedingService;
     }
 
-
-    public ServiceNode service()
+    public ServiceNode clientService()
     {
-        return service;
+        return clientService;
+    }
+    public ServiceNode embedingService()
+    {
+        return embedingService;
     }
 
-    public List< BindIn > bindIns()
+    public Argument[] getArgs()
     {
-        return bindIns;
+        return args;
     }
 
-    public List< BindOut > bindOuts()
+    public void setArgs( Argument[] args )
     {
-        return bindOuts;
-    }
-
-
-    public void addBindIns( List< BindIn > bindIns )
-    {
-        if ( this.bindIns == null ) {
-            this.bindIns = new ArrayList< BindIn >();
-        }
-        this.bindIns.addAll( bindIns );
-    }
-
-
-    public void addBindOut( List< BindOut > bindOuts )
-    {
-        if ( this.bindOuts == null ) {
-            this.bindOuts = new ArrayList< BindOut >();
-        }
-        this.bindOuts.addAll( bindOuts );
+        this.args = args;
     }
 
     @Override

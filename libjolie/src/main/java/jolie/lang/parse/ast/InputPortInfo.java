@@ -153,12 +153,6 @@ public class InputPortInfo extends PortInfo
 		return sb.toString();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#hashCode()
-	 */
-
 	@Override
 	public int hashCode()
 	{
@@ -172,12 +166,6 @@ public class InputPortInfo extends PortInfo
 		result = prime * result + ((redirectionMap == null) ? 0 : redirectionMap.hashCode());
 		return result;
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
 
 	@Override
 	public boolean equals( Object obj )
