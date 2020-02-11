@@ -335,15 +335,7 @@ public class OLParser extends AbstractParser
 
 		eat( Scanner.TokenType.LPAREN,
 				"expected ( after the opening clause of service " + serviceName );
-
-		// require packageName string for java type
-		if ( type == Constants.EmbeddedServiceType.JAVA ) {
-			if ( !token.is( TokenType.STRING ) ) {
-				throwException( "expected package id for Java Type service" );
-			}
-			service.putParameter( "packageName", token.content() );
-			getToken();
-		}
+		service.addParameters(_parseServiceParameter(type));
 		eat( Scanner.TokenType.RPAREN,
 				"expected ) after the opening clause of service " + serviceName );
 		eat( Scanner.TokenType.LCURLY,
@@ -372,11 +364,16 @@ public class OLParser extends AbstractParser
 				case "cset":
 					parseCorrelationSets();
 					break;
+				case "execution":
+					parseExecution();
+					break;
 				case "init":
 					initSequence = parseInit();
+					service.addInit(initSequence);
 					break;
 				case "main":
 					main = parseMain();
+					service.setMain(main);
 					break;
 				case "inputPort":
 					InputPortInfo inputPortInfo = null;
@@ -391,13 +388,18 @@ public class OLParser extends AbstractParser
 					service.addInputPortInfo(inputPortInfo);
 					serviceProgramBuilder.addChild( inputPortInfo );
 					break;
+				case "binding":
+					Bind[] binds = parseBinding();
+					service.addBindings(binds);
+					break;
 				case "outputPort":
 					OutputPortInfo outputPortInfo = parseOutputPortInfo();
 					service.addOutputPortInfo(outputPortInfo);
 					serviceProgramBuilder.addChild( outputPortInfo );
 					break;
 				case "embed":
-					EmbeddedServiceNode2 node = parseEmbed();
+					EmbeddedServiceNode2 node = parseEmbed(service);
+					service.addEmbedding(node);
 					serviceProgramBuilder.addChild( node );
 					break;
 				default:
@@ -417,6 +419,7 @@ public class OLParser extends AbstractParser
 		}
 
 		service.setProgram( serviceProgramBuilder.toProgram() );
+				
 		// add embedded service node to program that is embedding it
 		this.services.put( serviceName, service );
 		this.programBuilder = mainBuilder;
@@ -574,7 +577,7 @@ public class OLParser extends AbstractParser
 	}
 
 
-	private OLSyntaxNode parseTypes()
+	private void parseTypes()
 		throws IOException, ParserException
 	{
 		Scanner.Token commentToken = null;
@@ -1586,7 +1589,7 @@ public class OLParser extends AbstractParser
 		}
 		eat( Scanner.TokenType.RCURLY, "} expected" );
 		if ( inputPortLocation == null ) {
-			throwException( "expected location URI for " + inputPortName );
+			// throwException( "expected location URI for " + inputPortName );
 		} else if ( iface.operationsMap().isEmpty() && redirectionMap.isEmpty() && aggregationList.isEmpty() ) {
 			throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
 		} else if ( protocolId == null && !inputPortLocation.toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) && !inputPortLocation.getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {

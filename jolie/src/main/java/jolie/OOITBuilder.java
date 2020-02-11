@@ -1782,20 +1782,76 @@ public class OOITBuilder implements OLVisitor
 	@Override
 	public void visit( EmbeddedServiceNode2 n )
 	{
+		// resolve binding
+		Parameter[] targetServiceParams = n.embedingService().getAssignableParameters();
+		Argument[] clientArgument = n.getArgs();
+		for (int paramIndex = 0; paramIndex < targetServiceParams.length; paramIndex++) {
+			Parameter p = targetServiceParams[paramIndex];
+			if ( p.getObjectType().equals( Pair.class ) ) {
+				Pair< String, String > paramPair = (Pair< String, String >) p.value();
+				switch (paramPair.key()) {
+					case "inputPort":
+						if ( clientArgument[paramIndex] instanceof ArgumentLiteral ) {
+							// create new inputport at client and bind to service outputport
+							// there is no binding name!
+							//
+
+						} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
+							// bind client inputport and to service outputport
+							String clientPortName = (String)clientArgument[paramIndex].value();
+							InputPortInfo ip = n.clientService().getInputPortInfo(clientPortName);
+							OutputPortInfo serviceOutputPort =
+							(OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
+							
+							serviceOutputPort.setProtocolConfiguration(ip.protocolConfiguration());
+							serviceOutputPort.setLocation( ip.location() );
+							serviceOutputPort.setProtocolId( ip.protocolId() );
+						}
+						break;
+					case "outputPort":
+						if ( clientArgument[paramIndex] instanceof ArgumentString ) {
+							// create new outputport at client
+							String clientPortName = (String)clientArgument[paramIndex].value();
+							InputPortInfo ip =
+							(InputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
+							OutputPortInfo clientOutputPort =
+									new OutputPortInfo( n.context(), clientPortName );
+							clientOutputPort.setLocation( ip.location() );
+							clientOutputPort.setProtocolId( ip.protocolId() );
+							clientOutputPort.setProtocolConfiguration( ip.protocolConfiguration() );
+							ip.operations().forEach( op -> clientOutputPort.addOperation( op ) );
+							ip.getInterfaceList().forEach( iface -> clientOutputPort.addInterface( iface ) );
+							clientOutputPort.accept(this);
+						} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
+							// bind client outputport with service inputport 
+							String clientPortName = (String)clientArgument[paramIndex].value();
+							OutputPortInfo op = n.clientService().getOutputPortInfo(clientPortName);
+							InputPortInfo serviceInputPort =
+							(InputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
+							
+							// serviceInputPort.setProtocolConfiguration(op.protocolConfiguration());
+							// serviceInputPort.setLocation( op.location() );
+							// serviceInputPort.setProtocolId( op.protocolId() );
+						}
+						break;
+				}
+			}
+		}
+
 		try {
 			VariablePath path = null;
-			if (n.service().type() != Constants.EmbeddedServiceType.JOLIE){
+			if (n.embedingService().type() != Constants.EmbeddedServiceType.JOLIE){
 				// TODO make get(0).embedderOutputPortName type safer
-				path = interpreter.getOutputPort( n.bindIns().get(0).embedderOutputPortName() ).locationVariablePath();
+				path = interpreter.getOutputPort( (String)clientArgument[0].value() ).locationVariablePath();
 			}
 
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
-					n.service().type().equals( Constants.EmbeddedServiceType.JOLIE )
+					n.embedingService().type().equals( Constants.EmbeddedServiceType.JOLIE )
 							? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration(
-									n.service().name(), (Program) n.service().program() )
+									n.embedingService().name(), (Program) n.embedingService().program() )
 							: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(
-									n.service().type(),
-									n.service().getParameter( "packageName" ).toString() );
+									n.embedingService().type(),
+									n.embedingService().getParameter(0).value().toString() );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(

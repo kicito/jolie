@@ -19,6 +19,7 @@
 
 package jolie.lang.parse;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
+import jolie.lang.Constants.EmbeddedServiceType;
 import jolie.lang.Constants.ExecutionMode;
 import jolie.lang.Constants.OperandType;
 import jolie.lang.Constants.OperationType;
@@ -83,6 +85,7 @@ import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
 import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.ast.ServiceNode.Bind;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -118,6 +121,11 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.URIParsingContext;
+import jolie.lang.parse.module.argument.Argument;
+import jolie.lang.parse.module.argument.ArgumentID;
+import jolie.lang.parse.module.argument.ArgumentLiteral;
+import jolie.lang.parse.module.argument.ArgumentString;
+import jolie.lang.parse.module.parameter.Parameter;
 import jolie.util.ArrayListMultiMap;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
@@ -194,6 +202,8 @@ public class SemanticVerifier implements OLVisitor
 	
 	private OperationType insideCourierOperationType = null;
 	private InputPortInfo courierInputPort = null;
+
+	private Set< String > embedingPortString = new HashSet< String >();
 
 	public SemanticVerifier( Program program, Configuration configuration )
 	{
@@ -764,6 +774,9 @@ public class SemanticVerifier implements OLVisitor
 	@Override
 	public void visit( NotificationOperationStatement n )
 	{
+		if ( embedingPortString.contains( n.outputPortId() ) ) {
+			return;
+		}
 		OutputPortInfo p = outputPorts.get( n.outputPortId() );
 		if ( p == null ) {
 			error( n, n.outputPortId() + " is not a valid output port" );
@@ -781,6 +794,9 @@ public class SemanticVerifier implements OLVisitor
 	{
 		if ( n.inputVarPath() != null ) {
 			encounteredAssignment( n.inputVarPath() );
+		}
+		if ( embedingPortString.contains( n.outputPortId() ) ) {
+			return;
 		}
 		OutputPortInfo p = outputPorts.get( n.outputPortId() );
 		if ( p == null ) {
@@ -1358,14 +1374,164 @@ public class SemanticVerifier implements OLVisitor
 		total.accept( this );
 	}
 
+	private Map< String, ServiceNode > services = new HashMap< String, ServiceNode >();
+
 	@Override
 	public void visit( ServiceNode n )
 	{
 		// jolie 2.0
 		this.mainDefined = true;
+
+		if ( n.type() == EmbeddedServiceType.JAVA ) {
+			Parameter p = n.getParameter( 0 );
+			if ( !p.getObjectType().equals( String.class ) ) {
+				error( n,
+						"service type JAVA should have package name declared as first parameter" );
+			}
+		}
+
+		Set< String > paramInputPortName = new HashSet< String >();
+		Set< String > paramOutputPortName = new HashSet< String >();
+
+		// check binding with parameter
+		for (Parameter p : n.getAssignableParameters()) {
+			if ( p.getObjectType().equals( Pair.class ) ) {
+				Pair< String, String > paramPair = (Pair< String, String >) p.value();
+				switch (paramPair.key()) {
+					case "inputPort":
+						paramInputPortName.add( paramPair.value() );
+						break;
+					case "outputPort":
+						paramOutputPortName.add( paramPair.value() );
+						break;
+					default:
+						error( n, "undefined parameter key " + paramPair.key() );
+				}
+			}
+		}
+
+		Set< String > expectedParamInputPortName = new HashSet< String >();
+		Set< String > expectedParamOutputPortName = new HashSet< String >();
+
+		for (Bind b : n.getBindings()) {
+			if ( n.getInputPortInfo( b.localPort ) != null ) {
+				expectedParamOutputPortName.add( b.callerPort );
+			} else if ( n.getOutputPortInfo( b.localPort ) != null ) {
+				expectedParamInputPortName.add( b.callerPort );
+			} else {
+				error( n, "undefined binding key, expecting and exist port name " + b.localPort );
+			}
+		}
+		Set< String > intersectionInputPortName =
+				new HashSet< String >( expectedParamInputPortName );
+		Set< String > intersectionOutputPortName =
+				new HashSet< String >( expectedParamOutputPortName );
+		intersectionInputPortName.removeAll( paramInputPortName );
+		intersectionOutputPortName.removeAll( paramOutputPortName );
+		if ( intersectionInputPortName.size() > 0 ) {
+			error( n, "undefined binding port in param "
+					+ Arrays.toString( intersectionInputPortName.toArray() ) );
+		}
+		if ( intersectionOutputPortName.size() > 0 ) {
+			error( n, "undefined binding port in param "
+					+ Arrays.toString( intersectionOutputPortName.toArray() ) );
+		}
+
+		intersectionInputPortName = new HashSet< String >( paramInputPortName );
+		intersectionOutputPortName = new HashSet< String >( paramOutputPortName );
+		intersectionInputPortName.removeAll( expectedParamInputPortName );
+		intersectionOutputPortName.removeAll( expectedParamOutputPortName );
+		if ( intersectionInputPortName.size() > 0 ) {
+			warning( n, Arrays.toString( intersectionInputPortName.toArray() )
+					+ " declared but not used" );
+		}
+		if ( intersectionOutputPortName.size() > 0 ) {
+			warning( n, Arrays.toString( intersectionOutputPortName.toArray() )
+					+ " declared but not used" );
+		}
+		services.put( n.name(), n );
+
+		// comment for testing include
+		//
+		// SemanticVerifier sv = new SemanticVerifier( n.program() );
+		// try {
+		// 	sv.validate();
+		// } catch (SemanticException e) {
+		// 	error(n, e.getErrorMessages());
+		// }
 	}
 
 	@Override
-	public void visit( EmbeddedServiceNode2 n ){}
+	public void visit( EmbeddedServiceNode2 n ){
+		Parameter[] serviceParams = n.embedingService().getAssignableParameters();
+		Argument[] embedArgs = n.getArgs();
+		
+		if ( serviceParams.length != embedArgs.length ){
+			error(n, "insufficient arguments expected " + serviceParams.length + " got " + embedArgs.length );
+		}
+
+		for( int paramIndex = 0 ; paramIndex < serviceParams.length ; paramIndex ++){
+			Parameter p = serviceParams[paramIndex];
+			if ( p.getObjectType().equals( Pair.class ) ) {
+				Pair< String, String > paramPair = (Pair< String, String >) p.value();
+				switch (paramPair.key()) {
+					case "inputPort":
+						if ( embedArgs[paramIndex] instanceof ArgumentLiteral ){
+							validateArgumentLiteral((ArgumentLiteral)embedArgs[paramIndex]);
+						}else if (embedArgs[paramIndex] instanceof ArgumentID){
+							ArgumentID argID = (ArgumentID)embedArgs[paramIndex];
+							// check if id is an input port
+							if ( !inputPorts.containsKey((String)argID.value() )){
+								error(n, "undefined input port " + argID.value());
+							}
+						} else {
+							error(n, "undefined argument " + embedArgs[paramIndex].value() );
+						}
+						break;
+					case "outputPort":
+						if ( embedArgs[paramIndex] instanceof ArgumentString ) {
+							// check if id is an input port
+							if ( inputPorts
+									.containsKey( (String) embedArgs[paramIndex].value() ) ) {
+								error( n, "input port " + embedArgs[paramIndex].value()
+										+ " is defined at "
+										+ inputPorts.get( (String) embedArgs[paramIndex].value() )
+												.context() );
+							}
+							embedingPortString.add((String) embedArgs[paramIndex].value());
+
+						} else if ( embedArgs[paramIndex] instanceof ArgumentID ) {
+							ArgumentID argID = (ArgumentID) embedArgs[paramIndex];
+							String argVal = (String) argID.value();
+							// check if id is an output port
+							if ( !outputPorts.containsKey( (String) argVal ) ) {
+								error( n, "undefined output port " + argVal );
+							}
+							OutputPortInfo clientPort = outputPorts.get( argVal );
+							embedingPortString.add(clientPort.id());
+
+							InputPortInfo servicePort = (InputPortInfo) n.embedingService()
+									.getLocalBindingPortFromParamName( argVal );
+							if (!clientPort.operationsMap().equals(servicePort.operationsMap())){
+								error( n, "unbindable port " + argVal + " to " +servicePort.id() + ", port have different operations" );
+							}
+							if (!clientPort.getInterfaceList().equals(servicePort.getInterfaceList())){
+								error( n, "unbindable port " + argVal + " to " +servicePort.id() + ", port have different interfaces" );
+							}
+						} else {
+							error( n, "undefined argument " + embedArgs[paramIndex].value() );
+						}
+						break;
+					default:
+						error( n, "undefined parameter key " + paramPair.key() );
+				}
+			}
+		}
+
+	}
+
+	private void validateArgumentLiteral(ArgumentLiteral arg){
+
+	}
 
 }

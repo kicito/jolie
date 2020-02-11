@@ -235,7 +235,7 @@ class TestModuleResolver
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
 		Program p = olParser.parse();
-
+		configuration.setCheckForMain(false);
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();

@@ -110,28 +110,28 @@ public class TestService
     }
 
     
-    @Test
-    void testEmbedEchoService() throws FileNotFoundException, CommandLineException, IOException,
-            InterpreterException, InterruptedException
-    {
+    // @Test
+    // void testEmbedEchoService() throws FileNotFoundException, CommandLineException, IOException,
+    //         InterpreterException, InterruptedException
+    // {
         
-        String serverFilePath = "service/embed/echo.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+    //     String serverFilePath = "service/embed/echo.ol";
+    //     String[] serverArgs = new String[launcherArgs.length + 1];
+    //     System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+    //     serverArgs[serverArgs.length - 1] = serverFilePath;
+    //     final Interpreter interpreter =
+    //             new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+    //     interpreter.run();
+    //     Runtime.getRuntime().addShutdownHook( new Thread() {
+    //         @Override
+    //         public void run()
+    //         {
+    //             interpreter.exit( -1 );
+    //         }
+    //     } );
 
         
-        assertTrue( systemOutContent.toString().contains( "Hello" ) );
+    //     assertTrue( systemOutContent.toString().contains( "Hello" ) );
 
-    }
+    // }
 }

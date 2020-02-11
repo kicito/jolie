@@ -23,6 +23,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import jolie.lang.Constants;
+import jolie.lang.Constants.EmbeddedServiceType;
 import jolie.lang.parse.ast.AddAssignStatement;
 import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.CompareConditionNode;
@@ -962,8 +963,24 @@ public class OLParseTreeOptimizer
 
 		@Override
 		public void visit( ServiceNode n ) {
-			n.setProgram(OLParseTreeOptimizer.optimize(n.program()));
-			programChildren.add(n);
+			ServiceNode node = new ServiceNode(n.context(), n.name(), n.type());
+			node.addBindings(n.getBindings());
+			n.embeddings().forEach(em -> node.addEmbedding(em));
+			n.deploymentInstructions().forEach( di -> node.addDeploymentInstruction(OLParseTreeOptimizer.optimize(di)));
+			if (n.type() == EmbeddedServiceType.JAVA){
+				node.addParameter(n.getParameter(0));
+			}
+			node.addParameters(n.getAssignableParameters());
+			n.getInputPortInfos().values().forEach( p -> node.addInputPortInfo(p));
+			n.getOutputPortInfos().values().forEach( p -> node.addOutputPortInfo(p));
+			if (n.initSequence() != null){
+				node.addInit(OLParseTreeOptimizer.optimize(n.initSequence()));
+			}
+			if (n.main() != null){
+				node.setMain(OLParseTreeOptimizer.optimize(n.main()));
+			}
+			// currNode = node;
+			programChildren.add(node);
 		}
 
 
