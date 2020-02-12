@@ -60,34 +60,34 @@ public class ServiceNode extends OLSyntaxNode implements Importable
         this.program = p;
     }
 
-    public Program program()
-    {
-        return this.program;
-    }
-
     // public Program program()
     // {
-    // List< OLSyntaxNode > children = new ArrayList< OLSyntaxNode >();
-    // if (this.deploymentInstructions.size() > 0){
-    // children.addAll( this.deploymentInstructions );
+    // return this.program;
     // }
-    // if (this.inputPortInfos.values().size() > 0){
-    // children.addAll( this.inputPortInfos.values() );
-    // }
-    // if (this.outputPortInfos.values().size() > 0){
-    // children.addAll( this.outputPortInfos.values() );
-    // }
-    // if (this.embeddings.size() > 0){
-    // children.addAll( this.embeddings );
-    // }
-    // if ( this.init != null ) {
-    // children.add( new DefinitionNode( this.init.context(), "init", this.init ) );
-    // }
-    // if ( this.main != null ) {
-    // children.add( this.main );
-    // }
-    // return new Program( this.context(), children );
-    // }
+
+    public Program program()
+    {
+        List< OLSyntaxNode > children = new ArrayList< OLSyntaxNode >();
+        if ( this.deploymentInstructions.size() > 0 ) {
+            children.addAll( this.deploymentInstructions );
+        }
+        if ( this.inputPortInfos.values().size() > 0 ) {
+            children.addAll( this.inputPortInfos.values() );
+        }
+        if ( this.outputPortInfos.values().size() > 0 ) {
+            children.addAll( this.outputPortInfos.values() );
+        }
+        if ( this.embeddings.size() > 0 ) {
+            children.addAll( this.embeddings );
+        }
+        if ( this.init != null ) {
+            children.add( new DefinitionNode( this.init.context(), "init", this.init ) );
+        }
+        if ( this.main != null ) {
+            children.add( this.main );
+        }
+        return new Program( this.context(), children );
+    }
 
     public void addDeploymentInstruction( OLSyntaxNode n )
     {
@@ -107,11 +107,6 @@ public class ServiceNode extends OLSyntaxNode implements Importable
     public List< EmbeddedServiceNode2 > embeddings()
     {
         return this.embeddings;
-    }
-
-    public void setType( Constants.EmbeddedServiceType type )
-    {
-        this.type = type;
     }
 
     public Constants.EmbeddedServiceType type()
@@ -256,14 +251,13 @@ public class ServiceNode extends OLSyntaxNode implements Importable
 
         this.getOutputPortInfos().forEach(
                 ( String name, OutputPortInfo ip ) -> localService.addOutputPortInfo( ip ) );
-        if (this.main != null){
+        if ( this.main != null ) {
             localService.setMain( this.main );
         }
-        if (this.init != null){
+        if ( this.init != null ) {
             localService.addInit( init );
         }
         this.deploymentInstructions.forEach( di -> localService.addDeploymentInstruction( di ) );
-        // localService.setProgram( this.program() );
         return localService;
     }
 
@@ -288,9 +282,12 @@ public class ServiceNode extends OLSyntaxNode implements Importable
     }
 
 
-    public OLSyntaxNode initSequence()
+    public OLSyntaxNode init()
     {
-        return this.init;
+        if (this.init == null){
+            return null;
+        }
+        return new DefinitionNode( this.init.context(), "init", this.init );
     }
 
     public void setMain( OLSyntaxNode main )

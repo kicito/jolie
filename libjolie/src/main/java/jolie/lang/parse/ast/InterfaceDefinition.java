@@ -92,7 +92,8 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 	public InterfaceDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
 	{
         InterfaceDefinition localIface = new InterfaceDefinition( ctx, localID );
-        localIface.setDocumentation( this.getDocumentation() );
+		localIface.setDocumentation( this.getDocumentation() );
+		this.operationsMap.values().forEach((op) -> localIface.addOperation(op));
         this.copyTo( localIface );
 		return localIface;
 	}

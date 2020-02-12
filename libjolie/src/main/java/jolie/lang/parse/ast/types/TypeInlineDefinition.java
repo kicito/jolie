@@ -156,7 +156,7 @@ public class TypeInlineDefinition extends TypeDefinition
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append( "type " + super.id() +": " + this.nativeType );
+		sb.append( "type " + super.id() +": " + this.nativeType + this.cardinality() );
 		if ( this.subTypes != null ) {
 			sb.append( "{" );
 			sb.append( Arrays.toString( this.subTypes.entrySet().toArray() ) );

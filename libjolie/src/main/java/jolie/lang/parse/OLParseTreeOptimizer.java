@@ -962,31 +962,37 @@ public class OLParseTreeOptimizer
 		public void visit( DocumentationComment n ) {}
 
 		@Override
-		public void visit( ServiceNode n ) {
-			ServiceNode node = new ServiceNode(n.context(), n.name(), n.type());
-			node.addBindings(n.getBindings());
-			n.embeddings().forEach(em -> node.addEmbedding(em));
-			n.deploymentInstructions().forEach( di -> node.addDeploymentInstruction(OLParseTreeOptimizer.optimize(di)));
-			if (n.type() == EmbeddedServiceType.JAVA){
-				node.addParameter(n.getParameter(0));
+		public void visit( ServiceNode n )
+		{
+			ServiceNode node = new ServiceNode( n.context(), n.name(), n.type() );
+			node.addBindings( n.getBindings() );
+			n.embeddings().forEach( em -> node.addEmbedding( em ) );
+			n.deploymentInstructions().forEach(
+					di -> node.addDeploymentInstruction( OLParseTreeOptimizer.optimize( di ) != null
+							? OLParseTreeOptimizer.optimize( di )
+							: di ) );
+			if ( n.type() == EmbeddedServiceType.JAVA ) {
+				node.addParameter( n.getParameter( 0 ) );
 			}
-			node.addParameters(n.getAssignableParameters());
-			n.getInputPortInfos().values().forEach( p -> node.addInputPortInfo(p));
-			n.getOutputPortInfos().values().forEach( p -> node.addOutputPortInfo(p));
-			if (n.initSequence() != null){
-				node.addInit(OLParseTreeOptimizer.optimize(n.initSequence()));
+			node.addParameters( n.getAssignableParameters() );
+			n.getInputPortInfos().values().forEach( p -> node.addInputPortInfo( p ) );
+			n.getOutputPortInfos().values().forEach( p -> node.addOutputPortInfo( p ) );
+			if ( n.init() != null ) {
+				node.addInit(OLParseTreeOptimizer.optimize( n.init() ) );
 			}
-			if (n.main() != null){
-				node.setMain(OLParseTreeOptimizer.optimize(n.main()));
+			if ( n.main() != null ) {
+				node.setMain( new DefinitionNode( n.main().context(), "main",
+						OLParseTreeOptimizer.optimize( n.main() ) ) );
 			}
 			// currNode = node;
-			programChildren.add(node);
+			programChildren.add( node );
 		}
 
 
 		@Override
-		public void visit( EmbeddedServiceNode2 n){
-			programChildren.add(n);
+		public void visit( EmbeddedServiceNode2 n )
+		{
+			programChildren.add( n );
 		}
 	
 	}

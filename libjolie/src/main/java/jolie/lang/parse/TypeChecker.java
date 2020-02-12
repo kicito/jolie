@@ -1050,7 +1050,22 @@ public class TypeChecker implements OLVisitor
 	}
 	
 	@Override
-	public void visit( ServiceNode n ) {}
+	public void visit( ServiceNode n )
+	{
+		// for (Pair< String, String > binding : n.getBindings()) {
+		// 	String inputPortName = binding.key();
+		// 	String outputPortName = binding.value();
+		// 	if ( n.getInputPortInfo( inputPortName ) == null
+		// 			&& !n.isInputPortNameExistsInParameters( inputPortName ) ) {
+		// 		error( n, "input port " + inputPortName + " is not defined" );
+		// 	}
+		// 	if ( n.getInputPortInfo( outputPortName ) == null
+		// 			&& !n.isInputPortNameExistsInParameters( outputPortName ) ) {
+		// 		error( n, "output port " + outputPortName + " is not defined" );
+		// 	}
+		// }
+		// TODO check servicenode's program
+	}
 
 	@Override
 	public void visit( EmbeddedServiceNode2 n ){}

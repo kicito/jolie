@@ -123,7 +123,7 @@ import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.argument.Argument;
 import jolie.lang.parse.module.argument.ArgumentID;
-import jolie.lang.parse.module.argument.ArgumentLiteral;
+import jolie.lang.parse.module.argument.ArgumentPortLiteral;
 import jolie.lang.parse.module.argument.ArgumentString;
 import jolie.lang.parse.module.parameter.Parameter;
 import jolie.util.ArrayListMultiMap;
@@ -1476,8 +1476,8 @@ public class SemanticVerifier implements OLVisitor
 				Pair< String, String > paramPair = (Pair< String, String >) p.value();
 				switch (paramPair.key()) {
 					case "inputPort":
-						if ( embedArgs[paramIndex] instanceof ArgumentLiteral ){
-							validateArgumentLiteral((ArgumentLiteral)embedArgs[paramIndex]);
+						if ( embedArgs[paramIndex] instanceof ArgumentPortLiteral ){
+							validateArgumentPortLiteral((ArgumentPortLiteral)embedArgs[paramIndex]);
 						}else if (embedArgs[paramIndex] instanceof ArgumentID){
 							ArgumentID argID = (ArgumentID)embedArgs[paramIndex];
 							// check if id is an input port
@@ -1530,7 +1530,7 @@ public class SemanticVerifier implements OLVisitor
 
 	}
 
-	private void validateArgumentLiteral(ArgumentLiteral arg){
+	private void validateArgumentPortLiteral(ArgumentPortLiteral arg){
 
 	}
 

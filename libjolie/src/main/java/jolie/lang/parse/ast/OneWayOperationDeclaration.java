@@ -85,4 +85,12 @@ public class OneWayOperationDeclaration extends OperationDeclaration
 		} else if ( !requestType.equals( other.requestType ) ) return false;
 		return true;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "OneWay [" + requestType + "]";
+	}
+
+	
 }

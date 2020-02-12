@@ -130,7 +130,7 @@ import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.module.argument.Argument;
 import jolie.lang.parse.module.argument.ArgumentID;
-import jolie.lang.parse.module.argument.ArgumentLiteral;
+import jolie.lang.parse.module.argument.ArgumentPortLiteral;
 import jolie.lang.parse.module.argument.ArgumentString;
 import jolie.lang.parse.module.parameter.Parameter;
 import jolie.net.AggregatedOperation;
@@ -592,6 +592,10 @@ public class OOITBuilder implements OLVisitor
 			.toVariablePath();
 		locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
 		// Process assignLocation = new AssignmentProcess( locationPath, Value.create( n.location().toString() ) );
+		if (n.location() == null){
+			error( n.context(), "inputPort " + n.id() + " has undefined location" );
+			return;
+		}
 		locationPath.getValue().setValue( n.location().toString() );
 
 		VariablePath protocolPath =
@@ -673,7 +677,11 @@ public class OOITBuilder implements OLVisitor
 
 		insideType = backupInsideType;
 
-		if ( insideType == false && insideOperationDeclaration == false ) {
+		// if ( insideType == false && insideOperationDeclaration == false ) {
+		// 	types.put( n.id(), currType );
+		// }
+
+		if ( insideType == false ) {
 			types.put( n.id(), currType );
 		}
 	}
@@ -754,8 +762,12 @@ public class OOITBuilder implements OLVisitor
 			typeDescription = buildOneWayTypeDescription( decl );
 			try {
 				interpreter.getOneWayOperation( decl.id() );
-			} catch( InvalidIdException e ) {
-				interpreter.register( decl.id(), new OneWayOperation( decl.id(), types.get( decl.requestType().id() ) ) );
+			} catch (InvalidIdException e) {
+				if ( types.get( decl.requestType().id() ) == null ) {
+					decl.requestType().accept( this );
+				}
+				interpreter.register( decl.id(),
+						new OneWayOperation( decl.id(), types.get( decl.requestType().id() ) ) );
 			}
 		} else {
 			typeDescription = buildOneWayTypeDescription( decl );
@@ -1791,10 +1803,22 @@ public class OOITBuilder implements OLVisitor
 				Pair< String, String > paramPair = (Pair< String, String >) p.value();
 				switch (paramPair.key()) {
 					case "inputPort":
-						if ( clientArgument[paramIndex] instanceof ArgumentLiteral ) {
+						if ( clientArgument[paramIndex] instanceof ArgumentPortLiteral ) {
 							// create new inputport at client and bind to service outputport
 							// there is no binding name!
 							//
+							
+							InputPortInfo clientInputPort = (InputPortInfo)clientArgument[paramIndex].value();
+							OutputPortInfo serviceOutputPort =
+							(OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
+							serviceOutputPort.bindLocationAndProtocol(clientInputPort, true);
+							n.embedingService().addOutputPortInfo(serviceOutputPort);
+							clientInputPort.accept(this);
+
+							// OutputPortInfo serviceOutputPort =
+							// (OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
+							// serviceOutputPort.bindLocationAndProtocol(ip, true);
+							// n.embedingService().addOutputPortInfo(serviceOutputPort);
 
 						} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
 							// bind client inputport and to service outputport
@@ -1802,10 +1826,8 @@ public class OOITBuilder implements OLVisitor
 							InputPortInfo ip = n.clientService().getInputPortInfo(clientPortName);
 							OutputPortInfo serviceOutputPort =
 							(OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-							
-							serviceOutputPort.setProtocolConfiguration(ip.protocolConfiguration());
-							serviceOutputPort.setLocation( ip.location() );
-							serviceOutputPort.setProtocolId( ip.protocolId() );
+							serviceOutputPort.bindLocationAndProtocol(ip, true);
+							n.embedingService().addOutputPortInfo(serviceOutputPort);
 						}
 						break;
 					case "outputPort":
@@ -1816,11 +1838,10 @@ public class OOITBuilder implements OLVisitor
 							(InputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
 							OutputPortInfo clientOutputPort =
 									new OutputPortInfo( n.context(), clientPortName );
-							clientOutputPort.setLocation( ip.location() );
-							clientOutputPort.setProtocolId( ip.protocolId() );
-							clientOutputPort.setProtocolConfiguration( ip.protocolConfiguration() );
 							ip.operations().forEach( op -> clientOutputPort.addOperation( op ) );
 							ip.getInterfaceList().forEach( iface -> clientOutputPort.addInterface( iface ) );
+							clientOutputPort.bindLocationAndProtocol(ip, true);
+							n.clientService().addOutputPortInfo(clientOutputPort);
 							clientOutputPort.accept(this);
 						} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
 							// bind client outputport with service inputport 
@@ -1828,10 +1849,7 @@ public class OOITBuilder implements OLVisitor
 							OutputPortInfo op = n.clientService().getOutputPortInfo(clientPortName);
 							InputPortInfo serviceInputPort =
 							(InputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-							
-							// serviceInputPort.setProtocolConfiguration(op.protocolConfiguration());
-							// serviceInputPort.setLocation( op.location() );
-							// serviceInputPort.setProtocolId( op.protocolId() );
+							serviceInputPort.bindLocationAndProtocol(op, true);
 						}
 						break;
 				}
@@ -1848,7 +1866,7 @@ public class OOITBuilder implements OLVisitor
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
 					n.embedingService().type().equals( Constants.EmbeddedServiceType.JOLIE )
 							? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration(
-									n.embedingService().name(), (Program) n.embedingService().program() )
+									n.embedingService().name(), n.embedingService().program() )
 							: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(
 									n.embedingService().type(),
 									n.embedingService().getParameter(0).value().toString() );

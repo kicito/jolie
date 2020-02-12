@@ -25,7 +25,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
-
+import java.util.Set;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
 
@@ -90,9 +90,9 @@ public class InputPortInfo extends PortInfo
 		}
 	}
 
-	private final URI location;
-	private final String protocolId;
-	private final OLSyntaxNode protocolConfiguration;
+	private URI location;
+	private String protocolId;
+	private OLSyntaxNode protocolConfiguration;
 	private final AggregationItemInfo[] aggregationList;
 	private final Map< String, String > redirectionMap;
 
@@ -131,6 +131,33 @@ public class InputPortInfo extends PortInfo
 	public URI location()
 	{
 		return location;
+	}
+
+	public void bindLocationAndProtocol( OutputPortInfo op, boolean force )
+	{
+		if ( force ) {
+			this.protocolId = op.protocolId();
+			if ( op.protocolConfiguration() == null ) {
+				this.protocolConfiguration = new NullProcessStatement( this.context() );
+			} else {
+				this.protocolConfiguration = op.protocolConfiguration();
+			}
+			this.protocolId = op.protocolId();
+			this.location = op.location();
+		} else {
+			if ( this.protocolId == null ) {
+				this.protocolId = op.protocolId();
+			}
+			if ( this.protocolConfiguration == null ) {
+				this.protocolConfiguration = op.protocolConfiguration();
+			}
+			if ( this.protocolId == null ) {
+				this.protocolId = op.protocolId();
+			}
+			if ( this.location == null ) {
+				this.location = op.location();
+			}
+		}
 	}
 
 	@Override

@@ -137,7 +137,7 @@ import jolie.lang.parse.module.ImportResult;
 import jolie.lang.parse.module.Importer;
 import jolie.lang.parse.module.argument.Argument;
 import jolie.lang.parse.module.argument.ArgumentID;
-import jolie.lang.parse.module.argument.ArgumentLiteral;
+import jolie.lang.parse.module.argument.ArgumentPortLiteral;
 import jolie.lang.parse.module.argument.ArgumentString;
 import jolie.lang.parse.module.exception.ModuleNotFoundException;
 import jolie.lang.parse.module.exception.ModuleParsingException;
@@ -289,7 +289,7 @@ public class OLParser extends AbstractParser
 		);
 	}
 
-	Map< String, ServiceNode > services = new HashMap< String, ServiceNode >();
+	protected Map< String, ServiceNode > services = new HashMap< String, ServiceNode >();
 
 	private void parseService() 
 		throws IOException, ParserException
@@ -345,28 +345,24 @@ public class OLParser extends AbstractParser
 			this.services = new HashMap< String, ServiceNode >();
 		}
 
-		ProgramBuilder mainBuilder = this.programBuilder;
-		ProgramBuilder serviceProgramBuilder = new ProgramBuilder( getContext() );
-		this.programBuilder = serviceProgramBuilder;
-
 		// copy children of parent to service
 		for (OLSyntaxNode child : programBuilder.children()
 				.toArray( new OLSyntaxNode[programBuilder.children().size()] )) {
 			if ( child instanceof InterfaceDefinition || child instanceof DefinitionNode
 					|| child instanceof TypeDefinition ) {
-				serviceProgramBuilder.addChild( child );
+				service.addDeploymentInstruction( child );
 			}
 		}
 		OLSyntaxNode initSequence = null, main = null;
 		boolean keepRun = true;
 		while (keepRun) {
 			switch (token.content()) {
-				case "cset":
-					parseCorrelationSets();
-					break;
-				case "execution":
-					parseExecution();
-					break;
+				// case "cset":
+				// 	parseCorrelationSets();
+				// 	break;
+				// case "execution":
+				// 	parseExecution();
+				// 	break;
 				case "init":
 					initSequence = parseInit();
 					service.addInit(initSequence);
@@ -386,7 +382,6 @@ public class OLParser extends AbstractParser
 						inputPortInfo = parseForeignInputPortInfo();
 					}
 					service.addInputPortInfo(inputPortInfo);
-					serviceProgramBuilder.addChild( inputPortInfo );
 					break;
 				case "binding":
 					Bind[] binds = parseBinding();
@@ -395,12 +390,10 @@ public class OLParser extends AbstractParser
 				case "outputPort":
 					OutputPortInfo outputPortInfo = parseOutputPortInfo();
 					service.addOutputPortInfo(outputPortInfo);
-					serviceProgramBuilder.addChild( outputPortInfo );
 					break;
 				case "embed":
 					EmbeddedServiceNode2 node = parseEmbed(service);
 					service.addEmbedding(node);
-					serviceProgramBuilder.addChild( node );
 					break;
 				default:
 					keepRun = false;
@@ -410,19 +403,8 @@ public class OLParser extends AbstractParser
 		eat( Scanner.TokenType.RCURLY,
 				"expected } at the end of the definition of service " + serviceName );
 
-		if ( initSequence != null ) {
-			programBuilder.addChild( new DefinitionNode( getContext(), "init", initSequence ) );
-		}
-
-		if ( main != null ) {
-			programBuilder.addChild( main );
-		}
-
-		service.setProgram( serviceProgramBuilder.toProgram() );
-				
 		// add embedded service node to program that is embedding it
 		this.services.put( serviceName, service );
-		this.programBuilder = mainBuilder;
 
 		this.programBuilder.addChild( service );
 	}
@@ -536,8 +518,7 @@ public class OLParser extends AbstractParser
 				args.add( new ArgumentID( token.content() ) );
 				getToken();
 			} else if ( token.is( Scanner.TokenType.LCURLY ) ) {
-				args.add( _parseArgumentLiteral() );
-				getToken();
+				args.add( _parseArgumentPortLiteral() );
 			} else {
 				throwException( "unable to parse argument for service" );
 			}
@@ -552,28 +533,40 @@ public class OLParser extends AbstractParser
 		return args.toArray( new Argument[0] );
 	}
 
-	private ArgumentLiteral _parseArgumentLiteral() 
+	private ArgumentPortLiteral _parseArgumentPortLiteral() 
 		throws ParserException, IOException
 	{
-		eat( Scanner.TokenType.LCURLY, "expected {" );
-		boolean keepRun = true;
-		Map<String, String> literalMap = new HashMap<String, String>(); 
-		while(keepRun){
-			if ( token.is(Scanner.TokenType.LCURLY)){
-				keepRun = false;
-			}else if ( token.is( TokenType.STRING ) || token.isIdentifier() ) {
-				String key = token.content();
-				getToken();
-				String value = token.content();
-				getToken();
-				literalMap.put(key, value);
-				getToken();
-			}else {
-				throwException( "unable to parse argument literal for service" );
-			}
-		}
-		eat( Scanner.TokenType.LCURLY, "expected }" );
-		return new ArgumentLiteral(literalMap);
+
+		prependToken(
+			new Scanner.Token( Scanner.TokenType.ID, "IP#args1" )
+		);
+		// prependToken(Arrays.asList(
+		// 	new Scanner.Token( Scanner.TokenType.ID, "inputPort" ),
+		// 	new Scanner.Token( Scanner.TokenType.ID, "IP#args1" )
+		// ));
+		InputPortInfo inputPortInfo = null;
+		inputPortInfo = parseInputPortInfo();
+		return new ArgumentPortLiteral(inputPortInfo);
+		
+		// eat( Scanner.TokenType.LCURLY, "expected {" );
+		// boolean keepRun = true;
+		// Map<String, String> literalMap = new HashMap<String, String>(); 
+		// while(keepRun){
+		// 	if ( token.is(Scanner.TokenType.RCURLY)){
+		// 		keepRun = false;
+		// 	}else if ( token.is( TokenType.STRING ) || token.isIdentifier() ) {
+				
+		// 		String key = token.content();
+		// 		getToken();
+		// 		eat( Scanner.TokenType.COLON, "expected : after argument key" );
+		// 		String value = token.content();
+		// 		getToken();
+		// 		literalMap.put(key, value);
+		// 	}else {
+		// 		throwException( "unable to parse argument literal for service" );
+		// 	}
+		// }
+		// return new ArgumentPortLiteral(literalMap);
 	}
 
 

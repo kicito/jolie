@@ -73,6 +73,29 @@ public class OutputPortInfo extends PortInfo
 		return location;
 	}
 
+	public void bindLocationAndProtocol(InputPortInfo ip, boolean force)
+	{
+		if ( force ){
+			this.protocolId = ip.protocolId();
+			this.protocolConfiguration = ip.protocolConfiguration();
+			this.protocolId = ip.protocolId();
+			this.location = ip.location();
+		} else {
+			if (this.protocolId == null){
+				this.protocolId = ip.protocolId();
+			}
+			if (this.protocolConfiguration == null){
+				this.protocolConfiguration = ip.protocolConfiguration();
+			}
+			if (this.protocolId == null){
+				this.protocolId = ip.protocolId();
+			}
+			if (this.location == null){
+				this.location = ip.location();
+			}
+		}
+	}
+
 	@Override
 	public String toString()
 	{
