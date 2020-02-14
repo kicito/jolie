@@ -49,7 +49,7 @@ public class TestDeploymentConstruct
 	{
 		String code = "include \"date.ol\"";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		InstanceCreator oc = new InstanceCreator( new String[] {"simple-import/types/modules"} );
+		InstanceCreator oc = new InstanceCreator( new String[] {"jolie2/import/simple-import/types/modules"} );
 		OLParser olParser = oc.createOLParser( is );
 
 		TypeInlineDefinition expected =
@@ -248,7 +248,7 @@ public class TestDeploymentConstruct
 	private static Stream< Arguments > importStatementExceptionTestProvider()
 	{
 		return Stream.of(
-				Arguments.of( "import AA from \"simple-import/importstatement-test.ol\"",
+				Arguments.of( "import AA from \"jolie2/import/simple-import/importstatement-test.ol\"",
 						"unable to find AA in" ),
 				Arguments.of( "import AA from \"somewhere\"", "unable to locate" ), Arguments.of(
 						"import AA \"somewhere\"", "expected \"from\" for an import statement" ) );
