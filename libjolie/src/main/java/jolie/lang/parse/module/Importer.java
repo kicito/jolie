@@ -79,10 +79,13 @@ public class Importer
         throws ModuleParsingException, ModuleNotFoundException
     {
         ModuleRecord rc = null;
-        Finder[] finders = Finder.getFindersForTargetString( source, target );
+        Finder[] finders = Finder.getFindersForTargetString( target );
 
         for (Finder f : finders) {
-            Source targetSource = f.find();
+            Source targetSource = f.find(source, target);
+            if (targetSource == null){
+                continue;
+            }
             // perform cache lookup
             if ( cache.containsKey( targetSource.source() ) ) {
                 System.out.println( "[LOADER] found " + targetSource.source() + " in cache" );

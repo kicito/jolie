@@ -76,9 +76,6 @@ public abstract class OperationDeclaration extends OLSyntaxNode implements Docum
 		if ( !super.equals( obj ) ) return false;
 		if ( getClass() != obj.getClass() ) return false;
 		OperationDeclaration other = (OperationDeclaration) obj;
-		if ( document == null ) {
-			if ( other.document != null ) return false;
-		} else if ( !document.equals( other.document ) ) return false;
 		if ( id == null ) {
 			if ( other.id != null ) return false;
 		} else if ( !id.equals( other.id ) ) return false;

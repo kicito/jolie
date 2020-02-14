@@ -9,8 +9,121 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import jolie.lang.parse.module.exception.ModuleNotFoundException;
 import jolie.lang.parse.module.exception.ModuleParsingException;
+
+
+public interface Finder
+{
+    public Source find( URI baseUri, String target ) throws ModuleNotFoundException;
+
+    static Finder[] getFindersForTargetString( String target ) throws ModuleParsingException
+    {
+        // check protocol
+        if ( target.startsWith( "http" ) || target.startsWith( "https" ) ) {
+            return new Finder[] {URLFinder.getInstance()};
+        } else if ( target.startsWith( "./" ) ) {
+            return new Finder[] {ProjectDirFinder.getInstance()};
+        } else {
+            return new Finder[] {LibDirFinder.getInstance(), ProjectDirFinder.getInstance()};
+        }
+    }
+}
+
+
+class ProjectDirFinder implements Finder
+{
+    private static ProjectDirFinder finder = null;
+
+    private ProjectDirFinder()
+    {
+    }
+
+    @Override
+    public Source find( URI baseUri, String target )
+    {
+        File targetFile = new File( baseUri.resolve( target ).normalize() );
+        System.out.println( "[ProjectDirFinder] Perform look up for " + targetFile );
+
+        if ( !targetFile.exists() ) {
+            return null;
+        }
+        return new FileSource( targetFile );
+    }
+
+    public static ProjectDirFinder getInstance()
+    {
+        if ( finder == null ) finder = new ProjectDirFinder();
+
+        return finder;
+    }
+
+}
+
+
+class LibDirFinder implements Finder
+{
+    private static LibDirFinder finder = null;
+
+    private static String libDir = System.getenv( "JOLIE_HOME" );
+
+    private LibDirFinder()
+    {
+    }
+
+    @Override
+    public Source find( URI baseUri, String target ) throws ModuleNotFoundException
+    {
+        if ( libDir.isEmpty() ) {
+            throw new ModuleNotFoundException(
+                    "[LibDirFinder] JOLIE_HOME is not defined in environment" );
+        }
+        File targetFile = Paths.get( libDir, "include", "modules", target ).toFile();
+
+        System.out.println( "[LibDirFinder] Perform look up for " + targetFile );
+        if ( !targetFile.exists() ) {
+            return null;
+        }
+        return new FileSource( targetFile );
+    }
+
+    public static LibDirFinder getInstance()
+    {
+        if ( finder == null ) finder = new LibDirFinder();
+
+        return finder;
+    }
+
+}
+
+
+class URLFinder implements Finder
+{
+    private static URLFinder finder = null;
+
+    private URLFinder()
+    {
+    }
+
+    @Override
+    public Source find( URI baseUri, String targetURL ) throws ModuleNotFoundException
+    {
+        System.out.println( "[URLFinder] Perform look up for " + targetURL );
+        try {
+            return new URLSource( new URL( targetURL ) );
+        } catch (MalformedURLException e) {
+            throw new ModuleNotFoundException( "unable to locate " + targetURL, e );
+        }
+    }
+
+    public static URLFinder getInstance()
+    {
+        if ( finder == null ) finder = new URLFinder();
+        return finder;
+    }
+}
+
 
 interface Source
 {
@@ -20,140 +133,57 @@ interface Source
 }
 
 
-public interface Finder
+class FileSource implements Source
 {
-    public Source find() throws ModuleNotFoundException;
 
-    public URI target();
+    File file;
 
-    static Finder[] getFindersForTargetString( URI source, String target )
-            throws ModuleParsingException
+    public FileSource( File f )
     {
-        // check protocol
+        this.file = f;
+    }
+
+    @Override
+    public URI source()
+    {
+        return this.file.toURI();
+    }
+
+    @Override
+    public InputStream stream()
+    {
         try {
-            if ( target.startsWith( "http" ) || target.startsWith( "https" ) ) {
-                return new Finder[] {new URLFinder( target )};
-            } else {
-                return new Finder[] {new ProjectDirFinder( source, target )};
-            }
-        } catch (NullPointerException | IllegalArgumentException | MalformedURLException e) {
-            throw new ModuleParsingException( "[FINDER] Unable to resolve " + target, e );
+            return new FileInputStream( this.file );
+        } catch (FileNotFoundException e) {
         }
+        return null;
     }
 }
 
 
-class ProjectDirFinder implements Finder
+class URLSource implements Source
 {
 
-    private File targetFile;
+    URL source;
 
-    public ProjectDirFinder( URI baseUri, String target )
+    public URLSource( URL s )
     {
-        this.targetFile = new File( baseUri.resolve( target ).normalize() );
+        this.source = s;
     }
 
     @Override
-    public Source find() throws ModuleNotFoundException
-    {
-        System.out.println( "[ProjectDirFinder] Perform look up for " + this.targetFile );
-        if ( !this.targetFile.exists() ) {
-            throw new ModuleNotFoundException( "unable to locate " + this.targetFile.toPath().toString() );
-        }
-        return new FileSource( this.targetFile );
-    }
-
-    @Override
-    public URI target()
-    {
-        return this.targetFile.toURI();
-    }
-
-    class FileSource implements Source
-    {
-
-        File file;
-
-        public FileSource( File f )
-        {
-            this.file = f;
-        }
-
-        @Override
-        public URI source()
-        {
-            return this.file.toURI();
-        }
-
-        @Override
-        public InputStream stream()
-        {
-            try {
-                return new FileInputStream( this.file );
-            } catch (FileNotFoundException e) { }
-            return null;
-        }
-    }
-
-}
-
-
-class URLFinder implements Finder
-{
-
-    private String targetURL;
-
-    public URLFinder( String targetURL ) throws MalformedURLException
-    {
-        this.targetURL = targetURL;
-    }
-
-    @Override
-    public Source find() throws ModuleNotFoundException
-    {
-        System.out.println( "[URLFinder] Perform look up for " + targetURL );
-        try {
-            return new URLSource( new URL( this.targetURL ) );
-        } catch (MalformedURLException e) {
-            throw new ModuleNotFoundException( "unable to locate " + this.targetURL , e);
-        }
-    }
-
-    @Override
-    public URI target()
+    public URI source()
     {
         try {
-            return new URI( this.targetURL );
+            return this.source.toURI();
         } catch (URISyntaxException e) {
         }
         return null;
     }
 
-    class URLSource implements Source
+    @Override
+    public InputStream stream() throws IOException
     {
-
-        URL source;
-
-        public URLSource( URL s )
-        {
-            this.source = s;
-        }
-
-        @Override
-        public URI source()
-        {
-            try {
-                return this.source.toURI();
-            } catch (URISyntaxException e) {
-            }
-            return null;
-        }
-
-        @Override
-        public InputStream stream() throws IOException
-        {
-            return this.source.openStream();
-        }
+        return this.source.openStream();
     }
-
 }
