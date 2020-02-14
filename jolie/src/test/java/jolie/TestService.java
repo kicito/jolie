@@ -26,7 +26,6 @@ public class TestService
 
         originalSystemOut = System.out;
 
-        // given
         systemOutContent = new ByteArrayOutputStream();
         System.setOut( new PrintStream( systemOutContent ) );
     }
@@ -43,7 +42,7 @@ public class TestService
     void testService()
             throws FileNotFoundException, CommandLineException, IOException, InterpreterException
     {
-        String filePath = "service/main.ol";
+        String filePath = "jolie2/services/simple.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
@@ -59,7 +58,6 @@ public class TestService
                 interpreter.exit( -1 );
             }
         } );
-        assertTrue( systemOutContent.toString().contains( "2" ) );
     }
 
 
@@ -67,7 +65,7 @@ public class TestService
     void testEmbedTwiceService() throws FileNotFoundException, CommandLineException, IOException,
             InterpreterException, InterruptedException
     {
-        String serverFilePath = "service/embed/twice.ol";
+        String serverFilePath = "jolie2/services/twice.ol";
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
@@ -81,15 +79,59 @@ public class TestService
                 interpreter.exit( -1 );
             }
         } );
-        assertTrue( systemOutContent.toString().contains( "10" ) );
-
     }
 
     @Test
     void testEmbedConsoleService() throws FileNotFoundException, CommandLineException, IOException,
             InterpreterException, InterruptedException
     {
-        String serverFilePath = "service/embed/console.ol";
+        String serverFilePath = "jolie2/services/console.ol";
+        String[] serverArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+        serverArgs[serverArgs.length - 1] = serverFilePath;
+        final Interpreter interpreter =
+                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+        interpreter.run();
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+        
+        assertTrue( systemOutContent.toString().contains( "Hello" ) );
+
+    }
+
+    
+    @Test
+    void testEmbedIDOutputIDInputService() throws FileNotFoundException, CommandLineException, IOException,
+            InterpreterException, InterruptedException
+    {
+        
+        String serverFilePath = "jolie2/services/echo_id_output_id_input.ol";
+        String[] serverArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+        serverArgs[serverArgs.length - 1] = serverFilePath;
+        final Interpreter interpreter =
+                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+        interpreter.run();
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+    }
+
+    @Test
+    void testEmbedEchoIDOutputLiteralInputService() throws FileNotFoundException, CommandLineException, IOException,
+            InterpreterException, InterruptedException
+    {
+        
+        String serverFilePath = "jolie2/services/echo_id_output_literal_input.ol";
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
@@ -104,34 +146,25 @@ public class TestService
             }
         } );
 
-        
-        assertTrue( systemOutContent.toString().contains( "Hello" ) );
-
     }
 
-    
-    // @Test
-    // void testEmbedEchoService() throws FileNotFoundException, CommandLineException, IOException,
-    //         InterpreterException, InterruptedException
-    // {
-        
-    //     String serverFilePath = "service/embed/echo.ol";
-    //     String[] serverArgs = new String[launcherArgs.length + 1];
-    //     System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-    //     serverArgs[serverArgs.length - 1] = serverFilePath;
-    //     final Interpreter interpreter =
-    //             new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-    //     interpreter.run();
-    //     Runtime.getRuntime().addShutdownHook( new Thread() {
-    //         @Override
-    //         public void run()
-    //         {
-    //             interpreter.exit( -1 );
-    //         }
-    //     } );
-
-        
-    //     assertTrue( systemOutContent.toString().contains( "Hello" ) );
-
-    // }
+    @Test
+    void testEmbedEchoStringOutputIDInputService() throws FileNotFoundException, CommandLineException, IOException,
+            InterpreterException, InterruptedException
+    {
+        String serverFilePath = "jolie2/services/echo_string_output_id_input.ol";
+        String[] serverArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+        serverArgs[serverArgs.length - 1] = serverFilePath;
+        final Interpreter interpreter =
+                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+        interpreter.run();
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+    }
 }

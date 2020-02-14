@@ -43,7 +43,7 @@ public class TestJolieSimple
     @Test
     void testInterfaceJolie() throws Exception
     {
-        String filePath = "jolie-simple/interfacePrint.ol";
+        String filePath = "jolie1/interfacePrint.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
@@ -67,13 +67,12 @@ public class TestJolieSimple
     @Test
     void testInternalServiceJolie() throws Exception
     {
-        String filePath = "jolie-simple/serviceAsATree.ol";
+        String filePath = "jolie1/serviceAsATree.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
         final Interpreter interpreter =
                 new Interpreter( args, this.getClass().getClassLoader(), null );
-        // Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
         interpreter.run();
 
         Runtime.getRuntime().addShutdownHook( new Thread() {
@@ -83,7 +82,7 @@ public class TestJolieSimple
                 interpreter.exit( -1 );
             }
         } );
-        assertTrue( systemOutContent.toString().contains( "target/jolie-1.9.0-git.jar" ) );
+        assertTrue( systemOutContent.toString().contains( "pom.xml" ) );
     }
 
     
@@ -91,8 +90,8 @@ public class TestJolieSimple
     void testTwiceService() throws FileNotFoundException, CommandLineException, IOException,
             InterpreterException, InterruptedException
     {
-        String serverFilePath = "jolie-simple/twice/TwiceService.ol";
-        String clientFilePath = "jolie-simple/twice/TwiceClient.ol";
+        String serverFilePath = "jolie1/twice/TwiceService.ol";
+        String clientFilePath = "jolie1/twice/TwiceClient.ol";
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;

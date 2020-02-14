@@ -41,7 +41,7 @@ public class TestModuleInterpreter
     @Test
     void testImportTypesJolie() throws Exception
     {
-        String filePath = "simple-import/types/main.ol";
+        String filePath = "jolie2/import/simple/types/main.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
@@ -63,7 +63,7 @@ public class TestModuleInterpreter
     @Test
     void testImportTypeLink() throws Exception
     {
-        String filePath = "simple-import/types-linked/main.ol";
+        String filePath = "jolie2/import/simple/types-linked/main.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
@@ -86,7 +86,7 @@ public class TestModuleInterpreter
     @Test
     void testTypeChoiceImport() throws Exception
     {
-        String filePath = "simple-import/types-sum/main.ol";
+        String filePath = "jolie2/import/simple/types-sum/main.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
@@ -106,12 +106,37 @@ public class TestModuleInterpreter
         assertTrue( systemOutContent.toString().contains( "true" ) );
     }
 
+
+    @Test
+    void testDAGImport() throws Exception
+    {
+        String filePath = "jolie2/import/dag/main.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+        final Interpreter interpreter =
+                new Interpreter( args, this.getClass().getClassLoader(), null );
+        Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
+
+        interpreter.run();
+
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+        assertTrue( systemOutContent.toString().contains( "bDay = true" ) );
+        assertTrue( systemOutContent.toString().contains( "hDay = true" ) );
+    }
+
     @Test
     void testInterfaceImport() throws Exception
     {
 
-        String serverFilePath = "simple-import/interfaces/server.ol";
-        String clientFilePath = "simple-import/interfaces/client.ol";
+        String serverFilePath = "jolie2/import/simple/interfaces/server.ol";
+        String clientFilePath = "jolie2/import/simple/interfaces/client.ol";
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
@@ -154,7 +179,8 @@ public class TestModuleInterpreter
     void testEmbedConsoleService() throws  CommandLineException, IOException,
             InterpreterException, InterruptedException
     {
-        String filePath = "simple-import/service/main.ol";
+        
+        String filePath = "jolie2/import/services/import_lib_module_console.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;

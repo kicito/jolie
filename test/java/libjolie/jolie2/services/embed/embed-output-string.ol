@@ -1,14 +1,13 @@
-include "console.iol"
 
-decl service twiceService( outputPort tw ){ 
+decl service twiceService(outputPort fromClient){ 
     inputPort TwiceService {
         Location: "socket://localhost:8000"
         Protocol: sodep
         RequestResponse: twice
     }
 
-    binding {
-        TwiceService -> tw
+    binding{
+        TwiceService -> fromClient
     }
 
     main
@@ -20,12 +19,11 @@ decl service twiceService( outputPort tw ){
 }
 
 
-decl service twice(){ 
+decl service embed(){ 
 
     embed twiceService ("tw")
     
     main {
-        twice@tw(5)(res);
-        println@Console(res)()
+        a=2
     }
 }

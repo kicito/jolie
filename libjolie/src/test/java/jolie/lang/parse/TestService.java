@@ -27,34 +27,98 @@ class TestService
 	void simpleService() throws Exception
 	{
 
-		URL src = getClass().getClassLoader().getResource( "service/simple/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/services/simple/main.ol" );
 		is = src.openStream();
 
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		olParser.parse();
+		Program p = olParser.parse();
+		p = OLParseTreeOptimizer.optimize( p );
 
 		assertEquals( olParser.services.size(), 2 );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
 	}
 
 	@Test
-	void simpleEmbedService() throws Exception
+	void simpleEmbedStringOutputPortService() throws Exception
 	{
 
-		URL src = getClass().getClassLoader().getResource( "service/embed/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/services/embed/embed-output-string.ol" );
 		is = src.openStream();
 
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		olParser.parse();
+		Program p = olParser.parse();
 
 		assertEquals( olParser.services.size(), 2 );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
 	}
 
+	@Test
+	void simpleEmbedIDOutputPortService() throws Exception
+	{
+
+		URL src = getClass().getClassLoader().getResource( "jolie2/services/embed/embed-output-id.ol" );
+		is = src.openStream();
+
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		Program p = olParser.parse();
+
+		assertEquals( olParser.services.size(), 2 );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
+
+	@Test
+	void simpleEmbedLiteralService() throws Exception
+	{
+
+		URL src = getClass().getClassLoader().getResource( "jolie2/services/embed/embed-input-literal.ol" );
+		is = src.openStream();
+
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		Program p = olParser.parse();
+
+		assertEquals( olParser.services.size(), 2 );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
+
+
+	@Test
+	void simpleEmbedMultiArgsService() throws Exception
+	{
+
+		URL src = getClass().getClassLoader().getResource( "jolie2/services/embed/embed-multiple-args.ol" );
+		is = src.openStream();
+
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		Program p = olParser.parse();
+
+		assertEquals( olParser.services.size(), 2 );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
 
 	@AfterEach
 	void closeStream() throws IOException

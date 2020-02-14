@@ -1,9 +1,12 @@
-
-decl service twiceService(){ 
+decl service twiceService( outputPort tw ){ 
     inputPort TwiceService {
         Location: "socket://localhost:8000"
         Protocol: sodep
         RequestResponse: twice
+    }
+
+    binding {
+        TwiceService -> tw
     }
 
     main
@@ -15,11 +18,11 @@ decl service twiceService(){
 }
 
 
-decl service main(){ 
+decl service twice(){ 
 
     embed twiceService ("tw")
     
     main {
-        a=2
+        twice@tw(5)(res)
     }
 }

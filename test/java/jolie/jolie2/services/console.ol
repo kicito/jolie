@@ -53,29 +53,29 @@ interface IReceiver {
 	OneWay: in(InRequest)
 }
 
-decl service Java ConsoleService ("joliex.io.ConsoleService", outputPort fromClient) {
+decl service Java ConsoleService ("joliex.io.ConsoleService", outputPort fromClient, inputPort toClient) {
 	inputPort IP {
 		interfaces: IConsole
 	}
 
-	// outputPort Receiver {
-	// 	interfaces: IReceiver
-	// }
+	outputPort Receiver {
+		interfaces: IReceiver
+	}
 	
 	binding {
 		IP -> fromClient
-		// Receiver -> toClient
+		Receiver -> toClient
 	}
 }
 
 decl service console () {
 
-	// inputPort ConsoleInput {
-	// 	location: "local:/MyConsoleInput"
-	// 	interfaces: IReceiver
-	// }
+	inputPort ConsoleInput {
+		location: "local"
+		interfaces: IReceiver
+	}
 
-    embed ConsoleService ( "Console" )
+    embed ConsoleService ( "Console", ConsoleInput )
 
 	main{
 		println@Console("Hello")()

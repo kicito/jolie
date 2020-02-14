@@ -49,7 +49,7 @@ service TreeInternalService
 
 main
 {
-  tree@TreeInternalService( { .file = "target" } )( res );
+  tree@TreeInternalService( { .file = "." } )( res );
   println@Console( res )()
 }
 

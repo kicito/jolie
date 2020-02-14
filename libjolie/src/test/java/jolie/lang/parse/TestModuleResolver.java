@@ -41,7 +41,7 @@ class TestModuleResolver
 	@Test
 	void testSimpleImport() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "simple-import/types/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/types/main.ol" );
 		is = src.openStream();
 		// String importPrefix = src.getPath() + "#";
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -75,7 +75,7 @@ class TestModuleResolver
 	@Test
 	void testSimpleImportAs() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "simple-import/types/main-as.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/types/main-as.ol" );
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
@@ -101,7 +101,40 @@ class TestModuleResolver
 
 		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 
-		SemanticVerifier semanticVerifier = new SemanticVerifier( p );
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
+
+	@Test
+	void testSimpleImportUrl() throws Exception
+	{
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/types/main-url.ol" );
+		is = src.openStream();
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+		TypeInlineDefinition expected = new TypeInlineDefinition( null, "Date", NativeType.VOID,
+				Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expectedChild1 = new TypeInlineDefinition( null, "month",
+				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expectedChild2 =
+				new TypeInlineDefinition( null, "day", NativeType.INT, Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expectedChild3 = new TypeInlineDefinition( null, "year",
+				NativeType.INT, Constants.RANGE_ONE_TO_ONE );
+		expected.setDocumentation( "" );
+		expectedChild1.setDocumentation( "" );
+		expectedChild2.setDocumentation( "" );
+		expectedChild3.setDocumentation( "" );
+		expected.putSubType( expectedChild1 );
+		expected.putSubType( expectedChild2 );
+		expected.putSubType( expectedChild3 );
+
+		Program p = olParser.parse();
+
+
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 	}
 
@@ -109,7 +142,7 @@ class TestModuleResolver
 	void testImportTypeLink() throws Exception
 	{
 
-		URL src = getClass().getClassLoader().getResource( "simple-import/types-linked/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/types-linked/main.ol" );
 		is = src.openStream();
 
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -144,7 +177,7 @@ class TestModuleResolver
 	void testTypeChoiceImport() throws Exception
 	{
 
-		URL src = getClass().getClassLoader().getResource( "simple-import/types-sum/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/types-sum/main.ol" );
 		is = src.openStream();
 
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -175,7 +208,7 @@ class TestModuleResolver
 	@Test
 	void testInterfaceImport() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "simple-import/interfaces/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/interfaces/main.ol" );
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		InterfaceDefinition expected = new InterfaceDefinition( null, "TwiceInterface" );
@@ -191,10 +224,10 @@ class TestModuleResolver
 
 		Program p = olParser.parse();
 
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
-
-		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 
 	}
 
@@ -204,8 +237,7 @@ class TestModuleResolver
 	void testProcedureDefinitionImport() throws Exception
 	{
 		URL src = getClass().getClassLoader()
-				// .getResource( "simple-import/define/modules/define.ol" );
-				.getResource( "simple-import/define/main.ol" );
+				.getResource( "jolie2/import/simple-import/define/main.ol" );
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
@@ -219,23 +251,24 @@ class TestModuleResolver
 
 		Program p = olParser.parse();
 
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
+
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
-		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 
 	@Test
 	void testServiceImport() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "simple-import/service/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/service/main.ol" );
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
 		Program p = olParser.parse();
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
@@ -244,7 +277,7 @@ class TestModuleResolver
 	@Test
 	void testNestedImport() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "nested-import/types/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/nested-import/types/main.ol" );
 		is = src.openStream();
 
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -281,7 +314,7 @@ class TestModuleResolver
 	@Test
 	void testDAGImport() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "dag-import/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/dag-import/main.ol" );
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
@@ -339,15 +372,15 @@ class TestModuleResolver
 	@Test
 	void testNameSpaceImport() throws Exception
 	{
-		URL src = getClass().getClassLoader().getResource( "simple-import/namespace/main.ol" );
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/namespace/main.ol" );
 
 		is = src.openStream();
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		TypeInlineDefinition expected = new TypeInlineDefinition( null, "A",
-				NativeType.STRING, Constants.RANGE_ONE_TO_ONE );
+		TypeInlineDefinition expected = new TypeInlineDefinition( null, "A", NativeType.STRING,
+				Constants.RANGE_ONE_TO_ONE );
 
 		InterfaceDefinition expected2 = new InterfaceDefinition( null, "B" );
 		TypeDefinition intType =
@@ -361,11 +394,11 @@ class TestModuleResolver
 		expected2.setDocumentation( "" );
 		Program p = olParser.parse();
 
-		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
-		semanticVerifier.validate();
-
 		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 		assertTrue( iv.programHasOLSyntaxNode( p, expected2 ) );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
 	}
 
 	@AfterEach
