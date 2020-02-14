@@ -1,3 +1,4 @@
+
 type EnableTimestampRequest: bool {
 	format?: string
 }
@@ -48,8 +49,21 @@ RequestResponse:
 	unsubscribeSessionListener(UnsubscribeSessionListener)(void)
 }
 
-decl service Java Console ("joliex.io.ConsoleService") {
+interface IReceiver {
+	OneWay: in(InRequest)
+}
+
+decl service Java Console ("joliex.io.ConsoleService", outputPort fromClient, inputPort toClient) {
 	inputPort IP {
 		interfaces: IConsole
+	}
+
+	outputPort Receiver {
+		interfaces: IReceiver
+	}
+	
+	binding {
+		IP -> fromClient
+		Receiver -> toClient
 	}
 }
