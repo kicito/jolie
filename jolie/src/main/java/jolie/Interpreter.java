@@ -1260,7 +1260,6 @@ public class Interpreter
 
 			SemanticVerifier.Configuration conf = new SemanticVerifier.Configuration();
 			conf.setCheckForMain( !checkFlag );
-			conf.setProgramFileName( this.programFilename );
 			semanticVerifier = new SemanticVerifier( program, conf );
 
 			try {

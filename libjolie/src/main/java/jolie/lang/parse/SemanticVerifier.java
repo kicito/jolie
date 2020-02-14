@@ -139,7 +139,6 @@ public class SemanticVerifier implements OLVisitor
 {
 	public static class Configuration {
 		private boolean checkForMain = true;
-		private String programFileName;
 		
 		public void setCheckForMain( boolean checkForMain )
 		{
@@ -149,16 +148,6 @@ public class SemanticVerifier implements OLVisitor
 		public boolean checkForMain()
 		{
 			return checkForMain;
-		}
-
-		public void setProgramFileName( String programFilename )
-		{
-			this.programFileName = programFilename;
-		}
-
-		public String programFileName()
-		{
-			return this.programFileName;
 		}
 	}
 	
@@ -203,7 +192,7 @@ public class SemanticVerifier implements OLVisitor
 	private OperationType insideCourierOperationType = null;
 	private InputPortInfo courierInputPort = null;
 
-	private Set< String > embedingPortString = new HashSet< String >();
+	private Set< String > embeddingPortString = new HashSet< String >();
 
 	public SemanticVerifier( Program program, Configuration configuration )
 	{
@@ -619,7 +608,8 @@ public class SemanticVerifier implements OLVisitor
 	public void visit( OneWayOperationDeclaration n )
 	{
 		if ( definedTypes.get( n.requestType().id() ) == null ) {
-			error( n, "unknown type: " + n.requestType().id() + " for operation " + n.id() );
+			n.requestType().accept(this);
+			// error( n, "unknown type: " + n.requestType().id() + " for operation " + n.id() );
 		}
 		if ( insideInputPort ) { // Input operation
 			if ( oneWayOperations.containsKey( n.id() ) ) {
@@ -774,7 +764,7 @@ public class SemanticVerifier implements OLVisitor
 	@Override
 	public void visit( NotificationOperationStatement n )
 	{
-		if ( embedingPortString.contains( n.outputPortId() ) ) {
+		if ( embeddingPortString.contains( n.outputPortId() ) ) {
 			return;
 		}
 		OutputPortInfo p = outputPorts.get( n.outputPortId() );
@@ -795,7 +785,7 @@ public class SemanticVerifier implements OLVisitor
 		if ( n.inputVarPath() != null ) {
 			encounteredAssignment( n.inputVarPath() );
 		}
-		if ( embedingPortString.contains( n.outputPortId() ) ) {
+		if ( embeddingPortString.contains( n.outputPortId() ) ) {
 			return;
 		}
 		OutputPortInfo p = outputPorts.get( n.outputPortId() );
@@ -1451,14 +1441,16 @@ public class SemanticVerifier implements OLVisitor
 		}
 		services.put( n.name(), n );
 
+		Configuration serviceConf = new Configuration();
+		serviceConf.setCheckForMain(false);
+
 		// comment for testing include
-		//
-		// SemanticVerifier sv = new SemanticVerifier( n.program() );
-		// try {
-		// 	sv.validate();
-		// } catch (SemanticException e) {
-		// 	error(n, e.getErrorMessages());
-		// }
+		SemanticVerifier sv = new SemanticVerifier( n.program(), serviceConf );
+		try {
+			sv.validate();
+		} catch (SemanticException e) {
+			error(n, e.getErrorMessages());
+		}
 	}
 
 	@Override
@@ -1468,6 +1460,7 @@ public class SemanticVerifier implements OLVisitor
 		
 		if ( serviceParams.length != embedArgs.length ){
 			error(n, "insufficient arguments expected " + serviceParams.length + " got " + embedArgs.length );
+			return;
 		}
 
 		for( int paramIndex = 0 ; paramIndex < serviceParams.length ; paramIndex ++){
@@ -1498,7 +1491,7 @@ public class SemanticVerifier implements OLVisitor
 										+ inputPorts.get( (String) embedArgs[paramIndex].value() )
 												.context() );
 							}
-							embedingPortString.add((String) embedArgs[paramIndex].value());
+							embeddingPortString.add((String) embedArgs[paramIndex].value());
 
 						} else if ( embedArgs[paramIndex] instanceof ArgumentID ) {
 							ArgumentID argID = (ArgumentID) embedArgs[paramIndex];
@@ -1508,10 +1501,10 @@ public class SemanticVerifier implements OLVisitor
 								error( n, "undefined output port " + argVal );
 							}
 							OutputPortInfo clientPort = outputPorts.get( argVal );
-							embedingPortString.add(clientPort.id());
+							embeddingPortString.add(clientPort.id());
 
 							InputPortInfo servicePort = (InputPortInfo) n.embedingService()
-									.getLocalBindingPortFromParamName( argVal );
+									.getLocalBindingPortFromParamName( paramPair.value() );
 							if (!clientPort.operationsMap().equals(servicePort.operationsMap())){
 								error( n, "unbindable port " + argVal + " to " +servicePort.id() + ", port have different operations" );
 							}
