@@ -74,10 +74,6 @@ public abstract class OLSyntaxNode implements Serializable
 		if ( this == obj ) return true;
 		if ( obj == null ) return false;
 		if ( getClass() != obj.getClass() ) return false;
-		OLSyntaxNode other = (OLSyntaxNode) obj;
-		if ( context == null ) {
-			if ( other.context != null ) return false;
-		} else if ( !context.equals( other.context ) ) return false;
 		return true;
 	}
 }
