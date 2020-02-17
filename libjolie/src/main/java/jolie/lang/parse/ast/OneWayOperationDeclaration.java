@@ -91,6 +91,5 @@ public class OneWayOperationDeclaration extends OperationDeclaration
 	{
 		return "OneWay [" + requestType + "]";
 	}
-
 	
 }

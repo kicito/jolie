@@ -56,6 +56,12 @@ public class DefinitionNode extends OLSyntaxNode implements Importable
 	}
 
 	@Override
+	public String name()
+	{
+		return this.id;
+	}
+
+	@Override
 	public DefinitionNode resolve( ParsingContext ctx, ProgramInspector pi, String localID )
 	{
         DefinitionNode localProcedureDefinition = new DefinitionNode( ctx, localID, this.body() );

@@ -72,6 +72,12 @@ public class TypeChoiceDefinition extends TypeDefinition
 	}
 
 	@Override
+	public String name()
+	{
+		return this.id();
+	}
+
+	@Override
 	public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
 	{
 		TypeDefinition right = null;

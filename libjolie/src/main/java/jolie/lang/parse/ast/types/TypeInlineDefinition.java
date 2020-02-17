@@ -130,9 +130,14 @@ public class TypeInlineDefinition extends TypeDefinition
 	}
 
 	@Override
+	public String name()
+	{
+		return super.id();
+	}
+
+	@Override
 	public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
 	{
-
 		TypeInlineDefinition localType = new TypeInlineDefinition( ctx, localID,
 				this.nativeType(), this.cardinality() );
 		localType.setDocumentation(this.getDocumentation());

@@ -6,8 +6,12 @@ import java.util.List;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
+import jolie.lang.parse.ast.OneWayOperationDeclaration;
+import jolie.lang.parse.ast.OperationDeclaration;
+import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.types.TypeDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.module.exception.ModuleParsingException;
 import jolie.lang.parse.util.ProgramInspector;
@@ -66,23 +70,42 @@ public class ModuleRecord
         return null;
     }
 
-    public Importable find( String id )
+    public Importable[] find( String id )
     {
         TypeDefinition moduleTypeDef = this.findType( id );
         if ( moduleTypeDef != null ) {
-            return moduleTypeDef;
+            return new Importable[] {moduleTypeDef};
         }
         InterfaceDefinition moduleInterfaceDef = this.findInterface( id );
         if ( moduleInterfaceDef != null ) {
-            return moduleInterfaceDef;
+            List< Importable > res = new ArrayList< Importable >();
+            for (OperationDeclaration op : moduleInterfaceDef.operationsMap().values()) {
+                if ( op instanceof OneWayOperationDeclaration ) {
+                    OneWayOperationDeclaration ow = (OneWayOperationDeclaration) op;
+                    if ( !ow.requestType().equals( TypeDefinitionUndefined.getInstance() ) ) {
+                        res.add( ow.requestType() );
+                    }
+                } else if ( op instanceof RequestResponseOperationDeclaration ) {
+                    RequestResponseOperationDeclaration rr =
+                            (RequestResponseOperationDeclaration) op;
+                    if ( !rr.requestType().equals( TypeDefinitionUndefined.getInstance() ) ) {
+                        res.add( rr.requestType() );
+                    }
+                    if ( !rr.responseType().equals( TypeDefinitionUndefined.getInstance() ) ) {
+                        res.add( rr.responseType() );
+                    }
+                }
+            }
+            res.add( moduleInterfaceDef );
+            return res.toArray( new Importable[0] );
         }
         DefinitionNode moduleProcedureDef = this.findProcedureDefinition( id );
         if ( moduleProcedureDef != null ) {
-            return moduleProcedureDef;
+            return new Importable[] {moduleProcedureDef};
         }
         ServiceNode moduleService = this.findService( id );
         if ( moduleService != null ) {
-            return moduleService;
+            return new Importable[] {moduleService};
         }
         return null;
     }
@@ -110,16 +133,25 @@ public class ModuleRecord
         return resolve( ctx, importPaths );
     }
 
-    public ImportResult resolve( ParsingContext ctx, List< Pair< String, String > > pathNodes ) throws ModuleParsingException
+    public ImportResult resolve( ParsingContext ctx, List< Pair< String, String > > pathNodes )
+            throws ModuleParsingException
     {
         ImportResult res = new ImportResult();
         for (Pair< String, String > pathNode : pathNodes) {
-            Importable moduleNode = this.find( pathNode.key() );
-            if (moduleNode == null){
-                throw new ModuleParsingException( "unable to find " + pathNode.key() + " in " + this.programInspector.getSources());
+            Importable[] moduleNodes = this.find( pathNode.key() );
+            if ( moduleNodes == null ) {
+                throw new ModuleParsingException( "unable to find " + pathNode.key() + " in "
+                        + this.programInspector.getSources() );
             }
-            OLSyntaxNode node = moduleNode.resolve(ctx, this.programInspector, pathNode.value());
-            res.addNode(node);
+            for (Importable moduleNode : moduleNodes) {
+                OLSyntaxNode node;
+                if ( moduleNode.name().equals( pathNode.key() ) ) {
+                    node = moduleNode.resolve( ctx, this.programInspector, pathNode.value() );
+                } else {
+                    node = moduleNode.resolve( ctx, this.programInspector, moduleNode.name() );
+                }
+                res.addNode( node );
+            }
         }
 
         return res;

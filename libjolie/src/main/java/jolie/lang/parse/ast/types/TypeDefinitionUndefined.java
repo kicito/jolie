@@ -23,7 +23,9 @@ package jolie.lang.parse.ast.types;
 
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
+import jolie.lang.parse.util.ProgramInspector;
 
 /**
  *
@@ -33,14 +35,19 @@ public class TypeDefinitionUndefined extends TypeInlineDefinition
 {
 	public static final String UNDEFINED_KEYWORD = "undefined";
 
-	private static class LazyHolder {
-		private LazyHolder() {}
+	private static class LazyHolder
+	{
+		private LazyHolder()
+		{
+		}
+
 		private final static TypeDefinitionUndefined instance = new TypeDefinitionUndefined();
 	}
 
 	private TypeDefinitionUndefined()
 	{
-		super( URIParsingContext.DEFAULT, UNDEFINED_KEYWORD, NativeType.ANY, Constants.RANGE_ONE_TO_ONE );
+		super( URIParsingContext.DEFAULT, UNDEFINED_KEYWORD, NativeType.ANY,
+				Constants.RANGE_ONE_TO_ONE );
 		super.setUntypedSubTypes( true );
 	}
 
@@ -53,5 +60,17 @@ public class TypeDefinitionUndefined extends TypeInlineDefinition
 	public String toString()
 	{
 		return super.id() + " = " + UNDEFINED_KEYWORD;
+	}
+
+	@Override
+	public boolean equals( Object obj )
+	{
+		return super.equals( obj );
+	}
+
+	@Override
+	public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
+	{
+		return this;
 	}
 }

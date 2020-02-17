@@ -93,6 +93,7 @@ public class Importer
             }else{
                 rc = load( targetSource );
             }
+            break;
         }
 
         return rc;
