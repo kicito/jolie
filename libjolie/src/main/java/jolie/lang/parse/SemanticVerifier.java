@@ -1444,13 +1444,13 @@ public class SemanticVerifier implements OLVisitor
 		Configuration serviceConf = new Configuration();
 		serviceConf.setCheckForMain(false);
 
-		// comment for testing include
-		SemanticVerifier sv = new SemanticVerifier( n.program(), serviceConf );
-		try {
-			sv.validate();
-		} catch (SemanticException e) {
-			error(n, e.getErrorMessages());
-		}
+		// // comment for testing include
+		// SemanticVerifier sv = new SemanticVerifier( n.program(), serviceConf );
+		// try {
+		// 	sv.validate();
+		// } catch (SemanticException e) {
+		// 	error(n, e.getErrorMessages());
+		// }
 	}
 
 	@Override
@@ -1470,7 +1470,7 @@ public class SemanticVerifier implements OLVisitor
 				switch (paramPair.key()) {
 					case "inputPort":
 						if ( embedArgs[paramIndex] instanceof ArgumentPortLiteral ){
-							validateArgumentPortLiteral((ArgumentPortLiteral)embedArgs[paramIndex]);
+							// validateArgumentPortLiteral((ArgumentPortLiteral)embedArgs[paramIndex]);
 						}else if (embedArgs[paramIndex] instanceof ArgumentID){
 							ArgumentID argID = (ArgumentID)embedArgs[paramIndex];
 							// check if id is an input port
@@ -1520,10 +1520,6 @@ public class SemanticVerifier implements OLVisitor
 				}
 			}
 		}
-
-	}
-
-	private void validateArgumentPortLiteral(ArgumentPortLiteral arg){
 
 	}
 

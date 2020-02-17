@@ -360,9 +360,31 @@ public class OLParser extends AbstractParser
 				// case "cset":
 				// 	parseCorrelationSets();
 				// 	break;
-				// case "execution":
-				// 	parseExecution();
-				// 	break;
+				case "execution":
+					Constants.ExecutionMode mode = Constants.ExecutionMode.SEQUENTIAL;
+					getToken();
+					eat( Scanner.TokenType.LCURLY, "{ expected" );
+					assertToken( Scanner.TokenType.ID, "expected execution modality" );
+					switch( token.content() ) {
+						case "sequential":
+							mode = Constants.ExecutionMode.SEQUENTIAL;
+							break;
+						case "concurrent":
+							mode = Constants.ExecutionMode.CONCURRENT;
+							break;
+						case "single":
+							mode = Constants.ExecutionMode.SINGLE;
+							break;
+						default:
+							throwException( "Expected execution mode, found " + token.content() );
+							break;
+					}
+					service.addDeploymentInstruction( new ExecutionInfo( getContext(), mode ) );
+
+					// programBuilder.addChild( new ExecutionInfo( getContext(), mode ) );
+					getToken();
+					eat( Scanner.TokenType.RCURLY, "} expected" );
+					break;
 				case "init":
 					initSequence = parseInit();
 					service.addInit(initSequence);
