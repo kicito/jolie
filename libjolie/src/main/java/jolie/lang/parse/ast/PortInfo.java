@@ -119,7 +119,6 @@ public abstract class PortInfo extends OLSyntaxNode implements OperationCollecto
 	{
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((document == null) ? 0 : document.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		result = prime * result + ((interfaceList == null) ? 0 : interfaceList.hashCode());
 		result = prime * result + ((operationsMap == null) ? 0 : operationsMap.hashCode());
@@ -139,9 +138,6 @@ public abstract class PortInfo extends OLSyntaxNode implements OperationCollecto
 		if ( !super.equals( obj ) ) return false;
 		if ( getClass() != obj.getClass() ) return false;
 		PortInfo other = (PortInfo) obj;
-		if ( document == null ) {
-			if ( other.document != null ) return false;
-		} else if ( !document.equals( other.document ) ) return false;
 		if ( id == null ) {
 			if ( other.id != null ) return false;
 		} else if ( !id.equals( other.id ) ) return false;

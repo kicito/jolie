@@ -64,7 +64,6 @@ public abstract class OperationDeclaration extends OLSyntaxNode implements Docum
 	{
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + ((document == null) ? 0 : document.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
 	}

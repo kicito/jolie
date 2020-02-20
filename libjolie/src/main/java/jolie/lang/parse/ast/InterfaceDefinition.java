@@ -119,7 +119,6 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((documentation == null) ? 0 : documentation.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((operationsMap == null) ? 0 : operationsMap.hashCode());
 		return result;
@@ -138,9 +137,6 @@ public class InterfaceDefinition extends OLSyntaxNode implements OperationCollec
 		if ( obj == null ) return false;
 		if ( getClass() != obj.getClass() ) return false;
 		InterfaceDefinition other = (InterfaceDefinition) obj;
-		if ( documentation == null ) {
-			if ( other.documentation != null ) return false;
-		} else if ( !documentation.equals( other.documentation ) ) return false;
 		if ( name == null ) {
 			if ( other.name != null ) return false;
 		} else if ( !name.equals( other.name ) ) return false;

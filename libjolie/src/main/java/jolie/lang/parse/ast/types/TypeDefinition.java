@@ -263,9 +263,6 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		if ( cardinality == null ) {
 			if ( other.cardinality != null ) return false;
 		} else if ( !cardinality.equals( other.cardinality ) ) return false;
-		if ( document == null ) {
-			if ( other.document != null ) return false;
-		} else if ( !document.equals( other.document ) ) return false;
 		if ( id == null ) {
 			if ( other.id != null ) return false;
 		} else if ( !id.equals( other.id ) ) return false;
@@ -284,7 +281,6 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((cardinality == null) ? 0 : cardinality.hashCode());
-		result = prime * result + ((document == null) ? 0 : document.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
 	}
