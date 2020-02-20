@@ -380,8 +380,6 @@ public class OLParser extends AbstractParser
 							break;
 					}
 					service.addDeploymentInstruction( new ExecutionInfo( getContext(), mode ) );
-
-					// programBuilder.addChild( new ExecutionInfo( getContext(), mode ) );
 					getToken();
 					eat( Scanner.TokenType.RCURLY, "} expected" );
 					break;

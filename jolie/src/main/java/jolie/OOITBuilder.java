@@ -1815,9 +1815,6 @@ public class OOITBuilder implements OLVisitor
 				switch (paramPair.key()) {
 					case "inputPort":
 						if ( clientArgument[paramIndex] instanceof ArgumentPortLiteral ) {
-							// create new inputport at client and bind to service outputport
-							// there is no binding name!
-							//
 							
 							InputPortInfo clientInputPort = (InputPortInfo)clientArgument[paramIndex].value();
 							OutputPortInfo serviceOutputPort =
@@ -1825,11 +1822,6 @@ public class OOITBuilder implements OLVisitor
 							serviceOutputPort.bindLocationAndProtocol(clientInputPort, true);
 							n.embedingService().addOutputPortInfo(serviceOutputPort);
 							clientInputPort.accept(this);
-
-							// OutputPortInfo serviceOutputPort =
-							// (OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-							// serviceOutputPort.bindLocationAndProtocol(ip, true);
-							// n.embedingService().addOutputPortInfo(serviceOutputPort);
 
 						} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
 							// bind client inputport and to service outputport
