@@ -1620,11 +1620,6 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
 				parseAggregationList( aggregationList );
-			} else if ( token.isKeyword( "binding" ) ) {
-				getToken();
-				eat( Scanner.TokenType.COLON, "expected :" );
-				
-				parseAggregationList( aggregationList );
 			} else {
 				throwException( "Unrecognized token in inputPort " + inputPortName );
 			}
