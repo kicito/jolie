@@ -230,6 +230,26 @@ public class TestDeploymentConstruct
 
 	}
 
+	@Test
+	void testGlobalVar() throws IOException, URISyntaxException, ParserException
+	{
+		
+		StringBuilder code = new StringBuilder();
+		code.append("var a = 1");
+		code.append("var a << {a=1 b=2 c= \"test\"}");
+
+		this.is = new ByteArrayInputStream( code.toString().getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+
+		Program p = olParser.parse();
+
+		// assertNotNull( olParser.services );
+
+		// SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		// semanticVerifier.validate();
+	}
+
 
 	@ParameterizedTest
 	@MethodSource("importStatementExceptionTestProvider")
