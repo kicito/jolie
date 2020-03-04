@@ -35,6 +35,7 @@ import jolie.lang.parse.ast.OneWayOperationDeclaration;
 import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
 import jolie.lang.parse.ast.PostIncrementStatement;
@@ -730,4 +731,8 @@ class InspectorVisitor implements OLVisitor
 	public void visit( EmbeddedServiceNode2 n ){
         isFound = n.equals( target );
     }
+
+	@Override
+	public void visit( ParameterizeOutputPortInfo n )
+	{ }
 }

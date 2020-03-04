@@ -66,6 +66,7 @@ import jolie.lang.parse.ast.OneWayOperationDeclaration;
 import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
 import jolie.lang.parse.ast.PostIncrementStatement;
@@ -1069,4 +1070,8 @@ public class TypeChecker implements OLVisitor
 
 	@Override
 	public void visit( EmbeddedServiceNode2 n ){}
+
+	@Override
+	public void visit( ParameterizeOutputPortInfo n )
+	{}
 }

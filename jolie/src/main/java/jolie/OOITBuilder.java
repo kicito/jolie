@@ -80,6 +80,7 @@ import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OperationDeclaration;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
 import jolie.lang.parse.ast.PostIncrementStatement;
@@ -1898,6 +1899,10 @@ public class OOITBuilder implements OLVisitor
 			error( n.context(), "could not find port" );
 		}
 	}
+
+	@Override
+	public void visit( ParameterizeOutputPortInfo n )
+	{}
 
 }
 
