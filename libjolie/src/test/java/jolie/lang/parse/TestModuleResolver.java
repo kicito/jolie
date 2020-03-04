@@ -367,6 +367,21 @@ class TestModuleResolver
 		semanticVerifier.validate();
 	}
 
+	@Test
+	void testImportCyclicDependency() throws Exception
+	{
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/cyclic/A.ol" );
+		is = src.openStream();
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		Program p = olParser.parse();
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
+
 
 
 	@Test
