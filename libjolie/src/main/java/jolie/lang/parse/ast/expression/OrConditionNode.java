@@ -59,7 +59,11 @@ public class OrConditionNode extends OLSyntaxNode
 	@Override
 	public String toString()
 	{
-		return Arrays.toString( this.children.toArray() ).replace( ",", "||" );
+		if (children.size() == 1){
+			return children.get(0).toString();
+		}
+		String[] stringArray = Arrays.copyOf(children.toArray(), children.size(), String[].class);
+		return String.join("||", stringArray);
 	}
 
 	/*

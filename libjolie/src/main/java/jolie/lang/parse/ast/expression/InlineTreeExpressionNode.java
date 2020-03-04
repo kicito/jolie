@@ -56,6 +56,13 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 		{
 			return expression;
 		}
+
+		@Override
+		public String toString()
+		{
+			return path.toString() + "=" + expression.toString();
+		}
+		
 	}
 
 	public static class DeepCopyOperation implements Operation, Serializable
@@ -78,6 +85,12 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 		{
 			return expression;
 		}
+
+		@Override
+		public String toString()
+		{
+			return path.toString() + "<<" + expression.toString();
+		}
 	}
 
 	public static class PointsToOperation implements Operation, Serializable
@@ -99,6 +112,12 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 		public VariablePathNode target()
 		{
 			return target;
+		}
+
+		@Override
+		public String toString()
+		{
+			return path.toString() + "->" + target.toString();
 		}
 	}
 
@@ -132,8 +151,14 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 	@Override
 	public String toString()
 	{
-		// TODO Auto-generated method stub
-		return super.toString();
+		StringBuilder sb = new StringBuilder();
+		for (Operation o : operations){
+			sb.append(o);
+			sb.append(' ');
+		}
+		sb.delete(sb.length()-1, sb.length());
+
+		return rootExpression.toString() + "{" + sb + "}";
 	}
 
 	/*

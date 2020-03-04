@@ -66,7 +66,11 @@ public class SumExpressionNode extends OLSyntaxNode
 	@Override
 	public String toString()
 	{
+		if (this.operands.size() == 1){
+			return this.operands.iterator().next().value().toString();
+		}
 		StringBuilder sb = new StringBuilder();
+
 		for(Pair< Constants.OperandType, OLSyntaxNode >op : this.operands){
 			sb.append(op.key() + " " + op.value() );
 		}

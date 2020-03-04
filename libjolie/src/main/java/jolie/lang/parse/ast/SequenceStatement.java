@@ -58,7 +58,11 @@ public class SequenceStatement extends OLSyntaxNode
 	@Override
 	public String toString()
 	{
-		return Arrays.toString( children.toArray() );
+		if (children.size() == 1){
+			return children.get(0).toString();
+		}
+		String[] stringArray = Arrays.copyOf(children.toArray(), children.size(), String[].class);
+		return String.join(";", stringArray);
 	}
 
 	/*
