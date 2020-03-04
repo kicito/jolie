@@ -646,6 +646,7 @@ public class OOITBuilder implements OLVisitor
 	private Type currType;
 	boolean insideType = false;
 	private boolean insideInstanceOf = false;
+	private boolean insideProcess = false;
 	
 	private final Map< String, Type > types = new HashMap< String, Type >();
 	private final Map< String, Map< String, OneWayTypeDescription > > notificationTypes =
@@ -809,7 +810,7 @@ public class OOITBuilder implements OLVisitor
 	public void visit( DefinitionNode n )
 	{
 		final DefinitionProcess def;
-		
+		insideProcess = true;
 		switch( n.id() ) {
 		case "main":
 			switch( executionMode ) {
@@ -838,6 +839,8 @@ public class OOITBuilder implements OLVisitor
 		}
 
 		interpreter.register( n.id(), def );
+		insideProcess = false;
+
 	}
 
 	public void visit( ParallelStatement n )
@@ -1172,12 +1175,21 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( DeepCopyStatement n )
 	{
-		currProcess =
+		if (insideProcess){
+			currProcess =
 			new DeepCopyProcess(
 				buildVariablePath( n.leftPath() ),
 				buildExpression( n.rightExpression() ),
 				n.copyLinks(), n.context()
 			);
+		}else{
+			interpreter.publicProcesses.add(new DeepCopyProcess(
+				buildVariablePath( n.leftPath() ),
+				buildExpression( n.rightExpression() ),
+				n.copyLinks(), n.context()
+			));
+		}
+
 	}
 
 	public void visit( IfStatement n )

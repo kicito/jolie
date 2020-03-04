@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,26 @@ public class TestJolieSimple
         assertTrue( systemOutContent.toString().contains( "sodep" ) );
     }
 
+    @Test
+    void testGlobalVariableJolie() throws Exception
+    {
+        String filePath = "jolie1/globalVariable.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+        final Interpreter interpreter =
+                new Interpreter( args, this.getClass().getClassLoader(), null );
+        interpreter.run();
+        Runtime.getRuntime().addShutdownHook( new Thread() {
+            @Override
+            public void run()
+            {
+                interpreter.exit( -1 );
+            }
+        } );
+        assertTrue( systemOutContent.toString().contains( "11" ) );
+
+    }
 
 
     @Test

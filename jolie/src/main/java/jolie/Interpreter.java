@@ -77,6 +77,7 @@ import jolie.net.SessionMessage;
 import jolie.net.ports.OutputPort;
 import jolie.process.DefinitionProcess;
 import jolie.process.InputOperationProcess;
+import jolie.process.Process;
 import jolie.process.SequentialProcess;
 import jolie.runtime.FaultException;
 import jolie.runtime.InputOperation;
@@ -102,6 +103,15 @@ import jolie.tracer.*;
  */
 public class Interpreter
 {
+
+	private final class PublicSessionThread extends SessionThread{
+
+		public PublicSessionThread( Interpreter interpreter, Process process )
+		{
+			super( interpreter, process );
+		}
+		
+	}
     private final class InitSessionThread extends SessionThread
 	{
 		public InitSessionThread( Interpreter interpreter, jolie.process.Process process )
@@ -1051,47 +1061,58 @@ public class Interpreter
 		(new StarterThread( f )).start();
 		return f;
 	}
+
+	protected List<Process> publicProcesses = new ArrayList<Process>();
 	
 	private void init()
 		throws InterpreterException, IOException
 	{
-            /**
-            * Order is important.
-             * 1 - CommCore needs the OOIT to be initialized.
-             * 2 - initExec must be instantiated before we can receive communications.
-             */
-            if ( buildOOIT() == false && !checkFlag ) {
-                throw new InterpreterException( "Error: service initialisation failed" );
-            }
-            if ( checkFlag ){
-                exit();
-            } else {
-                sessionStarters = Collections.unmodifiableMap( sessionStarters );
-                try {
-                    initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
+		if ( buildOOIT() == false && !checkFlag ) {
+			throw new InterpreterException( "Error: service initialisation failed" );
+		}
+		// TODO move this statement to OOITBuilder
+		
+		DefinitionProcess publicProcess = new DefinitionProcess(
+			new SequentialProcess(publicProcesses.toArray(new Process[0]))
+		);
+		PublicSessionThread publicThread = new PublicSessionThread(this, publicProcess);
+		publicThread.start();
 
-                    commCore.init();
+		try {		
+			publicThread.join();
+		} catch( InterruptedException e ) {
+			logSevere( e );
+		}
+		return;
+	}
 
-                    // Initialize program arguments in the args variabile.
-                    ValueVector jArgs = ValueVector.create();
-                    for( String s : arguments ) {
-                        jArgs.add( Value.create( s ) );
-                    }
-                    initExecutionThread.state().root().getChildren( "args" ).deepCopy( jArgs );
-                    /* initExecutionThread.addSessionListener( new SessionListener() {
-                            public void onSessionExecuted( SessionThread session )
-                            {}
-                            public void onSessionError( SessionThread session, FaultException fault )
-                            {
-                                    exit();
-                            }
-                    }); */
+	private void runInit() throws IOException
+	{
+		sessionStarters = Collections.unmodifiableMap( sessionStarters );
+		try {
+			initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
 
-                    correlationEngine.onSingleExecutionSessionStart( initExecutionThread );
-                    // initExecutionThread.addSessionListener( correlationEngine );
-                    initExecutionThread.start();
-                } catch( InvalidIdException e ) { assert false; }
-            }
+			commCore.init();
+
+			// Initialize program arguments in the args variabile.
+			ValueVector jArgs = ValueVector.create();
+			for( String s : arguments ) {
+				jArgs.add( Value.create( s ) );
+			}
+			initExecutionThread.state().root().getChildren( "args" ).deepCopy( jArgs );
+			/* initExecutionThread.addSessionListener( new SessionListener() {
+					public void onSessionExecuted( SessionThread session )
+					{}
+					public void onSessionError( SessionThread session, FaultException fault )
+					{
+							exit();
+					}
+			}); */
+
+			correlationEngine.onSingleExecutionSessionStart( initExecutionThread );
+			// initExecutionThread.addSessionListener( correlationEngine );
+			initExecutionThread.start();
+		} catch( InvalidIdException e ) { assert false; }
 	}
 	
 	private void runCode()
@@ -1146,8 +1167,18 @@ public class Interpreter
 	public void run()
 		throws InterpreterException, IOException
 	{
+		/**
+		* Order is important.
+		 * 1 - CommCore needs the OOIT to be initialized.
+		 * 2 - initExec must be instantiated before we can receive communications.
+		 */
 		init();
-		runCode();
+		if ( checkFlag ){
+			exit();
+		} else {
+			runInit();
+			runCode();
+		}
 	}
 
 	private final ExecutorService nativeExecutorService =

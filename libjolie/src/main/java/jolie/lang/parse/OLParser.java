@@ -285,8 +285,37 @@ public class OLParser extends AbstractParser
 			this::parseInterfaceOrPort,
 			this::parseEmbedded,
 			this::parseInternalService,
-			this::parseCode
+			this::parseCode,
+			this::parseVariable
 		);
+	}
+
+	
+	private void parseVariable() 
+		throws IOException, ParserException
+	{
+		if ( token.isKeyword( "var" ) ) {
+
+			addTokens( Arrays.asList(
+				new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
+				new Scanner.Token( Scanner.TokenType.DOT )
+			));
+			getToken();
+
+			String id = token.content();
+			getToken();
+			VariablePathNode path= _parseVariablePath( id );
+			if ( token.is( Scanner.TokenType.ASSIGN )
+					|| token.is( Scanner.TokenType.DEEP_COPY_LEFT ) ) {
+
+				OLSyntaxNode retVal =
+						parseAssignOrDeepCopyOrPointerStatement( path );
+				programBuilder.addChild( retVal );
+
+			} else {
+				throwException( "expected = or <<" );
+			}
+		}
 	}
 
 	protected Map< String, ServiceNode > services = new HashMap< String, ServiceNode >();

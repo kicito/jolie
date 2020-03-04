@@ -212,11 +212,13 @@ public class OLParseTreeOptimizer
 		{
 			programChildren.add( n );
 		}
-
+		private boolean inDefNode = false;
 		@Override
 		public void visit( DefinitionNode n )
 		{
+			inDefNode = true;
 			programChildren.add( new DefinitionNode( n.context(), n.id(), optimizeNode( n.body() ) ) );
+			inDefNode = false;
 		}
 
 		@Override
@@ -553,11 +555,13 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( AssignStatement n )
 		{
-			currNode = new AssignStatement(
-				n.context(),
-				optimizePath( n.variablePath() ),
-				optimizeNode( n.expression() )
-			);
+			if ( inDefNode ) {
+				currNode = new AssignStatement( n.context(), optimizePath( n.variablePath() ),
+						optimizeNode( n.expression() ) );
+			} else {
+				programChildren.add( new AssignStatement( n.context(),
+						optimizePath( n.variablePath() ), optimizeNode( n.expression() ) ) );
+			}
 		}
 
 		@Override
@@ -599,12 +603,14 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( DeepCopyStatement n )
 		{
-			currNode = new DeepCopyStatement(
-				n.context(),
-				optimizePath( n.leftPath() ),
-				optimizeNode( n.rightExpression() ),
-				n.copyLinks()
-			);
+			if ( inDefNode ) {
+				currNode = new DeepCopyStatement( n.context(), optimizePath( n.leftPath() ),
+						optimizeNode( n.rightExpression() ), n.copyLinks() );
+			} else {
+				programChildren
+						.add( new DeepCopyStatement( n.context(), optimizePath( n.leftPath() ),
+								optimizeNode( n.rightExpression() ), n.copyLinks() ) );
+			}
 		}
 
 		@Override
@@ -873,7 +879,9 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( CourierDefinitionNode n )
 		{
+			inDefNode = true;
 			programChildren.add( new CourierDefinitionNode( n.context(), n.inputPortName(), optimizeNode( n.body() ) ) );
+			inDefNode = false;
 		}
 	
 		@Override
