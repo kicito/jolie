@@ -183,6 +183,22 @@ public class TestProcessParser
 
 	}
 
+
+
+	@Test
+	void testInLineTreePath() throws Exception
+	{
+
+		String code = "define a{ a << {a=1 b=2 c=3} }";
+		is = new ByteArrayInputStream( code.getBytes() );
+        InstanceCreator oc = new InstanceCreator( new String[] {"dist/jolie/include"} );
+
+		OLParser olParser = oc.createOLParser( is );
+
+
+		Program p = olParser.parse();
+		assertEquals(((DefinitionNode) p.children().get(0)).body().toString(),  "a << {a=1 b=2 c=3}");
+	}
 	// TODO NotificationMessage NDType, iteration, deterministic choice, parallel, sequence,
 	// init,
 	// main
