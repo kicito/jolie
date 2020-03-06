@@ -33,6 +33,7 @@ import jolie.lang.parse.DocumentedNode;
 import jolie.lang.parse.module.Importable;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.VariablePathNode;
+import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.util.Pair;
 import jolie.util.Range;
@@ -247,12 +248,6 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		return cardinality.equals( other.cardinality ) && checkTypeEqualness( this, other, recursiveTypeChecked );
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
-
 	@Override
 	public boolean equals( Object obj )
 	{
@@ -269,12 +264,6 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		return true;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#hashCode()
-	 */
-
 	@Override
 	public int hashCode()
 	{
@@ -283,6 +272,11 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		result = prime * result + ((cardinality == null) ? 0 : cardinality.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
 		return result;
+	}
+
+	public boolean checkInlineTree( InlineTreeExpressionNode n ){
+		System.out.println(n);
+		return true;
 	}
 
 	/* public abstract TypeDefinition getSubType( String id );

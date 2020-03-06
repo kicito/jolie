@@ -128,7 +128,10 @@ import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionInterface;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
+import jolie.lang.parse.ast.types.TypeDefinitionOperation;
+import jolie.lang.parse.ast.types.TypeDefinitionPort;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
@@ -217,6 +220,13 @@ public class OLParser extends AbstractParser
 			definedTypes.put( type.id(), new TypeInlineDefinition( context, type.id(), type, Constants.RANGE_ONE_TO_ONE ) );
 		}
 		definedTypes.put( TypeDefinitionUndefined.UNDEFINED_KEYWORD, TypeDefinitionUndefined.getInstance() );
+		
+		definedTypes.put( TypeDefinitionOperation.REQUEST_TYPE_KEYWORD, TypeDefinitionOperation.requestType() );
+		definedTypes.put( TypeDefinitionOperation.RESPONSE_TYPE_KEYWORD, TypeDefinitionOperation.responseType() );
+		definedTypes.put( TypeDefinitionOperation.ONEWAY_KEYWORD, TypeDefinitionOperation.oneWay() );
+		definedTypes.put( TypeDefinitionOperation.REQUESTRESPONSE_KEYWORD, TypeDefinitionOperation.requestResponse() );
+		definedTypes.put( TypeDefinitionInterface.INTERFACE_KEYWORD, TypeDefinitionInterface.getInstance() );
+		definedTypes.put( TypeDefinitionPort.PORT_KEYWORD, TypeDefinitionPort.getInstance() );
 
 		return definedTypes;
 	}
