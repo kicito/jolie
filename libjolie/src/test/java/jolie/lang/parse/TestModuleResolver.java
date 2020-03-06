@@ -1,5 +1,6 @@
 package jolie.lang.parse;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
@@ -376,10 +377,10 @@ class TestModuleResolver
 
 		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-		Program p = olParser.parse();
-
-		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
-		semanticVerifier.validate();
+		Exception exception = assertThrows( ParserException.class, () -> olParser.parse(),
+				"Expected parse() to throw, with \"error: cyclic dependency detected\" but it didn't" );
+		assertTrue( exception.getMessage().contains( "error: cyclic dependency detected" ) );
+		 
 	}
 
 

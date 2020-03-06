@@ -11,6 +11,7 @@ import jolie.lang.parse.SemanticException;
 import jolie.lang.parse.SemanticVerifier;
 import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.module.ImportCache.Status;
 import jolie.lang.parse.module.exception.ModuleNotFoundException;
 import jolie.lang.parse.module.exception.ModuleParsingException;
 import jolie.lang.parse.util.ParsingUtils;
@@ -46,7 +47,7 @@ public class Importer
     }
 
 
-    private Map< URI, ModuleRecord > cache;
+    private Map< URI, ImportCache > cache;
     private Configuration config;
 
     public Importer( Configuration c )
@@ -78,7 +79,7 @@ public class Importer
     public ModuleRecord moduleLookUp(URI source, String target) 
         throws ModuleParsingException, ModuleNotFoundException
     {
-        ModuleRecord rc = null;
+        ImportCache ic = null;
         Finder[] finders = Finder.getFindersForTargetString( target );
 
         for (Finder f : finders) {
@@ -89,14 +90,21 @@ public class Importer
             // perform cache lookup
             if ( cache.containsKey( targetSource.source() ) ) {
                 System.out.println( "[LOADER] found " + targetSource.source() + " in cache" );
-                rc = cache.get( targetSource.source() );
+                ic = cache.get( targetSource.source() );
+                if ( ic.s == Status.PENDING ){ // check importStatus is finishes
+                    throw new ModuleParsingException("cyclic dependency detected between " + source + " and " + targetSource );
+                }
             }else{
-                rc = load( targetSource );
+                ic = new ImportCache(targetSource.source());
+                cache.put( targetSource.source(), ic );
+                ModuleRecord rc = load( targetSource );
+                ic.setModuleRecord(rc);
+                ic.importFinished();
             }
             break;
         }
 
-        return rc;
+        return ic.rc;
     }
 
     public ImportResult importModule( URI source, ImportStatement stmt )
@@ -106,7 +114,6 @@ public class Importer
         if ( rc == null ) {
             throw new ModuleParsingException("unable to locate from " + source + " with target" + stmt.importTarget());
         }
-        cache.put( rc.source(), rc );
         if ( stmt.isNamespaceImport() ) {
             return rc.resolveNameSpace( stmt.context() );
         } else {
