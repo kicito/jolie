@@ -1007,8 +1007,14 @@ public class OLParseTreeOptimizer
 
 
 		@Override
-		public void visit( ParameterizeOutputPortInfo n )
-		{}
+		public void visit( ParameterizeOutputPortInfo p )
+		{
+			if ( p.parameter() != null ) {
+				p.parameter().accept(this);
+				p.setParameter( currNode );
+			}
+			programChildren.add( p );
+		}
 	
 	}
 

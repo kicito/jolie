@@ -21,6 +21,7 @@
 
 package jolie.runtime;
 
+import java.util.Arrays;
 import jolie.ExecutionThread;
 import jolie.State;
 import jolie.process.TransformationReason;
@@ -457,4 +458,12 @@ public class VariablePath implements Expression
 		final Value v = getValueOrNull();
 		return ( v == null ) ? Value.UNDEFINED_VALUE : v;
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "VariablePath [path=" + Arrays.toString( path ) + "]";
+	}
+
+	
 }

@@ -771,6 +771,8 @@ public class SemanticVerifier implements OLVisitor
 		OutputPortInfo p = outputPorts.get( n.outputPortId() );
 		if ( p == null ) {
 			error( n, n.outputPortId() + " is not a valid output port" );
+		} else if ( p instanceof ParameterizeOutputPortInfo ) {
+			// how to check type here?
 		} else {
 			OperationDeclaration decl = p.operationsMap().get( n.id() );
 			if ( decl == null )
@@ -792,6 +794,8 @@ public class SemanticVerifier implements OLVisitor
 		OutputPortInfo p = outputPorts.get( n.outputPortId() );
 		if ( p == null ) {
 			error( n, n.outputPortId() + " is not a valid output port" );
+		} else if ( p instanceof ParameterizeOutputPortInfo ){
+			// how to check type here?
 		} else {
 			OperationDeclaration decl = p.operationsMap().get( n.id() );
 			if ( decl == null ) {
@@ -1527,6 +1531,20 @@ public class SemanticVerifier implements OLVisitor
 
 	@Override
 	public void visit( ParameterizeOutputPortInfo n )
-	{}
+	{
+
+		if ( outputPorts.get( n.id() ) != null )
+			error( n, "output port " + n.id() + " has been already defined" );
+		outputPorts.put( n.id(), n );
+
+		encounteredAssignment( n.id() );
+		System.out.println(n.parameter());
+
+		if ( !(n.parameter() instanceof InlineTreeExpressionNode || n.parameter() instanceof VariableExpressionNode ) ) {
+			error(n, "expected parameter to be inlinetree or variable path node");
+		}else if (n.parameter() instanceof InlineTreeExpressionNode){
+			
+		}
+	}
 
 }

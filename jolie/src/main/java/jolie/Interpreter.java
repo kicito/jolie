@@ -1071,7 +1071,9 @@ public class Interpreter
 			throw new InterpreterException( "Error: service initialisation failed" );
 		}
 		// TODO move this statement to OOITBuilder
-		
+		if ( publicProcesses.size() == 0 ){
+			return;
+		}
 		DefinitionProcess publicProcess = new DefinitionProcess(
 			new SequentialProcess(publicProcesses.toArray(new Process[0]))
 		);

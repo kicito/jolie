@@ -250,6 +250,43 @@ public class TestDeploymentConstruct
 		// semanticVerifier.validate();
 	}
 
+	@Test
+	void testParameterizeOutputPort() throws IOException, URISyntaxException, ParserException,
+			SemanticException
+	{
+		
+		// variable node path
+		StringBuilder code = new StringBuilder();
+		code.append("outputPort myOP( a )");
+
+		this.is = new ByteArrayInputStream( code.toString().getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+
+		Program p = olParser.parse();
+
+		p = OLParseTreeOptimizer.optimize( p );
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+
+		// inlinetree
+
+		StringBuilder code2 = new StringBuilder();
+		code2.append("outputPort myOP( {location=\"local\"} )");
+
+		this.is = new ByteArrayInputStream( code2.toString().getBytes() );
+		OLParser olParser2 = oc.createOLParser( is );
+		
+		Program p2 = olParser2.parse();
+
+		p2 = OLParseTreeOptimizer.optimize( p2 );
+		semanticVerifier = new SemanticVerifier( p2, configuration );
+		semanticVerifier.validate();
+
+		// assertNotNull( olParser.services );
+
+	}
+
 
 	@ParameterizedTest
 	@MethodSource("importStatementExceptionTestProvider")

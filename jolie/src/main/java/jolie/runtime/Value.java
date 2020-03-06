@@ -659,6 +659,17 @@ public abstract class Value implements Expression, Cloneable
 	{
 		return ( valueObject() != null );
 	}
+
+	public final boolean isOneWay()
+	{
+		return this.isString() && this.children().size() == 1 && this.hasChildren("reqType");
+	}
+
+
+	public final boolean isRequestResponse()
+	{
+		return this.isString() && this.children().size() == 2 && this.hasChildren("reqType") && this.hasChildren("resType");
+	}
 	
 	public void setValue( CommChannel value )
 	{

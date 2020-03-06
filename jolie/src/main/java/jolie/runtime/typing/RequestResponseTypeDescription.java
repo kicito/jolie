@@ -69,4 +69,11 @@ public class RequestResponseTypeDescription implements OperationTypeDescription
 	{
 		return this;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "(" + requestType + ")" + "(" + responseType + ")" + faults().toString();
+	}
+	
 }

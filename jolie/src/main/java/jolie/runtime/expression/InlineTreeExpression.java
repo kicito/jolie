@@ -22,6 +22,7 @@
 
 package jolie.runtime.expression;
 
+import java.util.Arrays;
 import jolie.process.TransformationReason;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
@@ -59,6 +60,13 @@ public class InlineTreeExpression implements Expression
 		{
 			path.getValue( inlineValue ).deepCopyWithLinks( expression.evaluate() );
 		}
+
+		@Override
+		public String toString()
+		{
+			return "DeepCopyOperation [expression=" + expression + ", path=" + path + "]";
+		}
+		
 	}
 	
 	public static class AssignmentOperation implements Operation {
@@ -82,6 +90,13 @@ public class InlineTreeExpression implements Expression
 		{
 			path.getValue( inlineValue ).assignValue( expression.evaluate() );
 		}
+
+		@Override
+		public String toString()
+		{
+			return "AssignmentOperation [expression=" + expression + ", path=" + path + "]";
+		}
+		
 	}
 	
 	public static class PointsToOperation implements Operation {
@@ -105,6 +120,13 @@ public class InlineTreeExpression implements Expression
 		{
 			path.makePointer( inlineValue, target );
 		}
+
+		@Override
+		public String toString()
+		{
+			return "PointsToOperation [path=" + path + ", target=" + target + "]";
+		}
+		
 	}
 	
 	private final Expression rootExpression;
@@ -144,5 +166,16 @@ public class InlineTreeExpression implements Expression
 		}
 		
 		return inlineValue;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	
+	@Override
+	public String toString()
+	{
+		return "InlineTreeExpression [operations=" + Arrays.toString( operations ) + ", rootExpression="
+				+ rootExpression + "]";
 	}
 }

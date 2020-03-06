@@ -48,4 +48,11 @@ public class OneWayTypeDescription implements OperationTypeDescription
 	{
 		return null;
 	}
+
+	@Override
+	public String toString()
+	{
+		return "(" + requestType + ")";
+	}
+	
 }

@@ -22,11 +22,14 @@ package jolie;
 
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import jolie.lang.Constants;
 import jolie.lang.Constants.ExecutionMode;
 import jolie.lang.Constants.OperandType;
@@ -192,6 +196,7 @@ import jolie.runtime.InvalidIdException;
 import jolie.runtime.OneWayOperation;
 import jolie.runtime.RequestResponseOperation;
 import jolie.runtime.Value;
+import jolie.runtime.ValueVector;
 import jolie.runtime.VariablePath;
 import jolie.runtime.VariablePathBuilder;
 import jolie.runtime.correlation.CorrelationSet;
@@ -224,6 +229,7 @@ import jolie.runtime.expression.SumExpression;
 import jolie.runtime.expression.ValueVectorSizeExpression;
 import jolie.runtime.expression.VoidExpression;
 import jolie.runtime.typing.OneWayTypeDescription;
+import jolie.runtime.typing.OperationTypeDescription;
 import jolie.runtime.typing.RequestResponseTypeDescription;
 import jolie.runtime.typing.Type;
 import jolie.util.ArrayListMultiMap;
@@ -1900,9 +1906,109 @@ public class OOITBuilder implements OLVisitor
 		}
 	}
 
+
+	/**
+	 *  Output port....
+		final Process protocolConfigurationProcess =
+			( n.protocolConfiguration() != null ) ? buildProcess( n.protocolConfiguration() )
+			: NullProcess.getInstance();
+		
+		final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
+
+		currentOutputPort = n.id();
+		notificationTypes.put( currentOutputPort, new HashMap<>() );
+		solicitResponseTypes.put( currentOutputPort, new HashMap<>() );
+		for( OperationDeclaration decl : n.operations() ) {
+			decl.accept( this );
+		}
+		currentOutputPort = null;
+
+		interpreter.register( n.id(), new OutputPort(
+				interpreter,
+				n.id(),
+				n.protocolId(),
+				protocolConfigurationProcess,
+				n.location(),
+				getOutputPortInterface( n.id() ),
+				isConstant
+			)
+		);
+	 */
+
 	@Override
 	public void visit( ParameterizeOutputPortInfo n )
-	{}
+	{
+		String portId = n.id();
+		final Process protocolConfigurationProcess = NullProcess.getInstance();
+		if (n.parameter() instanceof VariableExpressionNode){
+			
+		} else { // inline case
+
+
+			notificationTypes.put( portId, new HashMap<>() );
+			solicitResponseTypes.put( portId, new HashMap<>() );
+
+			n.parameter().accept(this);
+			System.out.println(currExpression);
+
+			Value v = currExpression.evaluate();
+
+			// construct operation from interface TODO construct interface 
+			v.children().get( "interfaces" ).forEach( iface -> {
+				String interfaceName = iface.toString();
+				iface.getChildren("operations").forEach(opValue -> registerOperationTypeValue(portId, opValue));
+			} );
+
+
+			String location = v.children().get("location").first().toString();
+			String protocol = v.children().get("protocol").first().toString();
+			try {
+				n.setLocation(new URI(location));
+			} catch (URISyntaxException e) {
+				error(n.context(), "location:" + location + " is not valid URI");
+			}
+
+			n.setProtocolId(protocol);
+
+			interpreter.register( n.id(), new OutputPort(
+				interpreter,
+				n.id(),
+				n.protocolId(),
+				protocolConfigurationProcess,
+				n.location(),
+				getOutputPortInterface( n.id() ),
+				false
+				)
+			);
+		} 
+	}
+
+	private void registerOperationTypeValue(String portId, Value opValue ){
+		String operationName = opValue.strValue();
+		OperationTypeDescription opType = createTypeDescriptionFromValue(opValue);
+		if (opType.asOneWayTypeDescription() != null){
+			notificationTypes.get( portId ).put( operationName, opType.asOneWayTypeDescription() );
+		} else {
+			solicitResponseTypes.get( portId ).put( operationName, opType.asRequestResponseTypeDescription() );
+		}
+	}
+
+	private OperationTypeDescription createTypeDescriptionFromValue( Value v )
+	{
+		if ( v.isOneWay() ){
+			String reqTypeVal = v.getChildren("reqType").first().strValue();
+			Type reqType = types.get(reqTypeVal);
+			return new OneWayTypeDescription( reqType );
+		}else if (v.isRequestResponse() ){
+			String reqTypeVal = v.getChildren("reqType").first().strValue();
+			Type reqType = types.get(reqTypeVal);
+			String resTypeVal = v.getChildren("resType").first().strValue();
+			Type resType = types.get(resTypeVal);
+			return new RequestResponseTypeDescription( reqType, resType, new HashMap< String, Type >() );
+		} else {
+			return null;
+		}
+	} 
 
 }
 

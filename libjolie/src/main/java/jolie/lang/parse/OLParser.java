@@ -82,6 +82,7 @@ import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OperationCollector;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PortInfo;
 import jolie.lang.parse.ast.PostDecrementStatement;
@@ -1804,18 +1805,28 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	private OutputPortInfo parseOutputPortInfo( )
+	private OutputPortInfo parseParenOutputPort( ParsingContext ctx, String name )
 		throws IOException, ParserException
 	{
+		getToken();
 
+		ParameterizeOutputPortInfo p = new ParameterizeOutputPortInfo( ctx, name );
+		OLSyntaxNode o = parseBasicExpression();
+		p.setParameter( o );
+
+		eat( Scanner.TokenType.RPAREN, "expected )" );
+		
+		return p;
+	}
+
+	private OutputPortInfo parseCurlyOutputPort( ParsingContext ctx, String name )
+			throws IOException, ParserException
+	{
 		getToken();
-		assertToken( Scanner.TokenType.ID, "expected output port identifier" );
-		OutputPortInfo p = new OutputPortInfo( getContext(), token.content() );
-		getToken();
-		eat( Scanner.TokenType.LCURLY, "expected {" );
+		OutputPortInfo p = new OutputPortInfo( ctx, name );
 		
 		boolean keepRun = true;
-		while ( keepRun ) {
+		while (keepRun) {
 			if ( token.is( Scanner.TokenType.OP_OW ) ) {
 				parseOneWayOperations( p );
 			} else if ( token.is( Scanner.TokenType.OP_RR ) ) {
@@ -1824,7 +1835,7 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected : after Interfaces" );
 				boolean r = true;
-				while( r ) {
+				while (r) {
 					assertToken( Scanner.TokenType.ID, "expected interface name" );
 					InterfaceDefinition i = interfaces.get( token.content() );
 					if ( i == null ) {
@@ -1890,6 +1901,26 @@ public class OLParser extends AbstractParser
 		}
 		eat( Scanner.TokenType.RCURLY, "expected }" );
 		return p;
+	}
+
+	private OutputPortInfo parseOutputPortInfo() throws IOException, ParserException
+	{
+
+		getToken();
+		assertToken( Scanner.TokenType.ID, "expected output port identifier" );
+		ParsingContext ctx = getContext();
+		String portName = token.content();
+		getToken();
+
+		switch (token.type()) {
+			case LCURLY:
+				return parseCurlyOutputPort( ctx, portName );
+			case LPAREN:
+				return parseParenOutputPort( ctx, portName );
+			default:
+				throwException( "expected { or (" );
+				return null;
+		}
 	}
 
 	private void parseOneWayOperations( OperationCollector oc )
