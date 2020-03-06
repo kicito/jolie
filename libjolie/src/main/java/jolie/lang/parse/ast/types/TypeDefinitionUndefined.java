@@ -59,7 +59,7 @@ public class TypeDefinitionUndefined extends TypeInlineDefinition
 	@Override
 	public String toString()
 	{
-		return super.id() + " = " + UNDEFINED_KEYWORD;
+		return UNDEFINED_KEYWORD;
 	}
 
 	@Override
