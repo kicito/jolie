@@ -110,4 +110,51 @@ public class TestParameterizePort
 
     }
 
+    @Test
+    void testParameterizeInputPort() throws Exception
+    {
+        String serverFilePath = "jolie2/parameterizePort/parameterizeInputPort.ol";
+
+        String[] serverArgs = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
+        serverArgs[serverArgs.length - 1] = serverFilePath;
+        final Interpreter serverInterpreter =
+                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
+
+
+        String filePath = "jolie2/parameterizePort/parameterizePort.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+        final Interpreter interpreter =
+                new Interpreter( args, this.getClass().getClassLoader(), null );
+
+
+        Thread serverThread = new Thread( () -> {
+            try {
+                serverInterpreter.run();
+                assertTrue( systemOutContent.toString()
+                        .contains( "receive value hello from parameterize port" ) );
+
+            } catch (InterpreterException | IOException e) {
+                e.printStackTrace();
+            }
+        } );
+
+        Thread clientThread = new Thread( () -> {
+            try {
+                interpreter.run();
+                assertTrue( systemOutContent.toString().contains( "3" ) );
+            } catch (InterpreterException | IOException e) {
+                e.printStackTrace();
+            }
+        } );
+
+        serverThread.start();
+        clientThread.start();
+        clientThread.join();
+        serverThread.join();
+
+    }
+
 }

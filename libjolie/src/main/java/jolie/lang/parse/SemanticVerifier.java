@@ -72,6 +72,7 @@ import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OperationDeclaration;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
@@ -1548,6 +1549,13 @@ public class SemanticVerifier implements OLVisitor
 				error(n, "expected parameter to be inlinetree to be type of portInfo");
 			};
 		}
+	}
+
+	@Override
+	public void visit( ParameterizeInputPortInfo n )
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

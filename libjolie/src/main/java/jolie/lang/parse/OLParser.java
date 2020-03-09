@@ -82,6 +82,7 @@ import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OperationCollector;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PortInfo;
@@ -1520,21 +1521,50 @@ public class OLParser extends AbstractParser
 		//add embedded service node to program that is embedding it
 		programBuilder.addChild( internalServiceNode );
 	}
-    
+
 	private InputPortInfo parseInputPortInfo()
 		throws IOException, ParserException
 	{
-		String inputPortName;
+		getToken();
+		assertToken( Scanner.TokenType.ID, "expected inputport name" );
+		String portName = token.content();
+		getToken();
+
+
+		switch (token.type()) {
+			case LCURLY:
+				return parseCurlyInputPort( portName );
+			case LPAREN:
+				return parseParenInputPort( portName );
+			default:
+				throwException( "expected { or (" );
+				return null;
+		}
+	}
+
+	private InputPortInfo parseParenInputPort( String name )
+		throws IOException, ParserException
+	{
+		getToken();
+
+		ParameterizeInputPortInfo p = new ParameterizeInputPortInfo( getContext(), name );
+		OLSyntaxNode o = parseBasicExpression();
+		p.setParameter( o );
+
+		eat( Scanner.TokenType.RPAREN, "expected )" );
+		
+		return p;
+	}
+
+    
+	private InputPortInfo parseCurlyInputPort( String inputPortName)
+		throws IOException, ParserException
+	{
 		String protocolId;
 		URI inputPortLocation;
 		List< InterfaceDefinition > interfaceList = new ArrayList<>();
 		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
-		
 		getToken();
-		assertToken( Scanner.TokenType.ID, "expected inputPort name" );
-		inputPortName = token.content();
-		getToken();
-		eat( Scanner.TokenType.LCURLY, "{ expected" );
 		InterfaceDefinition iface = new InterfaceDefinition( getContext(), "Internal interface for: " + inputPortName );
 		
 		inputPortLocation = null;
@@ -1802,12 +1832,12 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	private OutputPortInfo parseParenOutputPort( ParsingContext ctx, String name )
+	private OutputPortInfo parseParenOutputPort( String name )
 		throws IOException, ParserException
 	{
 		getToken();
 
-		ParameterizeOutputPortInfo p = new ParameterizeOutputPortInfo( ctx, name );
+		ParameterizeOutputPortInfo p = new ParameterizeOutputPortInfo( getContext(), name );
 		OLSyntaxNode o = parseBasicExpression();
 		p.setParameter( o );
 
@@ -1816,11 +1846,11 @@ public class OLParser extends AbstractParser
 		return p;
 	}
 
-	private OutputPortInfo parseCurlyOutputPort( ParsingContext ctx, String name )
+	private OutputPortInfo parseCurlyOutputPort( String name )
 			throws IOException, ParserException
 	{
 		getToken();
-		OutputPortInfo p = new OutputPortInfo( ctx, name );
+		OutputPortInfo p = new OutputPortInfo( getContext(), name );
 		
 		boolean keepRun = true;
 		while (keepRun) {
@@ -1900,20 +1930,20 @@ public class OLParser extends AbstractParser
 		return p;
 	}
 
-	private OutputPortInfo parseOutputPortInfo() throws IOException, ParserException
+	private OutputPortInfo parseOutputPortInfo()
+		throws IOException, ParserException
 	{
 
 		getToken();
-		assertToken( Scanner.TokenType.ID, "expected output port identifier" );
-		ParsingContext ctx = getContext();
+		assertToken( Scanner.TokenType.ID, "expected outputport name" );
 		String portName = token.content();
 		getToken();
 
 		switch (token.type()) {
 			case LCURLY:
-				return parseCurlyOutputPort( ctx, portName );
+				return parseCurlyOutputPort( portName );
 			case LPAREN:
-				return parseParenOutputPort( ctx, portName );
+				return parseParenOutputPort( portName );
 			default:
 				throwException( "expected { or (" );
 				return null;

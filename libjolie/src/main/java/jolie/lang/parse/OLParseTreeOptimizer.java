@@ -60,6 +60,7 @@ import jolie.lang.parse.ast.OneWayOperationDeclaration;
 import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
@@ -1008,6 +1009,16 @@ public class OLParseTreeOptimizer
 
 		@Override
 		public void visit( ParameterizeOutputPortInfo p )
+		{
+			if ( p.parameter() != null ) {
+				p.parameter().accept(this);
+				p.setParameter( currNode );
+			}
+			programChildren.add( p );
+		}
+
+		@Override
+		public void visit( ParameterizeInputPortInfo p )
 		{
 			if ( p.parameter() != null ) {
 				p.parameter().accept(this);

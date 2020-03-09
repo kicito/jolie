@@ -59,6 +59,7 @@ import jolie.lang.parse.ast.OneWayOperationDeclaration;
 import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
@@ -443,4 +444,11 @@ public class ProgramVisitor   extends GeneralProgramVisitor implements OLVisitor
 	@Override
 	public void visit( ParameterizeOutputPortInfo n )
 	{}
+
+	@Override
+	public void visit( ParameterizeInputPortInfo n )
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

@@ -84,6 +84,7 @@ import jolie.lang.parse.ast.OneWayOperationStatement;
 import jolie.lang.parse.ast.OperationDeclaration;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParallelStatement;
+import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.lang.parse.ast.ParameterizeOutputPortInfo;
 import jolie.lang.parse.ast.PointerStatement;
 import jolie.lang.parse.ast.PostDecrementStatement;
@@ -1949,14 +1950,13 @@ public class OOITBuilder implements OLVisitor
 			solicitResponseTypes.put( portId, new HashMap<>() );
 
 			n.parameter().accept(this);
-			System.out.println(currExpression);
 
 			Value v = currExpression.evaluate();
 
 			// construct operation from interface TODO construct interface 
 			v.children().get( "interfaces" ).forEach( iface -> {
 				String interfaceName = iface.toString();
-				iface.getChildren("operations").forEach(opValue -> registerOperationTypeValue(portId, opValue));
+				iface.getChildren("operations").forEach(opValue -> registerOutputOperationTypeValue(portId, opValue));
 			} );
 
 
@@ -1983,13 +1983,269 @@ public class OOITBuilder implements OLVisitor
 		} 
 	}
 
-	private void registerOperationTypeValue(String portId, Value opValue ){
+
+	// public void visit( InputPortInfo n )
+	// {
+	// 	currentPortInterface = new Interface(
+	// 		new HashMap< String, OneWayTypeDescription >(),
+	// 		new HashMap< String, RequestResponseTypeDescription >()
+	// 	);
+	// 	for( OperationDeclaration op : n.operations() ) {
+	// 		op.accept( this );
+	// 	}
+		
+	// 	Map< String, OutputPort > redirectionMap =
+	// 		new HashMap< String, OutputPort > ();
+	// 	OutputPort oPort = null;
+	// 	for( Entry< String, String > entry : n.redirectionMap().entrySet() ) {
+	// 		try {
+	// 			oPort = interpreter.getOutputPort( entry.getValue() );
+	// 		} catch( InvalidIdException e ) {
+	// 			error( n.context(), "Unknown output port (" + entry.getValue() + ") in redirection for input port " + n.id() );
+	// 		}
+	// 		redirectionMap.put( entry.getKey(), oPort );
+	// 	}
+
+	// 	OutputPort outputPort;
+	// 	Map< String, OneWayTypeDescription > outputPortNotificationTypes;
+	// 	Map< String, RequestResponseTypeDescription > outputPortSolicitResponseTypes;
+	// 	Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
+	// 	InterfaceExtender extender;
+	// 	for( InputPortInfo.AggregationItemInfo item : n.aggregationList() ) {
+	// 		String outputPortName = item.outputPortList()[0];
+	// 		if ( item.interfaceExtender() == null ) {
+	// 			extender = null;
+	// 		} else {
+	// 			extender = interfaceExtenders.get( item.interfaceExtender().name() );
+	// 		}
+	// 		try {
+	// 			outputPort = interpreter.getOutputPort( outputPortName );
+	// 			outputPortNotificationTypes = notificationTypes.get( outputPortName );
+	// 			outputPortSolicitResponseTypes = solicitResponseTypes.get( outputPortName );
+	// 			for( String operationName : outputPortNotificationTypes.keySet() ) {
+	// 				aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.ONE_WAY, outputPort ) );
+	// 				putAggregationConfiguration( n.id(), operationName,
+	// 					new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
+	// 			}
+	// 			for( String operationName : outputPortSolicitResponseTypes.keySet() ) {
+	// 				aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.REQUEST_RESPONSE, outputPort ) );
+	// 				putAggregationConfiguration( n.id(), operationName,
+	// 					new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
+	// 			}
+	// 		} catch( InvalidIdException e ) {
+	// 			error( n.context(), e );
+	// 		}
+	// 	}
+		
+	// 	String pId = n.protocolId();
+	// 	CommProtocolFactory protocolFactory = null;
+
+	// 	VariablePath protocolConfigurationPath =
+	// 		new VariablePathBuilder( true )
+	// 		.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+	// 		.add( n.id(), 0 )
+	// 		.add( Constants.PROTOCOL_NODE_NAME, 0 )
+	// 		.toVariablePath();
+	// 	try {
+	// 		protocolFactory = interpreter.commCore().getCommProtocolFactory( pId );
+	// 	} catch( IOException e ) {
+	// 		error( n.context(), e );
+	// 	}
+
+	// 	VariablePath locationPath =
+	// 		new VariablePathBuilder( true )
+	// 		.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+	// 		.add( n.id(), 0 )
+	// 		.add( Constants.LOCATION_NODE_NAME, 0 )
+	// 		.toVariablePath();
+	// 	locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
+	// 	// Process assignLocation = new AssignmentProcess( locationPath, Value.create( n.location().toString() ) );
+	// 	if (n.location() == null){
+	// 		error( n.context(), "inputPort " + n.id() + " has undefined location" );
+	// 		return;
+	// 	}
+	// 	locationPath.getValue().setValue( n.location().toString() );
+
+	// 	VariablePath protocolPath =
+	// 		new VariablePathBuilder( true )
+	// 		.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+	// 		.add( n.id(), 0 )
+	// 		.add( Constants.PROTOCOL_NODE_NAME, 0 )
+	// 		.toVariablePath();
+	// 	Process assignProtocol = new AssignmentProcess( protocolPath, Value.create( n.protocolId() ), n.context() );
+	// 	Process[] confChildren = new Process[] { buildProcess( n.protocolConfiguration() ), assignProtocol };
+	// 	SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
+
+	// 	InputPort inputPort = new InputPort(
+	// 		n.id(),
+	// 		locationPath,
+	// 		protocolConfigurationPath,
+	// 		currentPortInterface,
+	// 		aggregationMap,
+	// 		redirectionMap
+	// 	);
+		
+	// 	if ( n.location().toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+	// 		try {
+	// 			interpreter.commCore().addLocalInputPort( inputPort );
+	// 			inputPorts.put( inputPort.name(), inputPort );
+	// 		} catch( IOException e ) {
+	// 			error( n.context(), e );
+	// 		}
+	// 	} else if ( protocolFactory != null || n.location().getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+	// 		try {
+	// 			interpreter.commCore().addInputPort(
+	// 				inputPort,
+	// 				protocolFactory,
+	// 				protocolConfigurationSequence
+	// 			);
+	// 			inputPorts.put( inputPort.name(), inputPort );
+	// 		} catch( IOException ioe ) {
+	// 			error( n.context(), ioe );
+	// 		}
+	// 	} else {
+	// 		error( n.context(), "Communication protocol extension for protocol " + pId + " not found." );
+	// 	}
+	// 	currentPortInterface = null;
+	// }
+	
+
+	@Override
+	public void visit( ParameterizeInputPortInfo n )
+	{
+		String portId = n.id();
+
+		// aggregation and redirect is not support yet....
+		Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
+		Map< String, OutputPort > redirectionMap = new HashMap< String, OutputPort > ();
+		
+		if (n.parameter() instanceof VariableExpressionNode){
+			
+		} else { // inline case
+			n.parameter().accept(this);
+
+			Value v = currExpression.evaluate();
+
+			Interface portInterface = new Interface(
+						new HashMap< String, OneWayTypeDescription >(),
+						new HashMap< String, RequestResponseTypeDescription >()
+					);
+			v.children().get( "interfaces" ).forEach( ifaceValue -> {
+				Interface iface = createInterfaceFromValue(ifaceValue);
+				portInterface.merge(iface);
+
+				ifaceValue.getChildren("operations").forEach(opValue -> registerInputOperationTypeValue(portId, opValue));
+
+			});
+
+
+			URI location = null;
+			try {
+				location = new URI( v.children().get( "location" ).first().toString() );
+			} catch (URISyntaxException e) {
+				error(n.context(), "location is not valid URI");
+			}
+			String protocol = v.children().get("protocol").first().toString();
+
+			VariablePath protocolConfigurationPath =
+				new VariablePathBuilder( true )
+				.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+				.add( portId, 0 )
+				.add( Constants.PROTOCOL_NODE_NAME, 0 )
+				.toVariablePath();
+
+			VariablePath locationPath =
+				new VariablePathBuilder( true )
+				.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+				.add( portId, 0 )
+				.add( Constants.LOCATION_NODE_NAME, 0 )
+				.toVariablePath();
+			locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
+			locationPath.getValue().setValue( location.toString() );
+
+			VariablePath protocolPath =
+				new VariablePathBuilder( true )
+				.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+				.add( portId, 0 )
+				.add( Constants.PROTOCOL_NODE_NAME, 0 )
+				.toVariablePath();
+
+
+			CommProtocolFactory protocolFactory = null;
+			try {
+				protocolFactory = interpreter.commCore().getCommProtocolFactory( protocol );
+			} catch( IOException e ) {
+				error( n.context(), e );
+			}
+
+			Process assignProtocol = new AssignmentProcess( protocolPath, Value.create( protocol ), n.context() );
+			Process[] confChildren = new Process[] { buildProcess( n.protocolConfiguration() ), assignProtocol };
+			SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
+
+			InputPort inputPort = new InputPort(
+				portId,
+				locationPath,
+				protocolConfigurationPath,
+				portInterface,
+				aggregationMap,
+				redirectionMap
+			);
+
+			if (location.equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+				try {
+					interpreter.commCore().addLocalInputPort( inputPort );
+					inputPorts.put( inputPort.name(), inputPort );
+				} catch( IOException e ) {
+					error( n.context(), e );
+				}
+			} else if ( protocolFactory != null || location.getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+				try {
+					interpreter.commCore().addInputPort(
+						inputPort,
+						protocolFactory,
+						protocolConfigurationSequence
+					);
+					inputPorts.put( inputPort.name(), inputPort );
+				} catch( IOException ioe ) {
+					error( n.context(), ioe );
+				}
+			} else {
+				error( n.context(), "Communication protocol extension for protocol " + protocol + " not found." );
+			}
+		}
+
+
+	}
+
+	private void registerOutputOperationTypeValue(String portId, Value opValue ){
 		String operationName = opValue.strValue();
 		OperationTypeDescription opType = createTypeDescriptionFromValue(opValue);
 		if (opType.asOneWayTypeDescription() != null){
 			notificationTypes.get( portId ).put( operationName, opType.asOneWayTypeDescription() );
 		} else {
 			solicitResponseTypes.get( portId ).put( operationName, opType.asRequestResponseTypeDescription() );
+		}
+	}
+
+
+	private void registerInputOperationTypeValue(String portId, Value opValue ){
+		String operationName = opValue.strValue();
+		OperationTypeDescription opType = createTypeDescriptionFromValue(opValue);
+		if (opType.asOneWayTypeDescription() != null){
+			try {
+				interpreter.getOneWayOperation( operationName );
+			} catch (InvalidIdException e) {
+				interpreter.register( operationName,
+						new OneWayOperation( operationName, opType.asOneWayTypeDescription().requestType() ) );
+			}
+		} else {
+			try {
+				interpreter.getRequestResponseOperation( operationName );
+			} catch( InvalidIdException e ) {
+				RequestResponseTypeDescription typeDescription = opType.asRequestResponseTypeDescription();
+				interpreter.register( operationName,
+						new RequestResponseOperation( operationName, typeDescription) );
+			}
 		}
 	}
 
@@ -2008,7 +2264,32 @@ public class OOITBuilder implements OLVisitor
 		} else {
 			return null;
 		}
-	} 
+	}
+
+
+	private Interface createInterfaceFromValue( Value interfaceValue )
+	{
+
+		String interfaceName = interfaceValue.strValue();
+
+		Interface iface = new Interface( new HashMap< String, OneWayTypeDescription >(),
+				new HashMap< String, RequestResponseTypeDescription >() );
+		interfaceValue.getChildren( "operations" ).forEach( opValue -> {
+			String opName = opValue.strValue();
+			OperationTypeDescription otd = createTypeDescriptionFromValue( opValue );
+			if ( otd.asOneWayTypeDescription() != null ) {
+				iface.oneWayOperations().put( opName, otd.asOneWayTypeDescription() );
+			} else if ( otd.asRequestResponseTypeDescription() != null ) {
+				iface.requestResponseOperations().put( opName,
+						otd.asRequestResponseTypeDescription() );
+			}
+		}
+
+		);
+
+
+		return iface;
+	}
 
 }
 

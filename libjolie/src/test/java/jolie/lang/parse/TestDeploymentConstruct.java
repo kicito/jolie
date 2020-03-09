@@ -286,7 +286,43 @@ public class TestDeploymentConstruct
 		semanticVerifier.validate();
 
 		// assertNotNull( olParser.services );
+	}
 
+	@Test
+	void testParameterizeInputPort() throws IOException, URISyntaxException, ParserException,
+			SemanticException
+	{
+		
+		// variable node path
+		StringBuilder code = new StringBuilder();
+		code.append("inputPort myIP( a )");
+
+		this.is = new ByteArrayInputStream( code.toString().getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+
+		Program p = olParser.parse();
+
+		p = OLParseTreeOptimizer.optimize( p );
+
+		configuration.setCheckForMain(false);
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+
+		// inlinetree
+		StringBuilder code2 = new StringBuilder();
+		code2.append("inputPort myIP( { location = \"socket://localhost:3000\" protocol = \"http\"			interfaces << \"SumInterface\"{ operations[0] << \"notice\"{ reqType = \"string\" } } } )");
+
+		this.is = new ByteArrayInputStream( code2.toString().getBytes() );
+		OLParser olParser2 = oc.createOLParser( is );
+		
+		Program p2 = olParser2.parse();
+
+		p2 = OLParseTreeOptimizer.optimize( p2 );
+		semanticVerifier = new SemanticVerifier( p2, configuration );
+		semanticVerifier.validate();
+
+		// assertNotNull( olParser.services );
 	}
 
 
