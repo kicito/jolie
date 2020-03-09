@@ -23,11 +23,9 @@ public class TypeDefinitionInterface extends TypeInlineDefinition
     private TypeDefinitionInterface()
     {
         super( URIParsingContext.DEFAULT, INTERFACE_KEYWORD, NativeType.STRING,
-                Constants.RANGE_ONE_TO_ONE );
-        TypeDefinition reqType = new TypeChoiceDefinition( URIParsingContext.DEFAULT, "operations",
-                new Range( 1, Integer.MAX_VALUE ), TypeDefinitionOperation.oneWay(),
-                TypeDefinitionOperation.RequestResponse() );
-        super.putSubType( reqType );
+                new Range(1,Integer.MAX_VALUE) );
+
+        super.putSubType( TypeDefinitionOperation.getInstance() );
     }
 
     public static TypeDefinitionInterface getInstance()

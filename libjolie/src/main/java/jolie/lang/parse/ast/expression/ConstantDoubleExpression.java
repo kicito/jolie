@@ -21,11 +21,12 @@
 
 package jolie.lang.parse.ast.expression;
 
+import jolie.lang.NativeType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.context.ParsingContext;
 
-public class ConstantDoubleExpression extends OLSyntaxNode
+public class ConstantDoubleExpression extends OLSyntaxNode implements NativeLiteral
 {
 	private final double value;
 
@@ -38,6 +39,11 @@ public class ConstantDoubleExpression extends OLSyntaxNode
 	public double value()
 	{
 		return value;
+	}
+
+	@Override
+	public NativeType type(){
+		return NativeType.DOUBLE;
 	}
 	
 	@Override

@@ -2,124 +2,58 @@ package jolie.lang.parse.ast.types;
 
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
-import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
-import jolie.lang.parse.util.ProgramInspector;
+import jolie.util.Range;
 
-public class TypeDefinitionOperation
+public class TypeDefinitionOperation extends TypeInlineDefinition
 {
 	public static final String ONEWAY_KEYWORD = "oneWay";
 	public static final String REQUESTRESPONSE_KEYWORD = "requestResponse";
-	public static final String REQUEST_TYPE_KEYWORD = "oneWay";
-	public static final String RESPONSE_TYPE_KEYWORD = "requestResponse";
+	public static final String REQUEST_TYPE_KEYWORD = "reqType";
+    public static final String RESPONSE_TYPE_KEYWORD = "resType";
+    public static final String OPERATION_TYPE_KEYWORD = "operations";
     
     private static final TypeDefinition reqType = new TypeInlineDefinition(
             URIParsingContext.DEFAULT, REQUEST_TYPE_KEYWORD, NativeType.STRING, Constants.RANGE_ONE_TO_ONE );
 
     private static final TypeDefinition resType = new TypeInlineDefinition(
-            URIParsingContext.DEFAULT, RESPONSE_TYPE_KEYWORD, NativeType.STRING, Constants.RANGE_ONE_TO_ONE );
-
-    public static TypeDefinition requestType()
-    {
-        return reqType;
-    }
-
-
-    public static TypeDefinition responseType()
-    {
-        return resType;
-    }
-
-
-    public static TypeDefinitionOneWayOperation oneWay()
-    {
-        return OneWayLazyHolder.instance;
-    }
-
-    public static TypeDefinitionRequestResponseOperation requestResponse()
-    {
-        return RequestResponseLazyHolder.instance;
-    }
+            URIParsingContext.DEFAULT, RESPONSE_TYPE_KEYWORD, NativeType.STRING, new Range(0,1) );
     
-    private static class OneWayLazyHolder
-    {
-        private OneWayLazyHolder()
-        {
-        }
 
-        private final static TypeDefinitionOneWayOperation instance =
-                new TypeDefinitionOneWayOperation();
+    public static TypeDefinition getInstance()
+    {
+        return LazyHolder.instance;
     }
 
-    private static class RequestResponseLazyHolder
+    private static class LazyHolder
     {
-        private RequestResponseLazyHolder()
+        private LazyHolder()
         {
         }
 
-        private final static TypeDefinitionRequestResponseOperation instance =
-                new TypeDefinitionRequestResponseOperation();
+        private final static TypeDefinitionOperation instance =
+                new TypeDefinitionOperation();
     }
 
 
-    static class TypeDefinitionOneWayOperation extends TypeInlineDefinition
+    private TypeDefinitionOperation()
     {
-
-        private TypeDefinitionOneWayOperation()
-        {
-            super( URIParsingContext.DEFAULT, ONEWAY_KEYWORD, NativeType.VOID,
-                    Constants.RANGE_ONE_TO_ONE );
-            super.putSubType( reqType );
-        }
-
-        @Override
-        public String toString()
-        {
-            return ONEWAY_KEYWORD;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            return super.equals( obj );
-        }
-
-        @Override
-        public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
-        {
-            return this;
-        }
-
+        super( URIParsingContext.DEFAULT, OPERATION_TYPE_KEYWORD, NativeType.STRING,
+            new Range(1,Integer.MAX_VALUE) );
+        super.putSubType( reqType );
+        super.putSubType( resType );
     }
 
-    static class TypeDefinitionRequestResponseOperation extends TypeInlineDefinition
+    @Override
+    public String toString()
     {
+        return OPERATION_TYPE_KEYWORD;
+    }
 
-        private TypeDefinitionRequestResponseOperation()
-        {
-            super( URIParsingContext.DEFAULT, REQUESTRESPONSE_KEYWORD, NativeType.VOID,
-                    Constants.RANGE_ONE_TO_ONE );
-            super.putSubType( reqType );
-            super.putSubType( resType );
-        }
-
-        @Override
-        public String toString()
-        {
-            return REQUESTRESPONSE_KEYWORD;
-        }
-
-        @Override
-        public boolean equals( Object obj )
-        {
-            return super.equals( obj );
-        }
-
-        @Override
-        public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
-        {
-            return this;
-        }
+    @Override
+    public boolean equals( Object obj )
+    {
+        return super.equals( obj );
     }
 
 }

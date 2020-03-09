@@ -2,13 +2,17 @@ package jolie.lang.parse.ast.types;
 
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.ast.expression.ConstantStringExpression;
+import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
+import jolie.lang.parse.ast.expression.VoidExpressionNode;
+import jolie.lang.parse.ast.expression.InlineTreeExpressionNode.Operation;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.util.ProgramInspector;
 
 public class TypeDefinitionPort extends TypeInlineDefinition
 {
-	public static final String PORT_KEYWORD = "port";
+    public static final String PORT_KEYWORD = "portInfo";
 
     private static class LazyHolder
     {
@@ -21,7 +25,8 @@ public class TypeDefinitionPort extends TypeInlineDefinition
 
     private TypeDefinitionPort()
     {
-        super( URIParsingContext.DEFAULT, TypeDefinitionPort.PORT_KEYWORD, NativeType.VOID, Constants.RANGE_ONE_TO_ONE );
+        super( URIParsingContext.DEFAULT, TypeDefinitionPort.PORT_KEYWORD, NativeType.VOID,
+                Constants.RANGE_ONE_TO_ONE );
         TypeDefinition protocol = new TypeInlineDefinition( URIParsingContext.DEFAULT, "protocol",
                 NativeType.STRING, Constants.RANGE_ONE_TO_ONE );
         TypeDefinition location = new TypeInlineDefinition( URIParsingContext.DEFAULT, "location",
@@ -36,6 +41,28 @@ public class TypeDefinitionPort extends TypeInlineDefinition
         return LazyHolder.instance;
     }
 
+    public static boolean isPortType( InlineTreeExpressionNode n )
+    {
+        if ( !(n.rootExpression() instanceof VoidExpressionNode) ){
+            return false;
+        }
+        for (Operation o : n.operations()) {
+            if( o instanceof InlineTreeExpressionNode.AssignmentOperation ){
+                InlineTreeExpressionNode.AssignmentOperation assignment = (InlineTreeExpressionNode.AssignmentOperation)o;
+                TypeInlineDefinition subType = (TypeInlineDefinition) LazyHolder.instance.getSubType(assignment.path().toString());
+                if (!(assignment.expression() instanceof ConstantStringExpression && subType.nativeType() == NativeType.STRING)){
+                    return false;
+                }
+            }else if ( o instanceof InlineTreeExpressionNode.DeepCopyOperation ){
+                InlineTreeExpressionNode.DeepCopyOperation deepCopy = (InlineTreeExpressionNode.DeepCopyOperation)o;
+                TypeInlineDefinition subType = (TypeInlineDefinition) LazyHolder.instance.getSubType(deepCopy.path().toString());
+
+            }
+            System.out.println("operation = " + o);
+        }
+        return true;
+    }
+
     @Override
     public String toString()
     {
@@ -46,11 +73,5 @@ public class TypeDefinitionPort extends TypeInlineDefinition
     public boolean equals( Object obj )
     {
         return super.equals( obj );
-    }
-
-    @Override
-    public TypeDefinition resolve( ParsingContext ctx, ProgramInspector pi, String localID )
-    {
-        return this;
     }
 }

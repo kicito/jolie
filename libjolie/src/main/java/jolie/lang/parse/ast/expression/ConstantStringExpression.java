@@ -21,12 +21,13 @@
 
 package jolie.lang.parse.ast.expression;
 
+import jolie.lang.NativeType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.context.ParsingContext;
 
 
-public class ConstantStringExpression extends OLSyntaxNode
+public class ConstantStringExpression extends OLSyntaxNode implements NativeLiteral
 {
 	private final String value;
 
@@ -39,6 +40,11 @@ public class ConstantStringExpression extends OLSyntaxNode
 	public String value()
 	{
 		return value;
+	}
+
+	@Override
+	public NativeType type(){
+		return NativeType.STRING;
 	}
 	
 	@Override

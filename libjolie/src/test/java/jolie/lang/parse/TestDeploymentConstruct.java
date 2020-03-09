@@ -266,13 +266,15 @@ public class TestDeploymentConstruct
 		Program p = olParser.parse();
 
 		p = OLParseTreeOptimizer.optimize( p );
+
+		configuration.setCheckForMain(false);
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
 		// inlinetree
 
 		StringBuilder code2 = new StringBuilder();
-		code2.append("outputPort myOP( {location=\"local\"} )");
+		code2.append("outputPort myOP( { location = \"socket://localhost:3000\" protocol = \"http\"			interfaces << \"SumInterface\"{ operations[0] << \"notice\"{ reqType = \"string\" } } } )");
 
 		this.is = new ByteArrayInputStream( code2.toString().getBytes() );
 		OLParser olParser2 = oc.createOLParser( is );

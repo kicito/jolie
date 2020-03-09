@@ -120,6 +120,7 @@ import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
+import jolie.lang.parse.ast.types.TypeDefinitionPort;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.argument.Argument;
@@ -1538,12 +1539,14 @@ public class SemanticVerifier implements OLVisitor
 		outputPorts.put( n.id(), n );
 
 		encounteredAssignment( n.id() );
-		System.out.println(n.parameter());
 
 		if ( !(n.parameter() instanceof InlineTreeExpressionNode || n.parameter() instanceof VariableExpressionNode ) ) {
 			error(n, "expected parameter to be inlinetree or variable path node");
 		}else if (n.parameter() instanceof InlineTreeExpressionNode){
-			
+			InlineTreeExpressionNode inlineTree = (InlineTreeExpressionNode) n.parameter();
+			if (!inlineTree.isType((TypeInlineDefinition)definedTypes.get("portInfo"))){
+				error(n, "expected parameter to be inlinetree to be type of portInfo");
+			};
 		}
 	}
 

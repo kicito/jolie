@@ -24,6 +24,7 @@ package jolie.lang.parse.ast.expression;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.VariablePathNode;
+import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
 
 import java.io.Serializable;
@@ -142,6 +143,49 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 		return operations;
 	}
 
+	public boolean isType( TypeInlineDefinition td )
+	{
+
+		if ( (((NativeLiteral) this.rootExpression()).type() != td.nativeType()) ) {
+			return false;
+		}
+		
+		// TODO use better approach to test! this pass if tree only has some subtype of a type
+        for (Operation o : this.operations()) {
+            if( o instanceof AssignmentOperation ){
+                AssignmentOperation assignment = (AssignmentOperation)o;
+				String typeKey = ((ConstantStringExpression)assignment.path().path().get(0).key()).value();
+				TypeInlineDefinition subType = (TypeInlineDefinition) td.getSubType(typeKey);
+				
+				if ( assignment.expression() instanceof NativeLiteral){
+					NativeLiteral literal = (NativeLiteral)assignment.expression();
+					if (literal.type() != subType.nativeType()){
+						return false;
+					}
+				} else {
+					return false;
+				}
+            }else if ( o instanceof DeepCopyOperation ){
+				DeepCopyOperation deepCopy = (DeepCopyOperation)o;
+				String typeKey = ((ConstantStringExpression)deepCopy.path().path().get(0).key()).value();
+				TypeInlineDefinition subType = (TypeInlineDefinition) td.getSubType(typeKey);
+
+				if ( deepCopy.expression() instanceof InlineTreeExpressionNode){
+					InlineTreeExpressionNode inLineTree = (InlineTreeExpressionNode)deepCopy.expression();
+					if (!inLineTree.isType(subType)){
+						return false;
+					}
+				} else {
+					return false;
+				}
+            } else{
+				return false;
+			}
+        }
+
+		return true;
+	}
+
 	@Override
 	public void accept( OLVisitor visitor )
 	{
@@ -161,12 +205,6 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 		return rootExpression.toString() + "{" + sb + "}";
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#hashCode()
-	 */
-
 	@Override
 	public int hashCode()
 	{
@@ -176,12 +214,6 @@ public class InlineTreeExpressionNode extends OLSyntaxNode
 		result = prime * result + ((rootExpression == null) ? 0 : rootExpression.hashCode());
 		return result;
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#equals(java.lang.Object)
-	 */
 
 	@Override
 	public boolean equals( Object obj )

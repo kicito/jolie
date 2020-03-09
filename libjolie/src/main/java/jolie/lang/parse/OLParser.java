@@ -222,10 +222,7 @@ public class OLParser extends AbstractParser
 		}
 		definedTypes.put( TypeDefinitionUndefined.UNDEFINED_KEYWORD, TypeDefinitionUndefined.getInstance() );
 		
-		definedTypes.put( TypeDefinitionOperation.REQUEST_TYPE_KEYWORD, TypeDefinitionOperation.requestType() );
-		definedTypes.put( TypeDefinitionOperation.RESPONSE_TYPE_KEYWORD, TypeDefinitionOperation.responseType() );
-		definedTypes.put( TypeDefinitionOperation.ONEWAY_KEYWORD, TypeDefinitionOperation.oneWay() );
-		definedTypes.put( TypeDefinitionOperation.REQUESTRESPONSE_KEYWORD, TypeDefinitionOperation.requestResponse() );
+		definedTypes.put( TypeDefinitionOperation.OPERATION_TYPE_KEYWORD, TypeDefinitionOperation.getInstance() );
 		definedTypes.put( TypeDefinitionInterface.INTERFACE_KEYWORD, TypeDefinitionInterface.getInstance() );
 		definedTypes.put( TypeDefinitionPort.PORT_KEYWORD, TypeDefinitionPort.getInstance() );
 

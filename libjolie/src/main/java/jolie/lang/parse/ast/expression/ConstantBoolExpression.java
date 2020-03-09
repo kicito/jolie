@@ -21,12 +21,13 @@
 
 package jolie.lang.parse.ast.expression;
 
+import jolie.lang.NativeType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.context.ParsingContext;
 
 
-public class ConstantBoolExpression extends OLSyntaxNode
+public class ConstantBoolExpression extends OLSyntaxNode implements NativeLiteral
 {
 	private final boolean value;
 
@@ -39,6 +40,11 @@ public class ConstantBoolExpression extends OLSyntaxNode
 	public boolean value()
 	{
 		return value;
+	}
+
+	@Override
+	public NativeType type(){
+		return NativeType.BOOL;
 	}
 	
 	@Override
