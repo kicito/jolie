@@ -233,6 +233,7 @@ import jolie.runtime.typing.OneWayTypeDescription;
 import jolie.runtime.typing.OperationTypeDescription;
 import jolie.runtime.typing.RequestResponseTypeDescription;
 import jolie.runtime.typing.Type;
+import jolie.runtime.typing.TypeCheckingException;
 import jolie.util.ArrayListMultiMap;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
@@ -1941,46 +1942,46 @@ public class OOITBuilder implements OLVisitor
 	{
 		String portId = n.id();
 		final Process protocolConfigurationProcess = NullProcess.getInstance();
+		Value v = null;
+
+		notificationTypes.put( portId, new HashMap<>() );
+		solicitResponseTypes.put( portId, new HashMap<>() );
+
 		if (n.parameter() instanceof VariableExpressionNode){
-			
+			n.parameter().accept(this);
+			VariablePath varPath = (VariablePath)currExpression;
+			v = varPath.evaluate();
 		} else { // inline case
-
-
-			notificationTypes.put( portId, new HashMap<>() );
-			solicitResponseTypes.put( portId, new HashMap<>() );
-
 			n.parameter().accept(this);
 
-			Value v = currExpression.evaluate();
+			v = currExpression.evaluate();
+		}
 
-			// construct operation from interface TODO construct interface 
-			v.children().get( "interfaces" ).forEach( iface -> {
-				String interfaceName = iface.toString();
-				iface.getChildren("operations").forEach(opValue -> registerOutputOperationTypeValue(portId, opValue));
-			} );
+		// construct operation from interface TODO construct interface 
+		v.children().get( "interfaces" ).forEach( iface -> {
+			String interfaceName = iface.toString();
+			iface.getChildren("operations").forEach(opValue -> registerOutputOperationTypeValue(portId, opValue));
+		} );
 
+		URI location = null;
+		try {
+			location = new URI(v.children().get("location").first().strValue());
+		} catch (URISyntaxException e) {
+			error(n.context(), "location:" + location + " is not valid URI");
+		}
 
-			String location = v.children().get("location").first().toString();
-			String protocol = v.children().get("protocol").first().toString();
-			try {
-				n.setLocation(new URI(location));
-			} catch (URISyntaxException e) {
-				error(n.context(), "location:" + location + " is not valid URI");
-			}
+		String protocol = v.children().get("protocol").first().toString();
 
-			n.setProtocolId(protocol);
-
-			interpreter.register( n.id(), new OutputPort(
-				interpreter,
-				n.id(),
-				n.protocolId(),
-				protocolConfigurationProcess,
-				n.location(),
-				getOutputPortInterface( n.id() ),
-				false
-				)
-			);
-		} 
+		interpreter.register( n.id(), new OutputPort(
+			interpreter,
+			n.id(),
+			protocol,
+			protocolConfigurationProcess,
+			location,
+			getOutputPortInterface( n.id() ),
+			false
+			)
+		);
 	}
 
 
