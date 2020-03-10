@@ -1543,19 +1543,27 @@ public class SemanticVerifier implements OLVisitor
 
 		if ( !(n.parameter() instanceof InlineTreeExpressionNode || n.parameter() instanceof VariableExpressionNode ) ) {
 			error(n, "expected parameter to be inlinetree or variable path node");
-		}else if (n.parameter() instanceof InlineTreeExpressionNode){
-			InlineTreeExpressionNode inlineTree = (InlineTreeExpressionNode) n.parameter();
-			if (!inlineTree.isType((TypeInlineDefinition)definedTypes.get("portInfo"))){
-				error(n, "expected parameter to be inlinetree to be type of portInfo");
-			};
 		}
+		// else if (n.parameter() instanceof InlineTreeExpressionNode){
+		// 	InlineTreeExpressionNode inlineTree = (InlineTreeExpressionNode) n.parameter();
+		// 	// if (!inlineTree.isType((TypeInlineDefinition)definedTypes.get("portInfo"))){
+		// 	// 	error(n, "expected parameter to be inlinetree to be type of portInfo");
+		// 	// };
+		// }
 	}
 
 	@Override
 	public void visit( ParameterizeInputPortInfo n )
 	{
-		// TODO Auto-generated method stub
-		
+		if ( outputPorts.get( n.id() ) != null )
+			error( n, "output port " + n.id() + " has been already defined" );
+		inputPorts.put( n.id(), n );
+
+		encounteredAssignment( n.id() );
+
+		if ( !(n.parameter() instanceof InlineTreeExpressionNode || n.parameter() instanceof VariableExpressionNode ) ) {
+			error(n, "expected parameter to be inlinetree or variable path node");
+		}
 	}
 
 }
