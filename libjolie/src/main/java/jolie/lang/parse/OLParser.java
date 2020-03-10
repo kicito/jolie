@@ -1131,11 +1131,18 @@ public class OLParser extends AbstractParser
 
 	private void parseImport() throws IOException, ParserException
 	{
-		if ( token.is( Scanner.TokenType.IMPORT ) ) {
+
+		if ( token.is( Scanner.TokenType.FROM ) ){
 			String importTarget;
 			boolean isNamespaceImport = false;
 			List< Pair< String, String > > pathNodes = null;
 			getToken();
+			assertToken( Scanner.TokenType.STRING, "expected path string to import" );
+			importTarget = token.content();
+			getToken();
+
+			eat( Scanner.TokenType.IMPORT, "expected \"import\" for an import statement" );
+			
 			if ( token.is( Scanner.TokenType.ASTERISK ) ) {
 				isNamespaceImport = true;
 				getToken();
@@ -1163,10 +1170,6 @@ public class OLParser extends AbstractParser
 					}
 				} while (keepRun);
 			}
-			eat( Scanner.TokenType.FROM, "expected \"from\" for an import statement" );
-			assertToken( Scanner.TokenType.STRING, "expected filename to import" );
-			importTarget = token.content();
-
 			ImportStatement stmt =
 					new ImportStatement( getContext(), importTarget, isNamespaceImport, pathNodes );
 			getToken();
