@@ -37,7 +37,7 @@ class TestService
 		Program p = olParser.parse();
 		p = OLParseTreeOptimizer.optimize( p );
 
-		assertEquals( olParser.services.size(), 2 );
+		assertEquals( 2, olParser.services.size() );
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
@@ -56,7 +56,7 @@ class TestService
 
 		Program p = olParser.parse();
 
-		assertEquals( olParser.services.size(), 2 );
+		assertEquals( olParser.services.size(), 5 );
 
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();

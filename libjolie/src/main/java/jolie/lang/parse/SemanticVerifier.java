@@ -118,6 +118,8 @@ import jolie.lang.parse.ast.expression.ProductExpressionNode;
 import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
+import jolie.lang.parse.ast.servicenode.JavaServiceNode;
+import jolie.lang.parse.ast.servicenode.JolieServiceNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
@@ -1564,6 +1566,21 @@ public class SemanticVerifier implements OLVisitor
 		if ( !(n.parameter() instanceof InlineTreeExpressionNode || n.parameter() instanceof VariableExpressionNode ) ) {
 			error(n, "expected parameter to be inlinetree or variable path node");
 		}
+	}
+
+	@Override
+	public void visit( JolieServiceNode n )
+	{
+		// jolie 2.0
+		this.mainDefined = true;
+	}
+
+	@Override
+	public void visit( JavaServiceNode n )
+	{
+		// jolie 2.0
+		this.mainDefined = true;
+		
 	}
 
 }

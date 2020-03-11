@@ -7,10 +7,17 @@ public class ParameterizeOutputPortInfo extends OutputPortInfo
 {
 
     private OLSyntaxNode parameter;
+    private String id;
 
     public ParameterizeOutputPortInfo( ParsingContext context, String id )
     {
         super( context, id );
+        this.id = id;
+    }
+
+    public String id()
+    {
+        return this.id;
     }
 
     public void setParameter( OLSyntaxNode parameter )

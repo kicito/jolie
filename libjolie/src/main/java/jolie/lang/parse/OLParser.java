@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import jolie.lang.Constants;
 import jolie.lang.Constants.EmbeddedServiceType;
+import jolie.lang.Constants.ServiceType;
 import jolie.lang.NativeType;
 import jolie.lang.parse.Scanner.TokenType;
 import jolie.lang.parse.ast.AddAssignStatement;
@@ -148,6 +149,9 @@ import jolie.lang.parse.module.exception.ModuleNotFoundException;
 import jolie.lang.parse.module.exception.ModuleParsingException;
 import jolie.lang.parse.module.parameter.Parameter;
 import jolie.lang.parse.module.parameter.ParameterFactory;
+import jolie.lang.parse.ast.servicenode.JavaServiceNode;
+import jolie.lang.parse.ast.servicenode.JolieServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
 import jolie.util.Pair;
@@ -327,7 +331,7 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	protected Map< String, ServiceNode > services = new HashMap< String, ServiceNode >();
+	protected Map< String, ServiceNodeParameterize > services = new HashMap< String, ServiceNodeParameterize >();
 
 	private void parseService() 
 		throws IOException, ParserException
@@ -346,22 +350,24 @@ public class OLParser extends AbstractParser
 
 	}
 
-	private void _parseService() throws IOException, ParserException
+	private ServiceNodeParameterize _parseServiceTechnology() 
+		throws IOException, ParserException
 	{
-		Constants.EmbeddedServiceType type = Constants.EmbeddedServiceType.JOLIE;
-
+		ServiceNodeParameterize result = null;
+		ServiceType type = Constants.ServiceType.JOLIE;
+		String className = null;
 		switch (token.content()) {
 			case "Java":
 				getToken();
-				type = Constants.EmbeddedServiceType.JAVA;
+				type = Constants.ServiceType.JAVA;
+				eat(TokenType.LPAREN, "expected (\"javaclass\") for java technology");
+				className = token.content();
+				getToken();
+				eat(TokenType.RPAREN, "expected ) for closing java class declaration");
 				break;
 			case "Jolie":
 				getToken();
-				type = Constants.EmbeddedServiceType.JOLIE;
-				break;
-			case "JavaScript":
-				getToken();
-				type = Constants.EmbeddedServiceType.JAVASCRIPT;
+				type = Constants.ServiceType.JOLIE;
 				break;
 		}
 
@@ -369,20 +375,66 @@ public class OLParser extends AbstractParser
 		String serviceName = token.content();
 		getToken();
 
-		ServiceNode service = new ServiceNode( getContext(), serviceName, type );
-
-		eat( Scanner.TokenType.LPAREN,
-				"expected ( after the opening clause of service " + serviceName );
-		service.addParameters(_parseServiceParameter(type));
-		eat( Scanner.TokenType.RPAREN,
-				"expected ) after the opening clause of service " + serviceName );
-		eat( Scanner.TokenType.LCURLY,
-				"expected { after the opening clause of service " + serviceName );
-		// add service to list
-		if ( this.services == null ) {
-			this.services = new HashMap< String, ServiceNode >();
+		if (type == Constants.ServiceType.JAVA){
+			if (className == null || className.isEmpty()){
+				throwException("expected target class name for java technology");
+			}
+			result = new JavaServiceNode(getContext(), className, serviceName);
+		}else if (type == Constants.ServiceType.JOLIE){
+			result = new JolieServiceNode(getContext(), serviceName);
+		}else{
+			throwException("technology " + type + " is not supported for jolie");
 		}
 
+		return result;
+	}
+
+	private Pair< TypeDefinition, VariablePathNode > _parseServiceParameter()
+		throws IOException, ParserException
+	{
+		if (token.is(TokenType.LPAREN)){
+			getToken();
+			if (token.is(TokenType.RPAREN)){ // case ( )
+				getToken();
+				return new Pair< TypeDefinition, VariablePathNode >(TypeDefinitionUndefined.getInstance(), null);
+			} else { // case ( type path )
+				
+				TypeDefinition parameterType = null;
+				NativeType nativeType = readNativeType();
+				if ( nativeType == null ) { // It's a user-defined type
+					assertToken( Scanner.TokenType.ID, "expected type name for service" );
+				}
+				if ( definedTypes.containsKey( token.content() ) == false ) {
+					throwException( "invalid type: " + token.content() );
+				}
+				parameterType = definedTypes.get( token.content() );
+				getToken();
+				assertToken( Scanner.TokenType.ID, "expected variable path after typename" );
+
+				VariablePathNode v = _parseVariablePath(token.content());
+				getToken();
+				eat(TokenType.RPAREN, "expected )");
+				return new Pair< TypeDefinition, VariablePathNode >(parameterType, v);
+			}
+		}else{
+			return new Pair< TypeDefinition, VariablePathNode >(TypeDefinitionUndefined.getInstance(), null);
+		}
+	}
+
+	private void _parseService() 
+		throws IOException, ParserException
+	{
+		ServiceNodeParameterize service =  _parseServiceTechnology();
+
+		// parsing type
+
+		if (service.parameterType() == null){
+			service.setParameter(TypeDefinitionUndefined.getInstance(), null);
+		}
+
+		service.setParameter(_parseServiceParameter());
+
+		eat(TokenType.LCURLY, "expected {");
 		// copy children of parent to service
 		for (OLSyntaxNode child : programBuilder.children()
 				.toArray( new OLSyntaxNode[programBuilder.children().size()] )) {
@@ -391,7 +443,6 @@ public class OLParser extends AbstractParser
 				service.addDeploymentInstruction( child );
 			}
 		}
-		OLSyntaxNode initSequence = null, main = null;
 		boolean keepRun = true;
 		while (keepRun) {
 			switch (token.content()) {
@@ -422,16 +473,14 @@ public class OLParser extends AbstractParser
 					eat( Scanner.TokenType.RCURLY, "} expected" );
 					break;
 				case "init":
-					initSequence = parseInit();
-					service.addInit(initSequence);
+					service.addInit(parseInit());
 					break;
 				case "main":
-					main = parseMain();
-					service.setMain(main);
+					service.setMain(parseMain());
 					break;
 				case "inputPort":
 					InputPortInfo inputPortInfo = null;
-					if ( type == Constants.EmbeddedServiceType.JOLIE ){
+					if ( service.getType() == Constants.ServiceType.JOLIE ){
 						inputPortInfo = parseInputPortInfo();
 					} else {
 						if (service.getInputPortInfos().size() > 0){
@@ -441,191 +490,92 @@ public class OLParser extends AbstractParser
 					}
 					service.addInputPortInfo(inputPortInfo);
 					break;
-				case "binding":
-					Bind[] binds = parseBinding();
-					service.addBindings(binds);
-					break;
 				case "outputPort":
 					OutputPortInfo outputPortInfo = parseOutputPortInfo();
 					service.addOutputPortInfo(outputPortInfo);
 					break;
-				case "embed":
-					EmbeddedServiceNode2 node = parseEmbed(service);
-					service.addEmbedding(node);
-					break;
+				// case "embed":
+				// 	EmbeddedServiceNode2 node = parseEmbed(service);
+				// 	service.addEmbedding(node);
+				// 	break;
 				default:
 					keepRun = false;
 			}
 		}
 
-		eat( Scanner.TokenType.RCURLY,
-				"expected } at the end of the definition of service " + serviceName );
+		eat(TokenType.RCURLY, "expected }");
 
-		// add embedded service node to program that is embedding it
-		this.services.put( serviceName, service );
+		this.services.put( service.name(), service );
 
 		this.programBuilder.addChild( service );
 	}
 
 	// Parsing function for Jolie 2.0 embed keyword
-	private EmbeddedServiceNode2 parseEmbed(ServiceNode clientService) 
-		throws IOException, ParserException
-	{
-		getToken();
+	// private EmbeddedServiceNode2 parseEmbed(ServiceNode clientService) 
+	// 	throws IOException, ParserException
+	// {
+	// 	getToken();
 
-		String embeddingServiceName = token.content();
-		ParsingContext context = getContext();
-		getToken();
+	// 	String embeddingServiceName = token.content();
+	// 	ParsingContext context = getContext();
+	// 	getToken();
 
-		ServiceNode embedingService = services.get( embeddingServiceName );
-		if ( embedingService == null ){
-			throwException("service " + embeddingServiceName + " not found");
-		}
-		EmbeddedServiceNode2 embedNode = new EmbeddedServiceNode2( context,clientService, embedingService );
+	// 	ServiceNode embedingService = services.get( embeddingServiceName );
+	// 	if ( embedingService == null ){
+	// 		throwException("service " + embeddingServiceName + " not found");
+	// 	}
+	// 	EmbeddedServiceNode2 embedNode = new EmbeddedServiceNode2( context,clientService, embedingService );
 
-		embedNode.setArgs( _parseEmbedArgument(clientService) );
-		return embedNode;
-	}
+	// 	embedNode.setArgs( _parseEmbedArgument(clientService) );
+	// 	return embedNode;
+	// }
 
-	
-	private Bind[] parseBinding()
-		throws IOException, ParserException
-	{
-		getToken();
-		eat( Scanner.TokenType.LCURLY, "expected { after the opening clause of binding" );
-		List<Bind > result = new ArrayList<Bind > ();
-		boolean keepRun = true;
-		while (keepRun) {
-			
-			if (!token.isIdentifier()){
-				throwException("expected a service's InputPort name after the service's InputPort of bindIn");
-			}
-			String servicePortName = token.content();
-			getToken();
-			
-			eat(Scanner.TokenType.POINTS_TO,  "expected -> after the binding outputPort name" );
-			if ( !token.isIdentifier() ) {
-				throwException(
-						"expected a service's InputPort name after the service's InputPort of bindIn" );
-			}
-			String clientPortName = token.content();
-			getToken();
-			result.add(new Bind(servicePortName, clientPortName));
-			
-			if ( token.is(Scanner.TokenType.RCURLY) ) {
-				keepRun = false;
-			}
-		}
-		eat( Scanner.TokenType.RCURLY, "expected } after the opening clause of binding" );
+	// private Argument[] _parseEmbedArgument( ServiceNode clientService )
+	// 		throws ParserException, IOException
+	// {
+	// 	eat( Scanner.TokenType.LPAREN, "expected ( after service name" );
+	// 	List< Argument > args = new ArrayList< Argument >();
+	// 	boolean keepRun = true;
+	// 	while (keepRun) {
+	// 		if ( token.is( Scanner.TokenType.RPAREN ) ) {
+	// 			keepRun = false;
+	// 		} else if ( token.is( TokenType.STRING ) ) {
+	// 			args.add( new ArgumentString( token.content() ) );
+	// 			getToken();
+	// 		} else if ( token.isIdentifier() ) {
+	// 			if (!clientService.getInputPortInfos().containsKey(token.content()) &&
+	// 			!clientService.getOutputPortInfos().containsKey(token.content()) ){
+	// 				throwException("undefined port name " + token.content());
+	// 			}
+	// 			args.add( new ArgumentID( token.content() ) );
+	// 			getToken();
+	// 		} else if ( token.is( Scanner.TokenType.LCURLY ) ) {
+	// 			args.add( _parseArgumentPortLiteral() );
+	// 		} else {
+	// 			throwException( "unable to parse argument for service" );
+	// 		}
 
-		return result.toArray(new Bind[0]);
-	}
+	// 		if ( token.is( Scanner.TokenType.COMMA ) ) {
+	// 			getToken();
+	// 		}
 
-	private Parameter[] _parseServiceParameter( Constants.EmbeddedServiceType type )
-			throws ParserException, IOException
-	{
-		boolean keepRun = true;
-		int argIndex = 0;
-		List< Parameter > params = new ArrayList< Parameter >();
-		while (keepRun) {
-			if ( argIndex == 0 && type == EmbeddedServiceType.JAVA
-					&& !token.is( TokenType.STRING ) ) {
-				throwException( "expected package id for Java Type service" );
-			}
-			if ( token.is( Scanner.TokenType.RPAREN ) ) {
-				keepRun = false;
-			} else if ( token.is( TokenType.STRING ) ) {
-				params.add( ParameterFactory.createParameter(token.content() ) );
-				getToken();
-			} else if ( token.isKeyword( "inputPort" ) || token.isKeyword( "outputPort" ) ) {
-				String key = token.content();
-				getToken();
-				String value = token.content();
-				getToken();
-				Pair< String, String > arg = new Pair< String, String >( key, value );
-				params.add( ParameterFactory.createParameter(arg) );
-			} else {
-				throwException( "unable to parse parameter for service" );
-			}
-			argIndex++;
+	// 	}
+	// 	eat( Scanner.TokenType.RPAREN, "expected )" );
 
-			if ( token.is( Scanner.TokenType.COMMA ) ) {
-				getToken();
-			}
-		}
-		return params.toArray(new Parameter[0]);
-	}
+	// 	return args.toArray( new Argument[0] );
+	// }
 
-	private Argument[] _parseEmbedArgument( ServiceNode clientService )
-			throws ParserException, IOException
-	{
-		eat( Scanner.TokenType.LPAREN, "expected ( after service name" );
-		List< Argument > args = new ArrayList< Argument >();
-		boolean keepRun = true;
-		while (keepRun) {
-			if ( token.is( Scanner.TokenType.RPAREN ) ) {
-				keepRun = false;
-			} else if ( token.is( TokenType.STRING ) ) {
-				args.add( new ArgumentString( token.content() ) );
-				getToken();
-			} else if ( token.isIdentifier() ) {
-				if (!clientService.getInputPortInfos().containsKey(token.content()) &&
-				!clientService.getOutputPortInfos().containsKey(token.content()) ){
-					throwException("undefined port name " + token.content());
-				}
-				args.add( new ArgumentID( token.content() ) );
-				getToken();
-			} else if ( token.is( Scanner.TokenType.LCURLY ) ) {
-				args.add( _parseArgumentPortLiteral() );
-			} else {
-				throwException( "unable to parse argument for service" );
-			}
+	// private ArgumentPortLiteral _parseArgumentPortLiteral() 
+	// 	throws ParserException, IOException
+	// {
+	// 	prependToken(
+	// 		new Scanner.Token( Scanner.TokenType.ID, "IP#args1" )
+	// 	);
 
-			if ( token.is( Scanner.TokenType.COMMA ) ) {
-				getToken();
-			}
-
-		}
-		eat( Scanner.TokenType.RPAREN, "expected )" );
-
-		return args.toArray( new Argument[0] );
-	}
-
-	private ArgumentPortLiteral _parseArgumentPortLiteral() 
-		throws ParserException, IOException
-	{
-
-		prependToken(
-			new Scanner.Token( Scanner.TokenType.ID, "IP#args1" )
-		);
-		// prependToken(Arrays.asList(
-		// 	new Scanner.Token( Scanner.TokenType.ID, "inputPort" ),
-		// 	new Scanner.Token( Scanner.TokenType.ID, "IP#args1" )
-		// ));
-		InputPortInfo inputPortInfo = null;
-		inputPortInfo = parseInputPortInfo();
-		return new ArgumentPortLiteral(inputPortInfo);
-		
-		// eat( Scanner.TokenType.LCURLY, "expected {" );
-		// boolean keepRun = true;
-		// Map<String, String> literalMap = new HashMap<String, String>(); 
-		// while(keepRun){
-		// 	if ( token.is(Scanner.TokenType.RCURLY)){
-		// 		keepRun = false;
-		// 	}else if ( token.is( TokenType.STRING ) || token.isIdentifier() ) {
-				
-		// 		String key = token.content();
-		// 		getToken();
-		// 		eat( Scanner.TokenType.COLON, "expected : after argument key" );
-		// 		String value = token.content();
-		// 		getToken();
-		// 		literalMap.put(key, value);
-		// 	}else {
-		// 		throwException( "unable to parse argument literal for service" );
-		// 	}
-		// }
-		// return new ArgumentPortLiteral(literalMap);
-	}
+	// 	InputPortInfo inputPortInfo = null;
+	// 	inputPortInfo = parseInputPortInfo();
+	// 	return new ArgumentPortLiteral(inputPortInfo);
+	// }
 
 
 	private void parseTypes()
@@ -1172,7 +1122,6 @@ public class OLParser extends AbstractParser
 			}
 			ImportStatement stmt =
 					new ImportStatement( getContext(), importTarget, isNamespaceImport, pathNodes );
-			getToken();
 
 			solveImport(stmt);
 		}
@@ -1208,14 +1157,14 @@ public class OLParser extends AbstractParser
 				interfaces.put(entry.getKey(), entry.getValue());
 			}
 
-			for(Map.Entry<String, ServiceNode> entry: importResult.services().entrySet()){
-				if (services.containsKey(entry.getKey())){
-					if (!services.get(entry.getKey()).equals(entry.getValue())){
-						System.out.println("[OLPARSER] warning, imported service '" + entry.getKey() + "' is already defined, replacing definition" );
-					}
-				}
-				services.put(entry.getKey(), entry.getValue());
-			}
+			// for(Map.Entry<String, ServiceNode> entry: importResult.services().entrySet()){
+			// 	if (services.containsKey(entry.getKey())){
+			// 		if (!services.get(entry.getKey()).equals(entry.getValue())){
+			// 			System.out.println("[OLPARSER] warning, imported service '" + entry.getKey() + "' is already defined, replacing definition" );
+			// 		}
+			// 	}
+			// 	services.put(entry.getKey(), entry.getValue());
+			// }
 		}
 	}
 
@@ -1681,7 +1630,7 @@ public class OLParser extends AbstractParser
 		return iport;
 	}
 
-	// Parsing function for Foreign service, where it should not have protocol and location defined
+	// Parsing function for Foreign service, where protocol and location should not be defined
 	private InputPortInfo parseForeignInputPortInfo()
 		throws IOException, ParserException
 	{

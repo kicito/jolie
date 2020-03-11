@@ -174,6 +174,36 @@ public final class Constants
 		}
 	}
 
+	public enum ServiceType
+	{
+		JOLIE("Jolie"), JAVA("Java"), UNSUPPORTED("Unsupported");
+		
+		private final String str;
+		
+		ServiceType( String str )
+		{
+			this.str = str;
+		}
+
+		@Override
+		public String toString()
+		{
+			return str;
+		}
+	}
+
+	public static ServiceType stringToServiceType( String str )
+	{
+		switch( str.toLowerCase() ) {
+			case "jolie":
+				return ServiceType.JOLIE;
+			case "java":
+				return ServiceType.JAVA;
+			default:
+				return ServiceType.UNSUPPORTED;
+		}
+	}
+
 	public enum ExecutionMode
 	{
 		SINGLE, SEQUENTIAL, CONCURRENT

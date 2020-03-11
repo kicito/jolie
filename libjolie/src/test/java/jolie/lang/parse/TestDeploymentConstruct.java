@@ -175,46 +175,56 @@ public class TestDeploymentConstruct
 	@Test
 	void testService() throws Exception
 	{
-		String code = "decl service doubleService (){ init{ a = 1 } main{a=2} }";
+		String code = "decl service doubleService (){ }";
+		// String code = "decl service doubleService (){ init{ a = 1 } main{a=2} }";
 		this.is = new ByteArrayInputStream( code.getBytes() );
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
 		OLParser olParser = oc.createOLParser( is );
-		SequenceStatement expected = new SequenceStatement( null );
-		VariablePathNode pathNodeA = new VariablePathNode( null, VariablePathNode.Type.NORMAL );
-		pathNodeA.append( new Pair<>( new ConstantStringExpression( null, "a" ), null ) );
-
-		AssignStatement assignmentNode = new AssignStatement( null, pathNodeA, OLSyntaxNodeCreator
-				.createNodeBasicExpression( new ConstantIntegerExpression( null, 1 ) ) );
-		SequenceStatement expected2 = new SequenceStatement( null );
-
-		AssignStatement assignmentNode2 = new AssignStatement( null, pathNodeA, OLSyntaxNodeCreator
-				.createNodeBasicExpression( new ConstantIntegerExpression( null, 2 ) ) );
-
-		expected.addChild( assignmentNode );
-		expected2.addChild( assignmentNode2 );
 
 		Program p = olParser.parse();
 
-		assertNotNull( olParser.services );
-		Program program = olParser.services.get( "doubleService" ).program();
-		assertTrue( iv.programHasOLSyntaxNode( program, expected ) );
-		assertTrue( iv.programHasOLSyntaxNode( program, expected2 ) );
-
-
+		configuration.setCheckForMain(false);
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
+	}
 
+	@Test
+	void testServiceWithOutParenthesis() throws Exception
+	{
+		String code = "decl service doubleService { }";
+		this.is = new ByteArrayInputStream( code.getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+
+		Program p = olParser.parse();
+
+		configuration.setCheckForMain(false);
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
+
+	@Test
+	void testServiceParameter() throws Exception
+	{
+		String code = "decl service doubleService (string a){ }";
+		// String code = "decl service doubleService (){ init{ a = 1 } main{a=2} }";
+		this.is = new ByteArrayInputStream( code.getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
+
+		Program p = olParser.parse();
+
+		configuration.setCheckForMain(false);
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
 	}
 
 	@Test
 	void testJavaService() throws Exception
 	{
 		StringBuilder code = new StringBuilder();
-		code.append("decl service Java ConsoleService (\"joliex.io.ConsoleService\", outputPort fromClient, inputPort toClient)");
+		code.append("decl service Java(\"joliex.io.ConsoleService\") ConsoleService (portInfo p)");
 		code.append("{");
-		code.append("inputPort IP { OneWay: test(int)}");
-		code.append("outputPort Receiver { location: \"local\" OneWay: test(int) }");
-		code.append("binding {IP -> fromClient Receiver -> toClient}");
 		code.append("}");
 
 		this.is = new ByteArrayInputStream( code.toString().getBytes() );
@@ -223,31 +233,10 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		assertNotNull( olParser.services );
-
+		configuration.setCheckForMain(false);
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
-	}
-
-	@Test
-	void testGlobalVar() throws IOException, URISyntaxException, ParserException
-	{
-		
-		StringBuilder code = new StringBuilder();
-		code.append("var a = 1");
-		code.append("var a << {a=1 b=2 c= \"test\"}");
-
-		this.is = new ByteArrayInputStream( code.toString().getBytes() );
-		InstanceCreator oc = new InstanceCreator( new String[] {} );
-		OLParser olParser = oc.createOLParser( is );
-
-		Program p = olParser.parse();
-
-		// assertNotNull( olParser.services );
-
-		// SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
-		// semanticVerifier.validate();
 	}
 
 	@Test
@@ -343,10 +332,10 @@ public class TestDeploymentConstruct
 	private static Stream< Arguments > importStatementExceptionTestProvider()
 	{
 		return Stream.of(
-				Arguments.of( "import AA from \"jolie2/import/simple-import/importstatement-test.ol\"",
+				Arguments.of( "from \"jolie2/import/simple-import/importstatement-test.ol\" import AA",
 						"unable to find AA in" ),
-				Arguments.of( "import AA from \"somewhere\"", "unable to locate" ), Arguments.of(
-						"import AA \"somewhere\"", "expected \"from\" for an import statement" ) );
+				Arguments.of( "from \"somewhere\" import AA", "unable to locate" ), Arguments.of(
+						"from \"somewhere\" AA ", "expected \"import\" for an import statement" ) );
 	}
 
 	@AfterEach

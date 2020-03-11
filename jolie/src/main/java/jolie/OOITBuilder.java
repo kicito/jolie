@@ -129,6 +129,9 @@ import jolie.lang.parse.ast.expression.ProductExpressionNode;
 import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
+import jolie.lang.parse.ast.servicenode.JavaServiceNode;
+import jolie.lang.parse.ast.servicenode.JolieServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
@@ -2107,6 +2110,12 @@ public class OOITBuilder implements OLVisitor
 		// aggregation and redirect is not support yet....
 		Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
 		Map< String, OutputPort > redirectionMap = new HashMap< String, OutputPort > ();
+
+		// n.parameter().accept(this);
+		// InputPort inputPort = interpreter.commCore().addParameterizeInputPort( portId, currExpression );
+
+		// inputPorts.put( inputPort.name(), inputPort );
+		
 		
 		if (n.parameter() instanceof VariableExpressionNode){
 			
@@ -2150,7 +2159,7 @@ public class OOITBuilder implements OLVisitor
 				.add( Constants.LOCATION_NODE_NAME, 0 )
 				.toVariablePath();
 			locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
-			locationPath.getValue().setValue( location.toString() );
+			locationPath.getValue().deepCopyWithLinks(v.children().get( "location" ).first());
 
 			VariablePath protocolPath =
 				new VariablePathBuilder( true )
@@ -2278,6 +2287,28 @@ public class OOITBuilder implements OLVisitor
 
 
 		return iface;
+	}
+
+	@Override
+	public void visit( JolieServiceNode n )
+	{
+		visitServiceNode(n);
+	}
+
+	@Override
+	public void visit( JavaServiceNode n )
+	{
+		visitServiceNode(n);
+	}
+
+	private void visitServiceNode(ServiceNodeParameterize n){
+		String targetServiceName = this.interpreter.programFilename().split( "\\." )[0];
+
+		if ( n.name().equals( targetServiceName ) ) {
+			System.out.println( "[OOITBuilder] found target execution service " );
+			n.program().accept( this );
+		}
+
 	}
 
 }

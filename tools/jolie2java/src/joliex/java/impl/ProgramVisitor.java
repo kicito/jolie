@@ -104,6 +104,8 @@ import jolie.lang.parse.ast.expression.ProductExpressionNode;
 import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
+import jolie.lang.parse.ast.servicenode.JavaServiceNode;
+import jolie.lang.parse.ast.servicenode.JolieServiceNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
@@ -447,6 +449,20 @@ public class ProgramVisitor   extends GeneralProgramVisitor implements OLVisitor
 
 	@Override
 	public void visit( ParameterizeInputPortInfo n )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit( JolieServiceNode n )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void visit( JavaServiceNode n )
 	{
 		// TODO Auto-generated method stub
 		

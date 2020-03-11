@@ -70,6 +70,7 @@ import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -103,7 +104,7 @@ import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
-import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.ast.servicenode.*;
 
 public interface OLVisitor
 {
@@ -192,6 +193,8 @@ public interface OLVisitor
 	public void visit( TypeChoiceDefinition n );
 	public void visit( ServiceNode n);
 	public void visit( EmbeddedServiceNode2 n);
-	public void visit( ParameterizeOutputPortInfo n);
-	public void visit( ParameterizeInputPortInfo n);
+	public void visit( ParameterizeOutputPortInfo n );
+	public void visit( ParameterizeInputPortInfo n );
+	public void visit( JolieServiceNode n );
+	public void visit( JavaServiceNode n );
 }

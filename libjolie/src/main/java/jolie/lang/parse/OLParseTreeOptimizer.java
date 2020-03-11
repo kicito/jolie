@@ -105,7 +105,11 @@ import jolie.lang.parse.ast.expression.ProductExpressionNode;
 import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
+import jolie.lang.parse.ast.servicenode.JavaServiceNode;
+import jolie.lang.parse.ast.servicenode.JolieServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
+import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
@@ -1026,7 +1030,53 @@ public class OLParseTreeOptimizer
 			}
 			programChildren.add( p );
 		}
-	
+
+		@Override
+		public void visit( JolieServiceNode n )
+		{
+			JolieServiceNode node = new JolieServiceNode( n.context(), n.name() );
+			optimizeServiceNode( node, n );
+			programChildren.add( node );
+		}
+
+		@Override
+		public void visit( JavaServiceNode n )
+		{
+			JavaServiceNode node = new JavaServiceNode( n.context(), n.name(), n.getTarget() );
+			optimizeServiceNode( node, n );
+			programChildren.add( node );
+		}
+
+		private void optimizeServiceNode( ServiceNodeParameterize newNode, ServiceNodeParameterize oldNode )
+		{
+			
+			// n.embeddings().forEach( em -> node.addEmbedding( em ) );
+			oldNode.deploymentInstructions().forEach(
+					di -> newNode.addDeploymentInstruction( OLParseTreeOptimizer.optimize( di ) != null
+							? OLParseTreeOptimizer.optimize( di )
+							: di ) );
+			
+			if (oldNode.parameterPath() != null){
+				newNode.setParameter( 
+					(TypeDefinition) OLParseTreeOptimizer.optimize( oldNode.parameterType() ),
+					(VariablePathNode) OLParseTreeOptimizer.optimize( oldNode.parameterPath() ) 
+				);
+			}
+			if ( oldNode.getInputPortInfos().size() > 0){
+				oldNode.getInputPortInfos().values().forEach( p -> newNode.addInputPortInfo( p ) );
+			}
+			if ( oldNode.getOutputPortInfos().size() > 0){
+				oldNode.getOutputPortInfos().values().forEach( p -> newNode.addOutputPortInfo( p ) );
+			}
+
+			if ( oldNode.init() != null ) {
+				newNode.addInit( OLParseTreeOptimizer.optimize( oldNode.init() ) );
+			}
+			if ( oldNode.main() != null ) {
+				newNode.setMain( new DefinitionNode( oldNode.main().context(), "main",
+						OLParseTreeOptimizer.optimize( oldNode.main() ) ) );
+			}
+		}
 	}
 
 	public static Program optimize( Program originalProgram )

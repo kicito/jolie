@@ -37,7 +37,6 @@ public class ServiceNode extends OLSyntaxNode implements Importable
     private Constants.EmbeddedServiceType type;
     private List< Parameter > parameters;
     private List< Bind > binds;
-    private Program program = null;
     private Map< String, InputPortInfo > inputPortInfos;
     private Map< String, OutputPortInfo > outputPortInfos;
     private List< OLSyntaxNode > deploymentInstructions = new ArrayList< OLSyntaxNode >();
@@ -53,17 +52,6 @@ public class ServiceNode extends OLSyntaxNode implements Importable
         this.inputPortInfos = new HashMap<>();
         this.outputPortInfos = new HashMap<>();
     }
-
-
-    public void setProgram( Program p )
-    {
-        this.program = p;
-    }
-
-    // public Program program()
-    // {
-    // return this.program;
-    // }
 
     public Program program()
     {
@@ -290,14 +278,14 @@ public class ServiceNode extends OLSyntaxNode implements Importable
         return new DefinitionNode( this.init.context(), "init", this.init );
     }
 
-    public void setMain( OLSyntaxNode main )
-    {
-        this.main = main;
-    }
-
     public OLSyntaxNode main()
     {
         return this.main;
+    }
+
+    public void setMain( OLSyntaxNode main )
+    {
+        this.main = main;
     }
 
 }
