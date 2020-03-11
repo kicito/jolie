@@ -103,6 +103,9 @@ public class Importer
             }
             break;
         }
+        if (ic == null){
+            throw new ModuleNotFoundException("unable to locate " + target);
+        }
 
         return ic.rc;
     }
