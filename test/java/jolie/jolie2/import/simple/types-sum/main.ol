@@ -1,4 +1,4 @@
-import CustomType from "./modules/types.ol"
+from "./modules/types.ol" import CustomType 
 include "console.iol"
 
 main{

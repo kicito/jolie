@@ -1,4 +1,4 @@
-import day from "./modules/day.ol"
+from "./modules/day.ol" import day 
 
 type Date : void {
     day: day

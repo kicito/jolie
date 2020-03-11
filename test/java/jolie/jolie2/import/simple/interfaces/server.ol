@@ -1,4 +1,4 @@
-import TwiceInterface from "modules/twiceInterface.ol"
+from "modules/twiceInterface.ol" import TwiceInterface
 include "console.iol"
 
 inputPort TwiceService {

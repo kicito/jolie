@@ -1,9 +1,11 @@
+from "modules/twiceInterface.ol" import TwiceInterface
+
 include "console.iol"
 
 outputPort TwiceService {
     Location: "socket://localhost:8000"
     Protocol: sodep
-    RequestResponse: twice
+    Interfaces: TwiceInterface
 }
 
 main

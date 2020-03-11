@@ -1,4 +1,4 @@
-import Date from "Date.ol"
+from "Date.ol" import Date 
 
 type Birthday : void{
     person_name: string

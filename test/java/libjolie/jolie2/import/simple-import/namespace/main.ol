@@ -1,1 +1,1 @@
-import * from "modules/namespace.ol"
+from "modules/namespace.ol" import *

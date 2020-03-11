@@ -1,4 +1,4 @@
-import Date from "modules/date.ol"
+from "modules/date.ol" import Date
 include "console.iol"
 main {
     today = void;

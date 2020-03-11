@@ -1,4 +1,4 @@
-import A from "A.ol"
+from "A.ol" import A 
 
 type B : void{
     cyclic: A

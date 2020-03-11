@@ -1,6 +1,6 @@
 include "console.iol"
-import Birthday from "modules/Birthday.ol"
-import Holiday from "modules/Holiday.ol"
+from "modules/Birthday.ol" import Birthday 
+from "modules/Holiday.ol" import Holiday
 
 main {
     bDay = void;

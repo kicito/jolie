@@ -1,5 +1,1 @@
-import aEquals2 from "modules/define.ol"
-
-main{
-    aEquals2
-}
+from "modules/define.ol" import aEquals2

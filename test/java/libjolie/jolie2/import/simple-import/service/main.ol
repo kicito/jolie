@@ -1,4 +1,4 @@
-import Console from "modules/Console.ol"
+from "modules/Console.ol" import Console
 
 decl service main (){
     embed Console ("Console")

@@ -53,7 +53,7 @@ interface IReceiver {
 	OneWay: in(InRequest)
 }
 
-decl service Java Console ("joliex.io.ConsoleService", outputPort fromClient) {
+decl service Java("joliex.io.ConsoleService") Console (outputPort fromClient) {
 	inputPort IP {
 		interfaces: IConsole
 	}

@@ -7,6 +7,8 @@ type sumReqType: void{
     y : int
 }
 
+inputPort myPort(a)
+
 inputPort myPort({ 
     location = "socket://localhost:3000"
     protocol = "http"
