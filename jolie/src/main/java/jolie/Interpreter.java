@@ -962,6 +962,19 @@ public class Interpreter
         this.internalServiceProgram = internalServiceProgram;
 	}
 
+	Pair <String, Value> argumentParameter = null;
+
+	public Interpreter( String[] args, ClassLoader parentClassLoader, File programDirectory, Interpreter parentInterpreter, Program internalServiceProgram, Pair <String, Value> argumentParameter )
+	throws CommandLineException, FileNotFoundException, IOException
+	{
+		this( args, parentClassLoader, programDirectory, true );
+		
+		this.parentInterpreter = parentInterpreter;
+		this.internalServiceProgram = internalServiceProgram;
+		this.argumentParameter = argumentParameter;
+	}
+
+
 	/**
 	 * Returns the parent directory of the program executed by this Interpreter.
 	 * @return the parent directory of the program executed by this Interpreter.
@@ -1053,30 +1066,19 @@ public class Interpreter
 		return f;
 	}
 
-	protected List<Process> publicProcesses = new ArrayList<Process>();
-	
-	private void init()
-		throws InterpreterException, IOException
+	/**
+	 * Starts this interpreter, returning a <code>Future</code> which can
+	 * be interrogated to know when the interpreter start procedure has been 
+	 * completed and the interpreter is ready to receive messages.
+	 * @return a <code>Future</code> which can
+	 *		be interrogated to know when the interpreter start procedure has been 
+	 *		completed and the interpreter is ready to receive messages.
+	 */
+	public Future< Exception > start2()
 	{
-		if ( buildOOIT() == false && !checkFlag ) {
-			throw new InterpreterException( "Error: service initialisation failed" );
-		}
-		// TODO move this statement to OOITBuilder
-		if ( publicProcesses.size() == 0 ){
-			return;
-		}
-		DefinitionProcess publicProcess = new DefinitionProcess(
-			new SequentialProcess(publicProcesses.toArray(new Process[0]))
-		);
-		PublicSessionThread publicThread = new PublicSessionThread(this, publicProcess);
-		publicThread.start();
-
-		try {		
-			publicThread.join();
-		} catch( InterruptedException e ) {
-			logSevere( e );
-		}
-		return;
+		CompletableFuture< Exception > f = new CompletableFuture<>();
+		(new StarterThread( f )).start();
+		return f;
 	}
 
 	private void runInit() throws IOException
@@ -1084,6 +1086,14 @@ public class Interpreter
 		sessionStarters = Collections.unmodifiableMap( sessionStarters );
 		try {
 			initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
+
+			// Initialize passing parameter value
+			if ( this.argumentParameter != null ){
+				ValueVector serviceArgs = ValueVector.create();
+				serviceArgs.add(this.argumentParameter.value());
+				initExecutionThread.state().root().getChildren( this.argumentParameter.key() ).deepCopy(serviceArgs);
+			}
+			
 
 			commCore.init();
 
@@ -1165,7 +1175,11 @@ public class Interpreter
 		 * 1 - CommCore needs the OOIT to be initialized.
 		 * 2 - initExec must be instantiated before we can receive communications.
 		 */
-		init();
+
+		if ( buildOOIT() == false && !checkFlag ) {
+			throw new InterpreterException( "Error: service initialisation failed" );
+		}
+
 		if ( checkFlag ){
 			exit();
 		} else {
@@ -1221,7 +1235,10 @@ public class Interpreter
 		public void run()
 		{
 			try {
-				init();
+				if ( buildOOIT() == false && !checkFlag ) {
+					throw new InterpreterException( "Error: service initialisation failed" );
+				}
+				runInit();
 				future.complete( null );
 			} catch( IOException | InterpreterException e ) {
 				future.complete( e );
