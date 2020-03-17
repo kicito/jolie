@@ -103,15 +103,6 @@ import jolie.tracer.*;
  */
 public class Interpreter
 {
-
-	private final class PublicSessionThread extends SessionThread{
-
-		public PublicSessionThread( Interpreter interpreter, Process process )
-		{
-			super( interpreter, process );
-		}
-		
-	}
     private final class InitSessionThread extends SessionThread
 	{
 		public InitSessionThread( Interpreter interpreter, jolie.process.Process process )
