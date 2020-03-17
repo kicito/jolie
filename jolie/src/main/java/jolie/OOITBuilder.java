@@ -2314,8 +2314,30 @@ public class OOITBuilder implements OLVisitor
 			System.out.println( "[OOITBuilder] found target execution service " );
 			n.program().accept( this );
 		}
-
 	}
 
+	@Override
+	public void visit( EmbeddedServiceNodeParameterize n )
+	{
+		n.expression().accept(this);
+
+		Value argument = currExpression.evaluate();
+		
+		Pair < String ,Value > argumentParameter = new Pair < String ,Value > (n.embedService().parameterPath(), argument);
+		try {
+			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
+					n.embedService().getType().equals( Constants.ServiceType.JOLIE )
+							? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration(
+									n.embedService().name(), n.embedService().program())
+							: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration2(
+									n.embedService().getType(), n.embedService().getTarget(),
+									n.embedService().program() );
+
+			interpreter.addEmbeddedServiceLoader(
+					EmbeddedServiceLoader.create( interpreter, embeddedServiceConfiguration, argumentParameter ) );
+		} catch (EmbeddedServiceLoaderCreationException e) {
+			error( n.context(), e );
+		}
+	}
 }
 

@@ -25,10 +25,12 @@ package jolie.runtime.embedding;
 import jolie.Interpreter;
 import jolie.lang.Constants;
 import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.ast.VariablePathNode;
 import jolie.net.CommChannel;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
 import jolie.runtime.expression.Expression;
+import jolie.util.Pair;
 
 public abstract class EmbeddedServiceLoader
 {
@@ -75,6 +77,48 @@ public abstract class EmbeddedServiceLoader
 		}
 
 		return ret;
+	}
+
+	private static EmbeddedServiceLoader createLoader2(
+		Interpreter interpreter,
+		EmbeddedServiceConfiguration configuration,
+		Pair < String ,Value > argumentParameter
+	)
+		throws EmbeddedServiceLoaderCreationException
+	{
+		EmbeddedServiceLoader ret = null;
+		try {
+			if ( configuration.isInternal() ) {
+				InternalEmbeddedServiceConfiguration internalConfiguration = (InternalEmbeddedServiceConfiguration) configuration;
+				ret = new JolieServiceLoader2( interpreter, internalConfiguration.serviceName(), internalConfiguration.program(), argumentParameter );
+			} else {
+				ExternalEmbeddedServiceConfiguration externalConfiguration = (ExternalEmbeddedServiceConfiguration) configuration;
+				switch( configuration.type() ) {
+					case JAVA:
+						ret = new JavaServiceLoader2( externalConfiguration.servicePath(), interpreter );
+						break;
+					// case JOLIE:
+					// 	ret = new JolieServiceLoader( channelDest, interpreter, externalConfiguration.servicePath() );
+					// 	break;
+					default:
+						throw new EmbeddedServiceLoaderCreationException( "Could not find extension to load services of type " + configuration.type );
+				}
+			}
+		} catch( Exception e ) {
+			throw new EmbeddedServiceLoaderCreationException( e );
+		}
+
+		return ret;
+	}
+
+	public static EmbeddedServiceLoader create(
+		Interpreter interpreter,
+		EmbeddedServiceConfiguration configuration,
+		Pair < String ,Value > argumentParameter
+	)
+		throws EmbeddedServiceLoaderCreationException
+	{
+		return createLoader2( interpreter, configuration, argumentParameter );
 	}
 
 	public static EmbeddedServiceLoader create(
@@ -160,6 +204,7 @@ public abstract class EmbeddedServiceLoader
 		}
 	}
 
+
 	public static class ExternalEmbeddedServiceConfiguration extends EmbeddedServiceConfiguration
 	{
 		private final String servicePath;
@@ -180,6 +225,37 @@ public abstract class EmbeddedServiceLoader
 		public String servicePath()
 		{
 			return servicePath;
+		}
+
+	}
+
+	public static class ExternalEmbeddedServiceConfiguration2 extends EmbeddedServiceConfiguration
+	{
+		private final String servicePath;
+		private final Program program;
+
+		/**
+		 *
+		 * @param type Type of embedded service, cannot be JOLIE
+		 * @param servicePath path of service
+		 */
+		public ExternalEmbeddedServiceConfiguration2( Constants.ServiceType type, String servicePath, Program program )
+		{
+			super( Constants.EmbeddedServiceType.valueOf( type.toString() ) );
+			this.servicePath = servicePath;
+			this.program = program;
+
+			assert type != Constants.ServiceType.JOLIE;
+		}
+
+		public String servicePath()
+		{
+			return servicePath;
+		}
+
+		public Program program()
+		{
+			return program;
 		}
 
 	}
