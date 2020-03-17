@@ -44,6 +44,25 @@ class TestService
 	}
 
 	@Test
+	void simpleEmbedJolieService() throws Exception
+	{
+
+		URL src = getClass().getClassLoader().getResource( "jolie2/services/embed/twice.ol" );
+		is = src.openStream();
+
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+
+		Program p = olParser.parse();
+
+		assertEquals( olParser.services.size(), 2 );
+
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
+
+	@Test
 	void simpleEmbedStringOutputPortService() throws Exception
 	{
 

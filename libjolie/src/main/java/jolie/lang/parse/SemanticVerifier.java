@@ -48,6 +48,7 @@ import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.EmbeddedServiceNode2;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -1582,5 +1583,9 @@ public class SemanticVerifier implements OLVisitor
 		this.mainDefined = true;
 		
 	}
+
+	@Override
+	public void visit( EmbeddedServiceNodeParameterize n )
+	{}
 
 }

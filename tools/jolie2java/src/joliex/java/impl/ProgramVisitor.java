@@ -37,6 +37,7 @@ import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.EmbeddedServiceNode2;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -441,30 +442,20 @@ public class ProgramVisitor   extends GeneralProgramVisitor implements OLVisitor
 	public void visit( ServiceNode n ) {}
 
 	@Override
-	public void visit( EmbeddedServiceNode2 n ){}
+	public void visit( EmbeddedServiceNode2 n ) {}
 
 	@Override
-	public void visit( ParameterizeOutputPortInfo n )
-	{}
+	public void visit( ParameterizeOutputPortInfo n ) {}
 
 	@Override
-	public void visit( ParameterizeInputPortInfo n )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	public void visit( ParameterizeInputPortInfo n ) {}
 
 	@Override
-	public void visit( JolieServiceNode n )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	public void visit( JolieServiceNode n ) {}
 
 	@Override
-	public void visit( JavaServiceNode n )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	public void visit( JavaServiceNode n ) {}
+
+	@Override
+	public void visit( EmbeddedServiceNodeParameterize n ) {}
 }

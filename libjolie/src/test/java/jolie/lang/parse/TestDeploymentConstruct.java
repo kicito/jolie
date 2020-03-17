@@ -311,7 +311,20 @@ public class TestDeploymentConstruct
 		semanticVerifier = new SemanticVerifier( p2, configuration );
 		semanticVerifier.validate();
 
-		// assertNotNull( olParser.services );
+
+		// parameterize + static
+		StringBuilder code3 = new StringBuilder();
+		code2.append("inputPort myIP( { location = \"socket://localhost:3000\" protocol = \"http\" } } { OneWay: ping(void)} )");
+
+		this.is = new ByteArrayInputStream( code3.toString().getBytes() );
+		OLParser olParser3 = oc.createOLParser( is );
+		
+		Program p3 = olParser3.parse();
+
+		p3 = OLParseTreeOptimizer.optimize( p3 );
+		semanticVerifier = new SemanticVerifier( p3, configuration );
+		semanticVerifier.validate();
+
 	}
 
 

@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import jolie.lang.Constants;
-import jolie.lang.Constants.EmbeddedServiceType;
 import jolie.lang.Constants.ServiceType;
 import jolie.lang.NativeType;
 import jolie.lang.parse.Scanner.TokenType;
@@ -50,14 +49,13 @@ import jolie.lang.parse.ast.CompensateStatement;
 import jolie.lang.parse.ast.CorrelationSetInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationAliasInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationVariableInfo;
-import jolie.lang.parse.ast.ServiceNode.Bind;
 import jolie.lang.parse.ast.CurrentHandlerStatement;
 import jolie.lang.parse.ast.DeepCopyStatement;
 import jolie.lang.parse.ast.DefinitionCallStatement;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
-import jolie.lang.parse.ast.EmbeddedServiceNode2;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -97,7 +95,6 @@ import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
-import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -129,6 +126,9 @@ import jolie.lang.parse.ast.expression.ProductExpressionNode;
 import jolie.lang.parse.ast.expression.SumExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
+import jolie.lang.parse.ast.servicenode.JavaServiceNode;
+import jolie.lang.parse.ast.servicenode.JolieServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionInterface;
@@ -141,17 +141,8 @@ import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.ImportResult;
 import jolie.lang.parse.module.Importer;
-import jolie.lang.parse.module.argument.Argument;
-import jolie.lang.parse.module.argument.ArgumentID;
-import jolie.lang.parse.module.argument.ArgumentPortLiteral;
-import jolie.lang.parse.module.argument.ArgumentString;
 import jolie.lang.parse.module.exception.ModuleNotFoundException;
 import jolie.lang.parse.module.exception.ModuleParsingException;
-import jolie.lang.parse.module.parameter.Parameter;
-import jolie.lang.parse.module.parameter.ParameterFactory;
-import jolie.lang.parse.ast.servicenode.JavaServiceNode;
-import jolie.lang.parse.ast.servicenode.JolieServiceNode;
-import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
 import jolie.util.Pair;
@@ -298,37 +289,8 @@ public class OLParser extends AbstractParser
 			this::parseInterfaceOrPort,
 			this::parseEmbedded,
 			this::parseInternalService,
-			this::parseCode,
-			this::parseVariable
+			this::parseCode
 		);
-	}
-
-	
-	private void parseVariable() 
-		throws IOException, ParserException
-	{
-		if ( token.isKeyword( "var" ) ) {
-
-			addTokens( Arrays.asList(
-				new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
-				new Scanner.Token( Scanner.TokenType.DOT )
-			));
-			getToken();
-
-			String id = token.content();
-			getToken();
-			VariablePathNode path= _parseVariablePath( id );
-			if ( token.is( Scanner.TokenType.ASSIGN )
-					|| token.is( Scanner.TokenType.DEEP_COPY_LEFT ) ) {
-
-				OLSyntaxNode retVal =
-						parseAssignOrDeepCopyOrPointerStatement( path );
-				programBuilder.addChild( retVal );
-
-			} else {
-				throwException( "expected = or <<" );
-			}
-		}
 	}
 
 	protected Map< String, ServiceNodeParameterize > services = new HashMap< String, ServiceNodeParameterize >();
@@ -389,14 +351,14 @@ public class OLParser extends AbstractParser
 		return result;
 	}
 
-	private Pair< TypeDefinition, VariablePathNode > _parseServiceParameter()
+	private Pair< TypeDefinition, String > _parseServiceParameter()
 		throws IOException, ParserException
 	{
 		if (token.is(TokenType.LPAREN)){
 			getToken();
 			if (token.is(TokenType.RPAREN)){ // case ( )
 				getToken();
-				return new Pair< TypeDefinition, VariablePathNode >(TypeDefinitionUndefined.getInstance(), null);
+				return new Pair< TypeDefinition, String >(TypeDefinitionUndefined.getInstance(), null);
 			} else { // case ( type path )
 				
 				TypeDefinition parameterType = null;
@@ -411,13 +373,13 @@ public class OLParser extends AbstractParser
 				getToken();
 				assertToken( Scanner.TokenType.ID, "expected variable path after typename" );
 
-				VariablePathNode v = _parseVariablePath(token.content());
+				String paramPath = token.content();
 				getToken();
 				eat(TokenType.RPAREN, "expected )");
-				return new Pair< TypeDefinition, VariablePathNode >(parameterType, v);
+				return new Pair< TypeDefinition, String >(parameterType, paramPath);
 			}
 		}else{
-			return new Pair< TypeDefinition, VariablePathNode >(TypeDefinitionUndefined.getInstance(), null);
+			return new Pair< TypeDefinition, String >(TypeDefinitionUndefined.getInstance(), null);
 		}
 	}
 
@@ -441,6 +403,10 @@ public class OLParser extends AbstractParser
 			if ( child instanceof InterfaceDefinition || child instanceof DefinitionNode
 					|| child instanceof TypeDefinition ) {
 				service.addDeploymentInstruction( child );
+			} else if ( child instanceof InputPortInfo ){
+				service.addInputPortInfo( ( InputPortInfo ) child);
+			} else if ( child instanceof OutputPortInfo ){
+				service.addOutputPortInfo( ( OutputPortInfo ) child);
 			}
 		}
 		boolean keepRun = true;
@@ -494,10 +460,10 @@ public class OLParser extends AbstractParser
 					OutputPortInfo outputPortInfo = parseOutputPortInfo();
 					service.addOutputPortInfo(outputPortInfo);
 					break;
-				// case "embed":
-				// 	EmbeddedServiceNode2 node = parseEmbed(service);
-				// 	service.addEmbedding(node);
-				// 	break;
+				case "embed":
+					EmbeddedServiceNodeParameterize node = parseEmbed();
+					service.addEmbbedingService(node);
+					break;
 				default:
 					keepRun = false;
 			}
@@ -509,6 +475,27 @@ public class OLParser extends AbstractParser
 
 		this.programBuilder.addChild( service );
 	}
+
+	// Parsing function for Jolie 2.0 embed keyword
+	private EmbeddedServiceNodeParameterize parseEmbed() 
+		throws IOException, ParserException
+	{
+		getToken();
+		String embeddingServiceName = token.content();
+		ParsingContext context = getContext();
+		getToken();
+
+		ServiceNodeParameterize embedingService = services.get( embeddingServiceName );
+		if ( embedingService == null ){
+			throwException("service " + embeddingServiceName + " not found");
+		}
+		eat(TokenType.LPAREN, "expected (");
+
+		OLSyntaxNode expression = parseBasicExpression();
+		eat(TokenType.RPAREN, "expected )");
+		return new EmbeddedServiceNodeParameterize(context, embedingService, expression);
+	}
+
 
 	// Parsing function for Jolie 2.0 embed keyword
 	// private EmbeddedServiceNode2 parseEmbed(ServiceNode clientService) 
@@ -1504,12 +1491,16 @@ public class OLParser extends AbstractParser
 		p.setParameter( o );
 
 		eat( Scanner.TokenType.RPAREN, "expected )" );
-		
+
+		if ( token.is( TokenType.LCURLY ) ) {
+			p = (ParameterizeInputPortInfo) parseCurlyInputPort( p );
+		}
+
 		return p;
 	}
 
     
-	private InputPortInfo parseCurlyInputPort( String inputPortName)
+	private InputPortInfo parseCurlyInputPort( String inputPortName )
 		throws IOException, ParserException
 	{
 		String protocolId;
@@ -1628,6 +1619,130 @@ public class OLParser extends AbstractParser
 		}
 		iface.copyTo( iport );
 		return iport;
+	}
+
+	private InputPortInfo parseCurlyInputPort( ParameterizeInputPortInfo inputPort )
+		throws IOException, ParserException
+	{
+		String protocolId;
+		URI inputPortLocation;
+		List< InterfaceDefinition > interfaceList = new ArrayList<>();
+		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
+		getToken();
+		InterfaceDefinition iface = new InterfaceDefinition( getContext(), "Internal interface for: " + inputPort.id() );
+		
+		inputPortLocation = null;
+		protocolId = null;
+		Map<String, String> redirectionMap = new HashMap<>();
+		List< InputPortInfo.AggregationItemInfo > aggregationList = new ArrayList<>();
+		while ( token.isNot( Scanner.TokenType.RCURLY ) ) {
+			if ( token.is( Scanner.TokenType.OP_OW ) ) {
+				parseOneWayOperations( iface );
+			} else if ( token.is( Scanner.TokenType.OP_RR ) ) {
+				parseRequestResponseOperations( iface );
+			} else if ( token.isKeyword( "location" ) || token.isKeyword( "Location" ) ) {
+				if ( inputPortLocation != null ) {
+					throwException( "Location already defined for service " + inputPort.id() );
+				}
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected : after location" );
+				checkConstant();
+				assertToken( Scanner.TokenType.STRING, "expected inputPort location string" );
+				try {
+					inputPortLocation = new URI( token.content() );
+				} catch ( URISyntaxException e ) {
+					throwException( e );
+				}
+				getToken();
+			} else if ( token.isKeyword( "interfaces" ) || token.isKeyword( "Interfaces" ) ) {
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected : after interfaces" );
+                boolean keepRun = true;
+                while( keepRun ) {
+                    assertToken( Scanner.TokenType.ID, "expected interface name" );
+					InterfaceDefinition i = interfaces.get( token.content() );
+					if ( i == null ) {
+						throwException( "Invalid interface name: " + token.content() );
+					} else {
+						i.copyTo( iface );
+						interfaceList.add( i );
+					}
+                    getToken();
+
+                    if ( token.is( Scanner.TokenType.COMMA ) ) {
+                        getToken();
+                    } else {
+                        keepRun = false;
+                    }
+                }
+			} else if ( token.isKeyword( "protocol" ) || token.isKeyword( "Protocol" ) ) {
+				if ( protocolId != null ) {
+					throwException( "Protocol already defined for inputPort " + inputPort.id() );
+				}
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected :" );
+				checkConstant();
+				assertToken( Scanner.TokenType.ID, "expected protocol identifier" );
+				protocolId = token.content();
+				getToken();
+				if ( token.is( Scanner.TokenType.LCURLY ) ) {
+					addTokens( Arrays.asList(
+						new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
+						new Scanner.Token( Scanner.TokenType.DOT ),
+						new Scanner.Token( Scanner.TokenType.ID, Constants.INPUT_PORTS_NODE_NAME ),
+						new Scanner.Token( Scanner.TokenType.DOT ),
+						new Scanner.Token( Scanner.TokenType.ID, inputPort.id() ),
+						new Scanner.Token( Scanner.TokenType.DOT ),
+						new Scanner.Token( Scanner.TokenType.ID, Constants.PROTOCOL_NODE_NAME ),
+						new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
+						token ) );
+					// Protocol configuration
+					getToken();
+					//protocolConfiguration = parseInVariablePathProcess( false );
+					protocolConfiguration = parseBasicStatement();
+				}
+			} else if ( token.isKeyword( "redirects" ) || token.isKeyword( "Redirects" ) ) {
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected :" );
+				String subLocationName;
+				while ( token.is( Scanner.TokenType.ID ) ) {
+					subLocationName = token.content();
+					getToken();
+					eat( Scanner.TokenType.ARROW, "expected =>" );
+					assertToken( Scanner.TokenType.ID, "expected outputPort identifier" );
+					redirectionMap.put( subLocationName, token.content() );
+					getToken();
+					if ( token.is( Scanner.TokenType.COMMA ) ) {
+						getToken();
+					} else {
+						break;
+					}
+				}
+			} else if ( token.isKeyword( "aggregates" ) || token.isKeyword( "Aggregates" ) ) {
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected :" );
+				parseAggregationList( aggregationList );
+			} else {
+				throwException( "Unrecognized token in inputPort " + inputPort.id() );
+			}
+		}
+		eat( Scanner.TokenType.RCURLY, "} expected" );
+		if ( inputPortLocation == null ) {
+			// throwException( "expected location URI for " + inputPort.id() );
+		} else if ( iface.operationsMap().isEmpty() && redirectionMap.isEmpty() && aggregationList.isEmpty() ) {
+			throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPort.id() );
+		} else if ( protocolId == null && !inputPortLocation.toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) && !inputPortLocation.getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+			throwException( "expected protocol for inputPort " + inputPort.id() );
+		}
+
+		inputPort.setLocation(inputPortLocation);
+		inputPort.setProtocolId(protocolId);
+
+		for( InterfaceDefinition i : interfaceList ) {
+			inputPort.addInterface( i );
+		}
+		iface.copyTo( inputPort );
+		return inputPort;
 	}
 
 	// Parsing function for Foreign service, where protocol and location should not be defined
@@ -1794,8 +1909,94 @@ public class OLParser extends AbstractParser
 		p.setParameter( o );
 
 		eat( Scanner.TokenType.RPAREN, "expected )" );
+
+		if ( token.is( TokenType.LCURLY ) ) {
+			p = (ParameterizeOutputPortInfo) parseCurlyOutputPort( p );
+		}
 		
 		return p;
+	}
+
+	private OutputPortInfo parseCurlyOutputPort( ParameterizeOutputPortInfo paramOutputPort )
+			throws IOException, ParserException
+	{
+		getToken();		
+		boolean keepRun = true;
+		while (keepRun) {
+			if ( token.is( Scanner.TokenType.OP_OW ) ) {
+				parseOneWayOperations( paramOutputPort );
+			} else if ( token.is( Scanner.TokenType.OP_RR ) ) {
+				parseRequestResponseOperations( paramOutputPort );
+			} else if ( token.isKeyword( "interfaces" ) || token.isKeyword( "Interfaces" ) ) {
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected : after Interfaces" );
+				boolean r = true;
+				while (r) {
+					assertToken( Scanner.TokenType.ID, "expected interface name" );
+					InterfaceDefinition i = interfaces.get( token.content() );
+					if ( i == null ) {
+						throwException( "Invalid interface name: " + token.content() );
+					}
+					i.copyTo( paramOutputPort );
+					paramOutputPort.addInterface( i );
+					getToken();
+					
+					if ( token.is( Scanner.TokenType.COMMA ) ) {
+						getToken();
+					} else {
+						r = false;
+					}
+				}
+			} else if ( token.isKeyword( "location" ) || token.isKeyword( "Location" ) ) {
+				if ( paramOutputPort.location() != null ) {
+					throwException( "Location already defined for output port " + paramOutputPort.id() );
+				}
+
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected :" );
+				checkConstant();
+
+				assertToken( Scanner.TokenType.STRING, "expected location string" );
+				URI location = null;
+				try {
+					location = new URI( token.content() );
+				} catch ( URISyntaxException e ) {
+					throwException( e );
+				}
+
+				paramOutputPort.setLocation( location );
+				getToken();
+			} else if ( token.isKeyword( "protocol" ) || token.isKeyword( "Protocol" ) ) {
+				if ( paramOutputPort.protocolId() != null ) {
+					throwException( "Protocol already defined for output port " + paramOutputPort.id() );
+				}
+
+				getToken();
+				eat( Scanner.TokenType.COLON, "expected :" );
+				checkConstant();
+
+				assertToken( Scanner.TokenType.ID, "expected protocol identifier" );
+				paramOutputPort.setProtocolId( token.content() );
+				getToken();
+
+				if ( token.is( Scanner.TokenType.LCURLY ) ) {
+					addTokens( Arrays.asList(
+						new Scanner.Token( Scanner.TokenType.ID, paramOutputPort.id() ),
+						new Scanner.Token( Scanner.TokenType.DOT ),
+						new Scanner.Token( Scanner.TokenType.ID, "protocol" ),
+						new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
+						token ) );
+					// Protocol configuration
+					getToken();
+					paramOutputPort.setProtocolConfiguration( parseBasicStatement() );
+				}
+			} else {
+				keepRun = false;
+			}
+
+		}
+		eat( Scanner.TokenType.RCURLY, "expected }" );
+		return paramOutputPort;
 	}
 
 	private OutputPortInfo parseCurlyOutputPort( String name )

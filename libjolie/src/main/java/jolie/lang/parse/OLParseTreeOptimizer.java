@@ -37,6 +37,7 @@ import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.EmbeddedServiceNode2;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -1047,20 +1048,24 @@ public class OLParseTreeOptimizer
 			programChildren.add( node );
 		}
 
-		private void optimizeServiceNode( ServiceNodeParameterize newNode, ServiceNodeParameterize oldNode )
+		private void optimizeServiceNode( ServiceNodeParameterize newNode,
+				ServiceNodeParameterize oldNode )
 		{
-			
-			// n.embeddings().forEach( em -> node.addEmbedding( em ) );
-			oldNode.deploymentInstructions().forEach(
-					di -> newNode.addDeploymentInstruction( OLParseTreeOptimizer.optimize( di ) != null
-							? OLParseTreeOptimizer.optimize( di )
-							: di ) );
-			
-			if (oldNode.parameterPath() != null){
-				newNode.setParameter( 
-					(TypeDefinition) OLParseTreeOptimizer.optimize( oldNode.parameterType() ),
-					(VariablePathNode) OLParseTreeOptimizer.optimize( oldNode.parameterPath() ) 
-				);
+
+			oldNode.embbedingServices().forEach( em -> {
+				em.setExpression( OLParseTreeOptimizer.optimize( em.expression() ) );
+				newNode.addEmbbedingService( em );
+			} );
+			oldNode.deploymentInstructions()
+					.forEach( di -> newNode
+							.addDeploymentInstruction( OLParseTreeOptimizer.optimize( di ) != null
+									? OLParseTreeOptimizer.optimize( di )
+									: di ) );
+
+			if ( oldNode.parameterPath() != null ) {
+				newNode.setParameter(
+						(TypeDefinition) OLParseTreeOptimizer.optimize( oldNode.parameterType() ),
+						oldNode.parameterPath() );
 			}
 			if ( oldNode.getInputPortInfos().size() > 0){
 				oldNode.getInputPortInfos().values().forEach( p -> newNode.addInputPortInfo( p ) );
@@ -1077,13 +1082,20 @@ public class OLParseTreeOptimizer
 						OLParseTreeOptimizer.optimize( oldNode.main() ) ) );
 			}
 		}
+
+		@Override
+		public void visit( EmbeddedServiceNodeParameterize n )
+		{
+			n.setExpression( OLParseTreeOptimizer.optimize( n.expression() ) );
+			programChildren.add( n );
+		}
 	}
 
 	public static Program optimize( Program originalProgram )
 	{
 		return (new OptimizerVisitor( originalProgram.context() )).optimize( originalProgram );
 	}
-	
+
 	public static OLSyntaxNode optimize( OLSyntaxNode node )
 	{
 		return (new OptimizerVisitor( node.context() )).optimize( node );

@@ -1,5 +1,7 @@
 package jolie.lang.parse.ast;
 
+import java.net.URI;
+import java.util.Map;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
 
@@ -35,6 +37,7 @@ public class ParameterizeInputPortInfo extends InputPortInfo
     {
         return parameter;
     }
+    
 
     @Override
     public boolean equals( Object obj )
@@ -64,4 +67,13 @@ public class ParameterizeInputPortInfo extends InputPortInfo
         return "inputPort " + this.id() + " ( " + this.parameter + " )";
     }
 
+    public void setLocation( URI location )
+    {
+        super.location = location;
+    }
+
+    public void setProtocolId( String protocolId )
+    {
+        super.protocolId = protocolId;
+    }
 }

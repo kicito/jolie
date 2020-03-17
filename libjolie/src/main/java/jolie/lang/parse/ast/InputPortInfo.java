@@ -90,11 +90,11 @@ public class InputPortInfo extends PortInfo
 		}
 	}
 
-	private URI location;
-	private String protocolId;
-	private OLSyntaxNode protocolConfiguration;
-	private final AggregationItemInfo[] aggregationList;
-	private final Map< String, String > redirectionMap;
+	protected URI location;
+	protected String protocolId;
+	protected OLSyntaxNode protocolConfiguration;
+	protected final AggregationItemInfo[] aggregationList;
+	protected final Map< String, String > redirectionMap;
 
 	public InputPortInfo( ParsingContext context, String id, URI location, String protocolId,
 			OLSyntaxNode protocolConfiguration, AggregationItemInfo[] aggregationList,

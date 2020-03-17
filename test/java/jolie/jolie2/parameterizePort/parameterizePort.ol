@@ -1,21 +1,4 @@
-
-
-// var o << { 
-//     location = 3000 
-//     protocol = "http" 
-//     interfaces << "SumInterface" {
-//         ow << "sum" {
-//             reqType = "int"
-//         }
-//         // rr << "sumRR"{
-//         //     reqType = "int"
-//         //     resType = "int"
-//         // }
-//     }
-// }
-
 include "console.iol"
-// include "string_utils.iol"
 
 type sumReqType: void{
     x : int
@@ -24,12 +7,12 @@ type sumReqType: void{
 
 outputPort servicePort({ 
     location = "socket://localhost:3000"
-    protocol = "http"
+    protocol = "sodep"
     interfaces << "SumInterface"{
-        operations[0] << "notice"{
+        operations[0] << "notice" {
             reqType = "string"
         }
-        operations[1] << "sum"{
+        operations[1] << "sum" {
             reqType = "sumReqType"
             resType = "int"
         }
@@ -38,6 +21,6 @@ outputPort servicePort({
 
 main{
     notice@servicePort("hello from parameterize port")
-    sum@servicePort({x = 1 y = 2})(res)
+    sum@servicePort(void{x = 1 y = 2})(res)
     println@Console(res)()
 }

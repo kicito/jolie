@@ -1,22 +1,19 @@
 
-include "console.iol"
-// include "string_utils.iol"
+// include "console.iol"
 
 type sumReqType: void{
     x : int
     y : int
 }
 
-inputPort myPort(a)
-
 inputPort myPort({ 
     location = "socket://localhost:3000"
-    protocol = "http"
+    protocol = "sodep"
     interfaces << "SumInterface"{
-        operations[0] << "notice"{
+        operations[0] << "notice" {
             reqType = "string"
         }
-        operations[1] << "sum"{
+        operations[1] << "sum" {
             reqType = "sumReqType"
             resType = "int"
         }
@@ -24,10 +21,10 @@ inputPort myPort({
 })
 
 main{
-    notice(req)
-    println@Console("[notice]receive value " + req)()
+    notice(req);
+    // println@Console("[notice]receive value " + req)();
     sum(req)(res){
-        println@Console("[sum] receive value x = " + req.x + ", y = " + req.y)()
+        // println@Console("[sum] receive value x = " + req.x + ", y = " + req.y)()
         res = req.x + req.y
     }
 }

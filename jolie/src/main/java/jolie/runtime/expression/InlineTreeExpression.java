@@ -88,7 +88,13 @@ public class InlineTreeExpression implements Expression
 		@Override
 		public void run( Value inlineValue )
 		{
-			path.getValue( inlineValue ).assignValue( expression.evaluate() );
+			Value v;
+			try {
+				v = expression.evaluate();
+			} catch ( NullPointerException e ) {
+				v = Value.UNDEFINED_VALUE;
+			}
+			path.getValue( inlineValue ).assignValue( v );
 		}
 
 		@Override

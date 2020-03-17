@@ -8,12 +8,12 @@ import jolie.lang.Constants;
 import jolie.lang.Constants.ServiceType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.DefinitionNode;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.SequenceStatement;
-import jolie.lang.parse.ast.VariablePathNode;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.util.Pair;
@@ -21,12 +21,14 @@ import jolie.util.Pair;
 public abstract class ServiceNodeParameterize extends OLSyntaxNode
 {
     private String name;
-    private Pair< TypeDefinition, VariablePathNode > parameter; // type variablePath
+    private Pair< TypeDefinition, String > parameter; // type variablePath
     private Map< String, InputPortInfo > inputPortInfos;
     private Map< String, OutputPortInfo > outputPortInfos;
-    private List< OLSyntaxNode > deploymentInstructions = new ArrayList< OLSyntaxNode >();
+    private List< OLSyntaxNode > deploymentInstructions;
     private SequenceStatement init = null;
     private OLSyntaxNode main = null;
+
+    private List<EmbeddedServiceNodeParameterize> embbedingServices;
 
     private static final long serialVersionUID = Constants.serialVersionUID();
 
@@ -36,6 +38,8 @@ public abstract class ServiceNodeParameterize extends OLSyntaxNode
         this.name = name;
         this.inputPortInfos = new HashMap<>();
         this.outputPortInfos = new HashMap<>();
+        this.deploymentInstructions = new ArrayList< OLSyntaxNode >();
+        this.embbedingServices = new ArrayList< EmbeddedServiceNodeParameterize >();
     }
 
     public String name()
@@ -49,20 +53,20 @@ public abstract class ServiceNodeParameterize extends OLSyntaxNode
         return this.parameter.key();
     }
 
-    public VariablePathNode parameterPath()
+    public String parameterPath()
     {
         if (this.parameter == null ) return null;
         return this.parameter.value();
     }
 
-    public void setParameter( Pair< TypeDefinition, VariablePathNode > param )
+    public void setParameter( Pair< TypeDefinition, String > param )
     {
         this.parameter = param;
     }
 
-    public void setParameter( TypeDefinition t, VariablePathNode path )
+    public void setParameter( TypeDefinition t, String path )
     {
-        this.parameter = new Pair< TypeDefinition, VariablePathNode >( t, path );
+        this.parameter = new Pair< TypeDefinition, String >( t, path );
     }
 
     public List< OLSyntaxNode > deploymentInstructions()
@@ -131,6 +135,15 @@ public abstract class ServiceNodeParameterize extends OLSyntaxNode
         return this.outputPortInfos;
     }
 
+    public List< EmbeddedServiceNodeParameterize > embbedingServices()
+    {
+        return embbedingServices;
+    }
+
+    public void addEmbbedingService( EmbeddedServiceNodeParameterize embbedingService )
+    {
+        this.embbedingServices.add(embbedingService);
+    }
 
     public Program program()
     {
@@ -144,9 +157,9 @@ public abstract class ServiceNodeParameterize extends OLSyntaxNode
         if ( this.outputPortInfos.values().size() > 0 ) {
             children.addAll( this.outputPortInfos.values() );
         }
-        // if ( this.embeddings.size() > 0 ) {
-        //     children.addAll( this.embeddings );
-        // }
+        if ( this.embbedingServices.size() > 0 ) {
+            children.addAll( this.embbedingServices );
+        }
         if ( this.init != null ) {
             children.add( new DefinitionNode( this.init.context(), "init", this.init ) );
         }
@@ -156,10 +169,10 @@ public abstract class ServiceNodeParameterize extends OLSyntaxNode
         return new Program( this.context(), children );
     }
 
-
     public abstract String getTarget();
 
     public abstract ServiceType getType();
 
     public abstract void accept( OLVisitor visitor );
+
 }

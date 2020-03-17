@@ -44,6 +44,7 @@ import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.EmbeddedServiceNode2;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -1080,22 +1081,17 @@ public class TypeChecker implements OLVisitor
 
 	@Override
 	public void visit( ParameterizeInputPortInfo n )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	{}
 
 	@Override
 	public void visit( JolieServiceNode n )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	{}
 
 	@Override
 	public void visit( JavaServiceNode n )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	{}
+
+	@Override
+	public void visit( EmbeddedServiceNodeParameterize n )
+	{}
 }

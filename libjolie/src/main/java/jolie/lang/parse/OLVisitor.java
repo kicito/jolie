@@ -34,6 +34,7 @@ import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.EmbeddedServiceNode2;
+import jolie.lang.parse.ast.EmbeddedServiceNodeParameterize;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -197,4 +198,6 @@ public interface OLVisitor
 	public void visit( ParameterizeInputPortInfo n );
 	public void visit( JolieServiceNode n );
 	public void visit( JavaServiceNode n );
+	public void visit( EmbeddedServiceNodeParameterize n );
+	
 }

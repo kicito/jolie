@@ -1,18 +1,14 @@
 
+interface SumInterface{
+    RequestResponse: twice( int )( int )
+}
 
-decl service twiceService( string portLocation ){ 
-    inputPort TwiceService (
-        {
-            location = portLocation
-            protocol = "sodep"
-            interfaces << "SumInterface" {
-                operations << "twice" {
-                    reqType = "int"
-                    resType = "int"
-                }
-            }
-        }
-    )
+decl service twiceService( portInfo p ){ 
+    
+    inputPort TwiceService ( p ) {
+        Interfaces: SumInterface
+    }
+
     main
     {
         twice( number )( result ) {
@@ -21,9 +17,7 @@ decl service twiceService( string portLocation ){
     }
 }
 
-
-decl service twice(){ 
-
+decl service twice_static(){ 
     embed twiceService ( {
         location = "socket://localhost:3000"
         protocol = "sodep"

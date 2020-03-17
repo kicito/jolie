@@ -30,12 +30,14 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -48,15 +50,18 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import jolie.ExecutionThread;
 import jolie.Interpreter;
 import jolie.JolieThreadPoolExecutor;
 import jolie.NativeJolieThread;
 import jolie.lang.Constants;
+import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.net.ext.CommChannelFactory;
 import jolie.net.ext.CommListenerFactory;
 import jolie.net.ext.CommProtocolFactory;
 import jolie.net.ports.InputPort;
 import jolie.net.ports.OutputPort;
+import jolie.net.ports.ParameterizeInputPort;
 import jolie.net.protocols.CommProtocol;
 import jolie.process.Process;
 import jolie.runtime.FaultException;
@@ -67,6 +72,7 @@ import jolie.runtime.TimeoutHandler;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
 import jolie.runtime.correlation.CorrelationError;
+import jolie.runtime.expression.Expression;
 import jolie.runtime.typing.TypeCheckingException;
 
 /** 
@@ -443,6 +449,15 @@ public class CommCore
 		);
 		listenersMap.put( inputPort.name(), listener );
 	}
+
+	public void addInputPort( ParameterizeInputPort inputPort ) 
+		throws IOException
+	{
+		CommListener listener = new ParameterizeCommListener( interpreter, inputPort );
+
+		listenersMap.put( inputPort.name(), listener );
+	}
+
 	
 	private final ExecutorService executorService;
 	
@@ -691,8 +706,30 @@ public class CommCore
 		for( SelectorThread t : selectorThreads() ) {
 			t.start();
 		}
-		for( Entry< String, CommListener > entry : listenersMap.entrySet() ) {
-			entry.getValue().start();
+
+		for (Entry< String, CommListener > entry : listenersMap.entrySet()) {
+			CommListener listener = entry.getValue();
+			if ( listener instanceof ParameterizeCommListener ) {
+				CommParameterizeSetup setup = new CommParameterizeSetup(
+						(ParameterizeInputPort) listener.inputPort(),
+						this.interpreter );
+				setup.start();
+				try {
+					setup.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				entry.setValue(setup.listener);
+				listener = setup.listener;
+			} 
+			listener.start();
+			
+			// try {
+			// 	listener.join();
+			// } catch (InterruptedException e) {
+			// 	e.printStackTrace();
+			// }
 		}
 	}
 	
