@@ -255,8 +255,8 @@ public class RuntimeService extends JavaService
 			String typeStr = request.getFirstChild( "type" ).strValue();
 			EmbeddedServiceType type =
 					jolie.lang.Constants.stringToEmbeddedServiceType( typeStr );
-            EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration configuration = null;
-                // new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(type, filePath);
+			EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration configuration = 
+				new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(type, filePath);
 			EmbeddedServiceLoader loader =
 					EmbeddedServiceLoader.create( interpreter(), configuration, channel );
 			loader.load();

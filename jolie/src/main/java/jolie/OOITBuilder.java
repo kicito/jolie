@@ -489,11 +489,7 @@ public class OOITBuilder implements OLVisitor
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
 				n.type().equals( Constants.EmbeddedServiceType.INTERNAL )
 				? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration( n.servicePath(), (Program) n.program() )
-				: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath(), (Program) n.program() );
-
-
-			// // TODO change everything to external internal embedded service
-			// final EmbeddedServiceConfiguration embeddedServiceConfiguration = new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath(), (Program) n.program() );
+				: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath() );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(
@@ -2163,7 +2159,7 @@ public class OOITBuilder implements OLVisitor
 		String targetServiceName = this.interpreter.programFilename().split( "\\." )[0];
 
 		if ( n.name().equals( targetServiceName ) ) {
-			System.out.println( "[OOITBuilder] found target execution service " );
+			System.out.println( "[OOITBuilder] found target execution service " + n.name() );
 			n.program().accept( this );
 		}
 	}

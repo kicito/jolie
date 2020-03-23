@@ -205,22 +205,20 @@ public abstract class EmbeddedServiceLoader
 		}
 	}
 
-
 	public static class ExternalEmbeddedServiceConfiguration extends EmbeddedServiceConfiguration
 	{
 		private final String servicePath;
-		private final Program program;
 
 		/**
 		 *
 		 * @param type Type of embedded service, cannot be INTERNAL
 		 * @param servicePath path of service
 		 */
-		public ExternalEmbeddedServiceConfiguration( Constants.EmbeddedServiceType type, String servicePath, Program program )
+		public ExternalEmbeddedServiceConfiguration( Constants.EmbeddedServiceType type, String servicePath )
 		{
 			super( type );
 			this.servicePath = servicePath;
-			this.program = program;
+
 			assert type != Constants.EmbeddedServiceType.INTERNAL;
 		}
 
@@ -228,13 +226,8 @@ public abstract class EmbeddedServiceLoader
 		{
 			return servicePath;
 		}
-		public Program program()
-		{
-			return program;
-		}
 
 	}
-
 	public static class ExternalEmbeddedServiceConfiguration2 extends ExternalEmbeddedServiceConfiguration
 	{
 		private final String name;
@@ -248,7 +241,7 @@ public abstract class EmbeddedServiceLoader
 		 */
 		public ExternalEmbeddedServiceConfiguration2( String name, Constants.ServiceType type, String servicePath, Program program )
 		{
-			super( Constants.stringToEmbeddedServiceType( type.toString() ), servicePath, program );
+			super( Constants.stringToEmbeddedServiceType( type.toString() ), servicePath );
 			
 			this.name = name;
 			this.servicePath = servicePath;
