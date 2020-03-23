@@ -197,7 +197,7 @@ public class TestProcessParser
 
 
 		Program p = olParser.parse();
-		assertEquals(((DefinitionNode) p.children().get(0)).body().toString(),  "a << {a=1 b=2 c=3}");
+		assertEquals(((DefinitionNode) p.children().get(0)).body().toString(),  "a << void{a=1 b=2 c=3}");
 	}
 
 
@@ -205,7 +205,7 @@ public class TestProcessParser
 	void testInstanceOfPort() throws Exception
 	{
 
-		String code = "define a{ b = \"aa\"; c = b instanceof port }";
+		String code = "define a{ c = b instanceof portInfo }";
 		is = new ByteArrayInputStream( code.getBytes() );
         InstanceCreator oc = new InstanceCreator( new String[] {"dist/jolie/include"} );
 
@@ -213,6 +213,7 @@ public class TestProcessParser
 
 
 		Program p = olParser.parse();
+		assertEquals( "c = b instanceof portInfo", ((DefinitionNode) p.children().get(0)).body().toString());
 	}
 	// TODO NotificationMessage NDType, iteration, deterministic choice, parallel, sequence,
 	// init,

@@ -58,7 +58,7 @@ public class InstanceOfExpressionNode extends OLSyntaxNode
 	@Override
 	public String toString()
 	{
-		return this.expression + "instanceof " + this.type;
+		return this.expression + " instanceof " + this.type;
 	}
 
 	/*

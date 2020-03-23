@@ -103,7 +103,8 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 		this.protocolVariablePath = protocolVariablePath;
 		this.iface = iface;
 		this.locationExpression = locationVariablePath;
-		this.configurationProcess = NullProcess.getInstance();
+		// this.configurationProcess = NullProcess.getInstance();
+		this.configurationProcess = new SequentialProcess( new Process[ ]{NullProcess.getInstance()} );
 	}
 	
 	/**

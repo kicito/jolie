@@ -8,6 +8,7 @@ import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeDefinition;
 
 
@@ -19,6 +20,7 @@ public class ImportResult
     private final Map< String, InterfaceDefinition > interfaces;
     private final Map< String, DefinitionNode > procedures;
     private final Map< String, ServiceNode > services;
+    private final Map< String, ServiceNodeParameterize > paramServices;
 
     public ImportResult()
     {
@@ -27,6 +29,7 @@ public class ImportResult
         this.interfaces = new HashMap< String, InterfaceDefinition >();
         this.procedures = new HashMap< String, DefinitionNode >();
         this.services = new HashMap< String, ServiceNode >();
+        this.paramServices = new HashMap< String, ServiceNodeParameterize >();
     }
 
     public void prependResult( ImportResult re )
@@ -63,6 +66,9 @@ public class ImportResult
         for (Map.Entry< String, ServiceNode > entry : re.services.entrySet()) {
             this.services.put( entry.getKey(), entry.getValue() );
         }
+        for (Map.Entry< String, ServiceNodeParameterize > entry : re.paramServices.entrySet()) {
+            this.paramServices.put( entry.getKey(), entry.getValue() );
+        }
     }
 
     public void addNode( OLSyntaxNode n )
@@ -78,6 +84,9 @@ public class ImportResult
         }
         if ( n instanceof ServiceNode ) {
             this.addService( (ServiceNode) n );
+        }
+        if ( n instanceof ServiceNodeParameterize ) {
+            this.addParamService( (ServiceNodeParameterize) n );
         }
         this.nodes.add( n );
     }
@@ -140,5 +149,18 @@ public class ImportResult
     public Map< String, ServiceNode > services()
     {
         return services;
+    }
+
+    public void addParamService( ServiceNodeParameterize s )
+    {
+        this.paramServices.put( s.name(), s );
+    }
+
+    /**
+     * @return the parameterize Services
+     */
+    public Map< String, ServiceNodeParameterize > paramServices()
+    {
+        return paramServices;
     }
 }

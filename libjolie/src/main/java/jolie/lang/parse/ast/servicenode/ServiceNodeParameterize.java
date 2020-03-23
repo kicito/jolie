@@ -16,9 +16,11 @@ import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.SequenceStatement;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.module.Importable;
+import jolie.lang.parse.util.ProgramInspector;
 import jolie.util.Pair;
 
-public abstract class ServiceNodeParameterize extends OLSyntaxNode
+public abstract class ServiceNodeParameterize extends OLSyntaxNode implements Importable
 {
     private String name;
     private Pair< TypeDefinition, String > parameter; // type variablePath
@@ -175,4 +177,5 @@ public abstract class ServiceNodeParameterize extends OLSyntaxNode
 
     public abstract void accept( OLVisitor visitor );
 
+    public abstract ServiceNodeParameterize resolve( ParsingContext ctx, ProgramInspector pi, String localID ); 
 }

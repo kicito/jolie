@@ -710,19 +710,20 @@ public class CommCore
 		for (Entry< String, CommListener > entry : listenersMap.entrySet()) {
 			CommListener listener = entry.getValue();
 			if ( listener instanceof ParameterizeCommListener ) {
+				
 				CommParameterizeSetup setup = new CommParameterizeSetup(
 						(ParameterizeInputPort) listener.inputPort(),
 						this.interpreter );
 				setup.start();
+
 				try {
 					setup.join();
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				entry.setValue(setup.listener);
 				listener = setup.listener;
-			} 
+			}
 			listener.start();
 			
 			// try {

@@ -46,6 +46,12 @@ public final class VariablePathBuilder
 		return this;
 	}
 	
+	public VariablePathBuilder add( Expression id, Expression index )
+	{
+		list.add( new Pair<>( id, index ) );
+		return this;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public VariablePath toVariablePath()
 	{

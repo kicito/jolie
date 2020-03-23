@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import jolie.lang.parse.ast.*;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeDefinition;
 
 /**
@@ -143,4 +144,8 @@ public interface ProgramInspector
 	 * Returns an array of all the service definition nodes defined in the program
 	 */
 	public ServiceNode[] getServices();
+	/**
+	 * Returns an array of all the service definition nodes defined in the program
+	 */
+	public ServiceNodeParameterize[] getParamServices();
 }

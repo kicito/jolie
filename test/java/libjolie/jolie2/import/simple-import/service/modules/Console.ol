@@ -1,4 +1,3 @@
-
 type EnableTimestampRequest: bool {
 	format?: string
 }
@@ -53,16 +52,23 @@ interface IReceiver {
 	OneWay: in(InRequest)
 }
 
-decl service Java("joliex.io.ConsoleService") Console (outputPort fromClient) {
-	inputPort IP {
-		interfaces: IConsole
+decl service Java("joliex.io.ConsoleService") Console ( p: void ) {
+
+	inputPort IP (p.fromClient)
+
+	outputPort Receiver (p.toClient) {
+		interfaces: IReceiver
 	}
 
-	// outputPort Receiver {
-	// 	interfaces: IReceiver
-	// }
-	
-	binding {
-		IP -> fromClient
+	inputPort ConsoleInputPort {
+		Location: "local"
+		Interfaces: IReceiver
 	}
+
+	execution { concurrent }
+    main{
+		[in(incoming)]{
+			in@Receiver(incoming)
+		}
+    }
 }

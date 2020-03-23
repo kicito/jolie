@@ -1,10 +1,10 @@
 
 
-decl service twiceService( string portLocation ){ 
+decl service twiceService( portLocation:string ){ 
     inputPort TwiceService (
         {
             location = portLocation
-            protocol = "sodep"
+            // protocol = "sodep"
             interfaces << "SumInterface" {
                 operations << "twice" {
                     reqType = "int"
@@ -24,14 +24,11 @@ decl service twiceService( string portLocation ){
 
 decl service twice(){ 
 
-    embed twiceService ( {
-        location = "socket://localhost:3000"
-        protocol = "sodep"
-    } )
+    embed twiceService ( "local://TwService" )
 
     outputPort tw {
-        Location: "socket://localhost:3000" 
-        Protocol: sodep
+        Location: "local://TwService" 
+        // Protocol: sodep
         RequestResponse: twice
     }
     

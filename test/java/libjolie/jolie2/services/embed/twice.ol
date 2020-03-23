@@ -1,4 +1,4 @@
-decl service twiceService( string portLocation ){ 
+decl service twiceService( portLocation:string  ){ 
     inputPort TwiceService (
         {
             location = portLocation

@@ -113,6 +113,7 @@ import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.servicenode.JavaServiceNode;
 import jolie.lang.parse.ast.servicenode.JolieServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
@@ -134,6 +135,7 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 	private final Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode>>> behaviouralDependencies = new HashMap<>();
 	private final Map< URI, List< DefinitionNode > > procedureDefinitions = new HashMap<>();
 	private final Map< URI, List< ServiceNode > > services = new HashMap<>();
+	private final Map< URI, List< ServiceNodeParameterize > > paramServices = new HashMap<>();
 	private final Set< URI > sources = new HashSet<>();
 
 	private OLSyntaxNode currentFirstInput = null;
@@ -154,7 +156,8 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 			embeddedServices,
 			behaviouralDependencies,
 			procedureDefinitions,
-			services
+			services,
+			paramServices
 		);
 	}
 
@@ -522,10 +525,26 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 	public void visit( ParameterizeInputPortInfo n ) {}
 
 	@Override
-	public void visit( JolieServiceNode n ) {}
+	public void visit( JolieServiceNode n ) {
+		List< ServiceNodeParameterize> list = this.paramServices.get( n.context().source() );
+		if ( list == null ) {
+			list = new LinkedList< >();
+			this.paramServices.put( n.context().source(), list );
+		}
+		list.add( n );
+		encounteredNode(n);
+	}
 
 	@Override
-	public void visit( JavaServiceNode n ) {}
+	public void visit( JavaServiceNode n ) {
+		List< ServiceNodeParameterize> list = this.paramServices.get( n.context().source() );
+		if ( list == null ) {
+			list = new LinkedList< >();
+			this.paramServices.put( n.context().source(), list );
+		}
+		list.add( n );
+		encounteredNode(n);
+	}
 
 	@Override
 	public void visit( EmbeddedServiceNodeParameterize n ) {}

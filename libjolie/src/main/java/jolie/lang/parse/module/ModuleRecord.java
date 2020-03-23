@@ -10,6 +10,7 @@ import jolie.lang.parse.ast.OneWayOperationDeclaration;
 import jolie.lang.parse.ast.OperationDeclaration;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.context.ParsingContext;
@@ -70,6 +71,16 @@ public class ModuleRecord
         return null;
     }
 
+    private ServiceNodeParameterize findParamService( String id )
+    {
+        for (ServiceNodeParameterize service : programInspector.getParamServices()) {
+            if ( service.name().equals( id ) ) {
+                return service;
+            }
+        }
+        return null;
+    }
+
     public Importable[] find( String id )
     {
         TypeDefinition moduleTypeDef = this.findType( id );
@@ -107,6 +118,11 @@ public class ModuleRecord
         if ( moduleService != null ) {
             return new Importable[] {moduleService};
         }
+        ServiceNodeParameterize service = this.findParamService( id );
+        if ( service != null ) {
+            return new Importable[] {service};
+        }
+
         return null;
     }
 
@@ -128,6 +144,10 @@ public class ModuleRecord
         }
 
         for (ServiceNode service : this.programInspector.getServices()) {
+            importPaths.add( new Pair< String, String >( service.name(), service.name() ) );
+        }
+
+        for (ServiceNodeParameterize service : this.programInspector.getParamServices()) {
             importPaths.add( new Pair< String, String >( service.name(), service.name() ) );
         }
         return resolve( ctx, importPaths );

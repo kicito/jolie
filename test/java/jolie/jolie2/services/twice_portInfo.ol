@@ -8,8 +8,11 @@ type twiceServiceParams: void{
     .prot : string
 }
 
-decl service twiceService( twiceServiceParams p ){ 
-    inputPort TwiceService ( p ) {
+decl service twiceService( p: twiceServiceParams ){ 
+    inputPort TwiceService ( {
+        location = p.loc
+        protocol = p.prot
+    } ) {
         Interfaces: SumInterface
     }
 
@@ -23,8 +26,8 @@ decl service twiceService( twiceServiceParams p ){
 
 decl service twice_portInfo(){ 
     embed twiceService ( {
-        location = "socket://localhost:3000"
-        protocol = "sodep"
+        loc = "socket://localhost:3000"
+        prot = "sodep"
     } )
 
     outputPort tw {

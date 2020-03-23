@@ -9,18 +9,13 @@ public class ParameterizeInputPortInfo extends InputPortInfo
 {
 
     private OLSyntaxNode parameter;
-    private String id;
 
-    public ParameterizeInputPortInfo( ParsingContext context, String id )
+    public ParameterizeInputPortInfo( ParsingContext context, String id, AggregationItemInfo[] aggregationList,
+    Map< String, String > redirectionMap)
     {
-        super( context, id, null, null, new NullProcessStatement( context ), null, null );
-        this.id = id;
+        super( context, id, null, null, new NullProcessStatement( context ), aggregationList, redirectionMap );
     }
-
-    public String id()
-    {
-        return this.id;
-    }
+    
 
     public void setParameter( OLSyntaxNode parameter )
     {

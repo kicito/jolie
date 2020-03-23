@@ -274,11 +274,6 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 		return result;
 	}
 
-	public boolean checkInlineTree( InlineTreeExpressionNode n ){
-		System.out.println(n);
-		return true;
-	}
-
 	/* public abstract TypeDefinition getSubType( String id );
 	public abstract Set< Map.Entry< String, TypeDefinition > > subTypes();
 	public abstract boolean hasSubTypes();

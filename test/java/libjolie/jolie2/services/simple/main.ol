@@ -1,5 +1,5 @@
-decl service main(portInfo info){ init { a = 1 } main { a=2 } }
-decl service main(string a){ init { a = 1 } main { a=2 } }
+decl service main(info : portInfo ){ init { a = 1 } main { a=2 } }
+decl service main(a:string ){ init { a = 1 } main { a=2 } }
 decl service main(){ init { a = 1 } main { a=2 } }
 decl service main{ init { a = 1 } main { a=2 } }
 

@@ -1,13 +1,19 @@
 package jolie;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(MethodOrderer.Alphanumeric.class)
 public class TestParameterizePort
 {
 
@@ -39,25 +45,19 @@ public class TestParameterizePort
         System.out.println( systemOutContent.toString() );
     }
 
+    
+
     @Test
-    void testInstanceOfPortInfo() throws Exception
+    void testInstanceOfPortInfo()
     {
         String filePath = "jolie2/parameterizePort/portType.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-        // Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
-        interpreter.run();
 
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        assertDoesNotThrow(
+                () -> JolieRunner.run(args, this.getClass().getClassLoader(), null) );
+
         assertTrue( systemOutContent.toString().contains( "true" ) );
     }
 
@@ -71,35 +71,21 @@ public class TestParameterizePort
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter serverInterpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
 
 
         String filePath = "jolie2/parameterizePort/outputPort/InlineTreeParamIface.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-
 
         Thread serverThread = new Thread( () -> {
-            try {
-                serverInterpreter.run();
-                // assertTrue( systemOutContent.toString()
-                //         .contains( "receive value hello from parameterize port" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
         } );
 
         Thread clientThread = new Thread( () -> {
-            try {
-                interpreter.run();
-                // assertTrue( systemOutContent.toString().contains( "3" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
         } );
 
         serverThread.start();
@@ -119,34 +105,20 @@ public class TestParameterizePort
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter serverInterpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
 
         String filePath = "jolie2/parameterizePort/outputPort/InlineTreePredefinedIface.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-
 
         Thread serverThread = new Thread( () -> {
-            try {
-                serverInterpreter.run();
-                // assertTrue( systemOutContent.toString()
-                //         .contains( "receive value hello from parameterize port" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
         } );
 
         Thread clientThread = new Thread( () -> {
-            try {
-                interpreter.run();
-                // assertTrue( systemOutContent.toString().contains( "3" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
         } );
 
         serverThread.start();
@@ -159,45 +131,30 @@ public class TestParameterizePort
     @Test
     void testParameterizeInputPortInlineTreeStaticPredefinedIface() throws Exception
     {
-        String serverFilePath = "jolie2/parameterizePort/inputPort/InlineTreeStaticPredefinedIface.ol";
+        String serverFilePath =
+                "jolie2/parameterizePort/inputPort/InlineTreeStaticPredefinedIface.ol";
 
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter serverInterpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-
 
         String filePath = "jolie2/parameterizePort/inputPort/client.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-
 
         Thread serverThread = new Thread( () -> {
-            try {
-                serverInterpreter.run();
-                
-                // assertTrue( systemOutContent.toString()
-                //         .contains( "receive value hello from parameterize port" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
         } );
 
         Thread clientThread = new Thread( () -> {
-            try {
-                interpreter.run();
-                // assertTrue( systemOutContent.toString().contains( "3" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
         } );
 
         serverThread.start();
-        Thread.sleep(1000);
+        Thread.sleep( 1000 );
         clientThread.start();
         clientThread.join();
         serverThread.join();
@@ -214,34 +171,20 @@ public class TestParameterizePort
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter serverInterpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
 
         String filePath = "jolie2/parameterizePort/inputPort/client.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-
 
         Thread serverThread = new Thread( () -> {
-            try {
-                serverInterpreter.run();
-                // assertTrue( systemOutContent.toString()
-                //         .contains( "receive value hello from parameterize port" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
         } );
 
         Thread clientThread = new Thread( () -> {
-            try {
-                interpreter.run();
-                // assertTrue( systemOutContent.toString().contains( "3" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
         } );
 
         serverThread.start();
@@ -259,41 +202,40 @@ public class TestParameterizePort
         String[] serverArgs = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
         serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter serverInterpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-
-        Thread serverThread = new Thread( () -> {
-            try {
-                serverInterpreter.run();
-                assertTrue( systemOutContent.toString()
-                        .contains( "receive value hello from parameterize port" ) );
-
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
-        } );
-        serverThread.start();
 
         String filePath = "jolie2/parameterizePort/parameterizePort.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
 
-        Thread clientThread = new Thread( () -> {
-            try {
-                interpreter.run();
-                assertTrue( systemOutContent.toString().contains( "3" ) );
-            } catch (InterpreterException | IOException e) {
-                e.printStackTrace();
-            }
+        Thread serverThread = new Thread( () -> {
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
         } );
 
+        Thread clientThread = new Thread( () -> {
+            assertDoesNotThrow(
+                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
+        } );
+
+        serverThread.start();
         clientThread.start();
         clientThread.join();
         serverThread.join();
 
     }
+
+    // @Test
+    // void testParameterizeInputPortLocalLocation()
+    // {
+
+    //     String filePath = "jolie2/parameterizePort/localLocation.ol";
+    //     String[] args = new String[launcherArgs.length + 1];
+    //     System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+    //     args[args.length - 1] = filePath;
+
+    //     assertDoesNotThrow(
+    //         () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
+    // }
 
 }

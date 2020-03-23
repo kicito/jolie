@@ -6,7 +6,8 @@ type sumReqType: void{
     y : int
 }
 
-inputPort myPort({ 
+inputPort myPort(
+    { 
     location = "socket://localhost:3000"
     protocol = "sodep"
     interfaces << "SumInterface"{
@@ -18,7 +19,8 @@ inputPort myPort({
             resType = "int"
         }
     }
-})
+}
+)
 
 main{
     notice(req);

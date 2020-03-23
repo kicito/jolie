@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import jolie.lang.parse.ast.*;
+import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.util.ProgramInspector;
 
@@ -48,6 +49,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 	private final Map< URI, List< DefinitionNode > > procedureDefinitions;
 	private final Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies;
 	private final Map< URI, List< ServiceNode > > services;
+	private final Map< URI, List< ServiceNodeParameterize > > paramServices;
 
 	public ProgramInspectorImpl(
 		URI[] sources,
@@ -58,7 +60,8 @@ public class ProgramInspectorImpl implements ProgramInspector
 		Map< URI, List< EmbeddedServiceNode > > embeddedServices,
 		Map< URI, Map< OLSyntaxNode, List< OLSyntaxNode > > > behaviouralDependencies,
 		Map< URI, List< DefinitionNode > > procedureDefinitions,
-		Map< URI, List< ServiceNode > > services
+		Map< URI, List< ServiceNode > > services,
+		Map< URI, List< ServiceNodeParameterize > > paramServices
 	) {
 		this.sources = sources;
 		this.interfaces = interfaces;
@@ -69,6 +72,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 		this.behaviouralDependencies = behaviouralDependencies;
 		this.procedureDefinitions = procedureDefinitions;
 		this.services = services;
+		this.paramServices = paramServices;
 	}
 
 	@Override
@@ -268,6 +272,20 @@ public class ProgramInspectorImpl implements ProgramInspector
 			}
 		}
 		return result.toArray( new ServiceNode[ 0 ] );
+	}
+
+	@Override
+	public ServiceNodeParameterize[] getParamServices()
+	{
+		List< ServiceNodeParameterize > result = new ArrayList< >();
+		List< ServiceNodeParameterize > list;
+		for( URI source : sources ) {
+			list = paramServices.get( source );
+			if ( list != null ) {
+				result.addAll( list );
+			}
+		}
+		return result.toArray( new ServiceNodeParameterize[ 0 ] );
 	}
 
 	/*

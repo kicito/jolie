@@ -309,7 +309,6 @@ public class OLParser extends AbstractParser
 		}
 		getToken();
 		_parseService();
-
 	}
 
 	private ServiceNodeParameterize _parseServiceTechnology() 
@@ -359,22 +358,16 @@ public class OLParser extends AbstractParser
 			if (token.is(TokenType.RPAREN)){ // case ( )
 				getToken();
 				return new Pair< TypeDefinition, String >(TypeDefinitionUndefined.getInstance(), null);
-			} else { // case ( type path )
-				
-				TypeDefinition parameterType = null;
-				NativeType nativeType = readNativeType();
-				if ( nativeType == null ) { // It's a user-defined type
-					assertToken( Scanner.TokenType.ID, "expected type name for service" );
-				}
-				if ( definedTypes.containsKey( token.content() ) == false ) {
-					throwException( "invalid type: " + token.content() );
-				}
-				parameterType = definedTypes.get( token.content() );
-				getToken();
-				assertToken( Scanner.TokenType.ID, "expected variable path after typename" );
+			} else { // case ( path: type  )
+
 
 				String paramPath = token.content();
 				getToken();
+
+				eat(TokenType.COLON, "expected :");
+				String typeName = token.content();
+				TypeDefinition parameterType = parseType( typeName );
+
 				eat(TokenType.RPAREN, "expected )");
 				return new Pair< TypeDefinition, String >(parameterType, paramPath);
 			}
@@ -446,14 +439,14 @@ public class OLParser extends AbstractParser
 					break;
 				case "inputPort":
 					InputPortInfo inputPortInfo = null;
-					if ( service.getType() == Constants.ServiceType.JOLIE ){
+					// if ( service.getType() == Constants.ServiceType.JOLIE ){
 						inputPortInfo = parseInputPortInfo();
-					} else {
-						if (service.getInputPortInfos().size() > 0){
-							throwException("InputPort for foreign technology service should not be more than one");
-						}
-						inputPortInfo = parseForeignInputPortInfo();
-					}
+					// } else {
+						// if (service.getType() != Constants.ServiceType.JOLIE && service.getInputPortInfos().size() > 0){
+							// throwException("InputPort for foreign technology service should not be more than one");
+						// }
+						// inputPortInfo = parseForeignInputPortInfo();
+					// }
 					service.addInputPortInfo(inputPortInfo);
 					break;
 				case "outputPort":
@@ -1144,14 +1137,14 @@ public class OLParser extends AbstractParser
 				interfaces.put(entry.getKey(), entry.getValue());
 			}
 
-			// for(Map.Entry<String, ServiceNode> entry: importResult.services().entrySet()){
-			// 	if (services.containsKey(entry.getKey())){
-			// 		if (!services.get(entry.getKey()).equals(entry.getValue())){
-			// 			System.out.println("[OLPARSER] warning, imported service '" + entry.getKey() + "' is already defined, replacing definition" );
-			// 		}
-			// 	}
-			// 	services.put(entry.getKey(), entry.getValue());
-			// }
+			for(Map.Entry<String, ServiceNodeParameterize> entry: importResult.paramServices().entrySet()){
+				if (services.containsKey(entry.getKey())){
+					if (!services.get(entry.getKey()).equals(entry.getValue())){
+						System.out.println("[OLPARSER] warning, imported service '" + entry.getKey() + "' is already defined, replacing definition" );
+					}
+				}
+				services.put(entry.getKey(), entry.getValue());
+			}
 		}
 	}
 
@@ -1481,12 +1474,14 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	private InputPortInfo parseParenInputPort( String name )
-		throws IOException, ParserException
+	private InputPortInfo parseParenInputPort( String name ) throws IOException, ParserException
 	{
 		getToken();
+		List< InputPortInfo.AggregationItemInfo > aggregationList = new ArrayList<>();
+		Map< String, String > redirectionMap = new HashMap<>();
 
-		ParameterizeInputPortInfo p = new ParameterizeInputPortInfo( getContext(), name );
+		ParameterizeInputPortInfo p = new ParameterizeInputPortInfo( getContext(), name,
+				aggregationList.toArray( new InputPortInfo.AggregationItemInfo[ aggregationList.size() ] ), redirectionMap );
 		OLSyntaxNode o = parseBasicExpression();
 		p.setParameter( o );
 
@@ -1499,8 +1494,9 @@ public class OLParser extends AbstractParser
 		return p;
 	}
 
-    
-	private InputPortInfo parseCurlyInputPort( String inputPortName )
+
+	private InputPortInfo parseCurlyInputPort(
+			String inputPortName )
 		throws IOException, ParserException
 	{
 		String protocolId;

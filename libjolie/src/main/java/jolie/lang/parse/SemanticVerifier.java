@@ -1547,12 +1547,6 @@ public class SemanticVerifier implements OLVisitor
 		if ( !(n.parameter() instanceof InlineTreeExpressionNode || n.parameter() instanceof VariableExpressionNode ) ) {
 			error(n, "expected parameter to be inlinetree or variable path node");
 		}
-		// else if (n.parameter() instanceof InlineTreeExpressionNode){
-		// 	InlineTreeExpressionNode inlineTree = (InlineTreeExpressionNode) n.parameter();
-		// 	// if (!inlineTree.isType((TypeInlineDefinition)definedTypes.get("portInfo"))){
-		// 	// 	error(n, "expected parameter to be inlinetree to be type of portInfo");
-		// 	// };
-		// }
 	}
 
 	@Override

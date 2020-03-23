@@ -260,20 +260,20 @@ class TestModuleResolver
 	}
 
 
-	// @Test
-	// void testServiceImport() throws Exception
-	// {
-	// 	URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/service/main.ol" );
-	// 	is = src.openStream();
-	// 	InstanceCreator oc = new InstanceCreator( new String[] {} );
-	// 	OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
+	@Test
+	void testServiceImport() throws Exception
+	{
+		URL src = getClass().getClassLoader().getResource( "jolie2/import/simple-import/service/main.ol" );
+		is = src.openStream();
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( new Scanner( is, src.toURI(), null ) );
 
-	// 	Program p = olParser.parse();
-	// 	configuration.setCheckForMain( false );
+		Program p = olParser.parse();
+		configuration.setCheckForMain( false );
 
-	// 	SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
-	// 	semanticVerifier.validate();
-	// }
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		semanticVerifier.validate();
+	}
 
 	@Test
 	void testNestedImport() throws Exception

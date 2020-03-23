@@ -231,6 +231,7 @@ import jolie.runtime.typing.OneWayTypeDescription;
 import jolie.runtime.typing.OperationTypeDescription;
 import jolie.runtime.typing.RequestResponseTypeDescription;
 import jolie.runtime.typing.Type;
+import jolie.runtime.typing.TypeCheckingException;
 import jolie.util.ArrayListMultiMap;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
@@ -488,7 +489,11 @@ public class OOITBuilder implements OLVisitor
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
 				n.type().equals( Constants.EmbeddedServiceType.INTERNAL )
 				? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration( n.servicePath(), (Program) n.program() )
-				: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath() );
+				: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath(), (Program) n.program() );
+
+
+			// // TODO change everything to external internal embedded service
+			// final EmbeddedServiceConfiguration embeddedServiceConfiguration = new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath(), (Program) n.program() );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(
@@ -1823,117 +1828,7 @@ public class OOITBuilder implements OLVisitor
 
 	@Override
 	public void visit( EmbeddedServiceNode2 n )
-	{
-		// // resolve binding
-		// Parameter[] targetServiceParams = n.embedingService().getAssignableParameters();
-		// Argument[] clientArgument = n.getArgs();
-		// for (int paramIndex = 0; paramIndex < targetServiceParams.length; paramIndex++) {
-		// 	Parameter p = targetServiceParams[paramIndex];
-		// 	if ( p.getObjectType().equals( Pair.class ) ) {
-		// 		Pair< String, String > paramPair = (Pair< String, String >) p.value();
-		// 		switch (paramPair.key()) {
-		// 			case "inputPort":
-		// 				if ( clientArgument[paramIndex] instanceof ArgumentPortLiteral ) {
-							
-		// 					InputPortInfo clientInputPort = (InputPortInfo)clientArgument[paramIndex].value();
-		// 					OutputPortInfo serviceOutputPort =
-		// 					(OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-		// 					serviceOutputPort.bindLocationAndProtocol(clientInputPort, true);
-		// 					n.embedingService().addOutputPortInfo(serviceOutputPort);
-		// 					clientInputPort.accept(this);
-
-		// 				} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
-		// 					// bind client inputport and to service outputport
-		// 					String clientPortName = (String)clientArgument[paramIndex].value();
-		// 					InputPortInfo ip = n.clientService().getInputPortInfo(clientPortName);
-		// 					OutputPortInfo serviceOutputPort =
-		// 					(OutputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-		// 					serviceOutputPort.bindLocationAndProtocol(ip, true);
-		// 					n.embedingService().addOutputPortInfo(serviceOutputPort);
-		// 				}
-		// 				break;
-		// 			case "outputPort":
-		// 				if ( clientArgument[paramIndex] instanceof ArgumentString ) {
-		// 					// create new outputport at client
-		// 					String clientPortName = (String)clientArgument[paramIndex].value();
-		// 					InputPortInfo ip =
-		// 					(InputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-		// 					OutputPortInfo clientOutputPort =
-		// 							new OutputPortInfo( n.context(), clientPortName );
-		// 					ip.operations().forEach( op -> clientOutputPort.addOperation( op ) );
-		// 					ip.getInterfaceList().forEach( iface -> clientOutputPort.addInterface( iface ) );
-		// 					clientOutputPort.bindLocationAndProtocol(ip, true);
-		// 					n.clientService().addOutputPortInfo(clientOutputPort);
-		// 					clientOutputPort.accept(this);
-		// 				} else if ( clientArgument[paramIndex] instanceof ArgumentID ) {
-		// 					// bind client outputport with service inputport 
-		// 					String clientPortName = (String)clientArgument[paramIndex].value();
-		// 					OutputPortInfo op = n.clientService().getOutputPortInfo(clientPortName);
-		// 					InputPortInfo serviceInputPort =
-		// 					(InputPortInfo)n.embedingService().getLocalBindingPortFromParamName( paramPair.value() );
-		// 					serviceInputPort.bindLocationAndProtocol(op, true);
-		// 				}
-		// 				break;
-		// 		}
-		// 	}
-		// }
-
-		// try {
-		// 	VariablePath path = null;
-		// 	if (n.embedingService().type() != Constants.EmbeddedServiceType.JOLIE){
-		// 		// TODO make get(0).embedderOutputPortName type safer
-		// 		path = interpreter.getOutputPort( (String)clientArgument[0].value() ).locationVariablePath();
-		// 	}
-
-		// 	final EmbeddedServiceConfiguration embeddedServiceConfiguration =
-		// 			n.embedingService().type().equals( Constants.EmbeddedServiceType.JOLIE )
-		// 					? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration(
-		// 							n.embedingService().name(), n.embedingService().program() )
-		// 					: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(
-		// 							n.embedingService().type(),
-		// 							n.embedingService().getParameter(0).value().toString() );
-
-		// 	interpreter.addEmbeddedServiceLoader(
-		// 		EmbeddedServiceLoader.create(
-		// 			interpreter,
-		// 			embeddedServiceConfiguration,
-		// 			path
-		// 		) );
-		// } catch( EmbeddedServiceLoaderCreationException e ) {
-		// 	error( n.context(), e );
-		// } catch( InvalidIdException e ) {
-		// 	error( n.context(), "could not find port" );
-		// }
-	}
-
-
-	/**
-	 *  Output port....
-		final Process protocolConfigurationProcess =
-			( n.protocolConfiguration() != null ) ? buildProcess( n.protocolConfiguration() )
-			: NullProcess.getInstance();
-		
-		final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
-
-		currentOutputPort = n.id();
-		notificationTypes.put( currentOutputPort, new HashMap<>() );
-		solicitResponseTypes.put( currentOutputPort, new HashMap<>() );
-		for( OperationDeclaration decl : n.operations() ) {
-			decl.accept( this );
-		}
-		currentOutputPort = null;
-
-		interpreter.register( n.id(), new OutputPort(
-				interpreter,
-				n.id(),
-				n.protocolId(),
-				protocolConfigurationProcess,
-				n.location(),
-				getOutputPortInterface( n.id() ),
-				isConstant
-			)
-		);
-	 */
+	{}
 
 	@Override
 	public void visit( ParameterizeOutputPortInfo n )
@@ -1947,6 +1842,7 @@ public class OOITBuilder implements OLVisitor
 		notificationTypes.put( portId, new HashMap<>() );
 		solicitResponseTypes.put( portId, new HashMap<>() );
 
+		// static interface
 		if (n.operations().size() > 0) {
 			currentOutputPort = portId;
 			for( OperationDeclaration decl : n.operations() ) {
@@ -1972,177 +1868,131 @@ public class OOITBuilder implements OLVisitor
 				} else {
 					error(n.context(), "interface is undefined");
 				}
+			}else{
+				error(n.context(), "interface is undefined");
 			}
 		}
 
-		// look for location if it is not yet defined
-		if ( n.location() == null ){
-			v = currExpression.evaluate();
-			String location = null;
-			try {
-				location = v.children().get("location").first().strValue();
-				n.setLocation(new URI(location));
-			} catch (URISyntaxException e) {
-				error(n.context(), "location:" + location + " is not valid URI");
+		// CommChannel construct
+		if ( n.parameter() instanceof InlineTreeExpressionNode ){
+			// location is declared in expression
+			if ( n.location() == null ){
+				n.parameter().accept(this);
+				v = currExpression.evaluate();
+				String location = null;
+				try {
+					location = v.children().get("location").first().strValue();
+					n.setLocation(new URI(location));
+				} catch (URISyntaxException e) {
+					error(n.context(), "location:" + location + " is not valid URI");
+				}
 			}
+
+			// look for location if it is not yet defined
+			if ( n.protocolId() == null ){
+				v = currExpression.evaluate();
+				String protocol = null;
+				protocol = v.children().get("protocol").first().strValue();
+				n.setProtocolId(protocol);
+			}
+
+
+			interpreter.register( n.id(), new OutputPort(
+				interpreter,
+				n.id(),
+				n.protocolId(),
+				protocolConfigurationProcess,
+				n.location(),
+				getOutputPortInterface( n.id() ),
+				true
+				)
+			);
+		} else if ( n.parameter() instanceof VariableExpressionNode ) {
+			VariablePath paramPath = buildVariablePath( ((VariableExpressionNode) n.parameter()).variablePath() );
+			VariablePathBuilder locationBuilder = new VariablePathBuilder(false);
+			VariablePathBuilder protocolBuilder = new VariablePathBuilder(false);
+			for (Pair<Expression, Expression> path : paramPath.path()){
+				locationBuilder.add(path.key(), path.value());
+				protocolBuilder.add(path.key(), path.value());
+			}
+
+			locationBuilder.add(Constants.LOCATION_NODE_NAME, 0);
+			protocolBuilder.add(Constants.PROTOCOL_NODE_NAME, 0);
+
+			VariablePath protocolVariablePath = new VariablePathBuilder( false ).add( n.id(), 0 )
+					.add( Constants.PROTOCOL_NODE_NAME, 0 ).toVariablePath();
+
+			VariablePath locationVariablePath =
+						new VariablePathBuilder( false )
+						.add( n.id(), 0 )
+						.add( Constants.LOCATION_NODE_NAME, 0 )
+						.toVariablePath();
+			Process assignProtocol =
+				new AssignmentProcess( protocolVariablePath, protocolBuilder.toVariablePath(), n.context() );
+			Process assignLocation =
+				new AssignmentProcess( locationVariablePath, locationBuilder.toVariablePath(), n.context() );
+			protocolConfigurationProcess = new SequentialProcess(new Process[]{assignProtocol, assignLocation});
+
+			interpreter.register( n.id(), new OutputPort(
+				interpreter,
+				n.id(),
+				null,
+				protocolConfigurationProcess,
+				null,
+				getOutputPortInterface( n.id() ),
+				true
+				)
+			);
 		}
-
-
-		// look for location if it is not yet defined
-		if ( n.protocolId() == null ){
-			v = currExpression.evaluate();
-			String protocol = null;
-			protocol = v.children().get("protocol").first().strValue();
-			n.setProtocolId(protocol);
-		}
-
-		interpreter.register( n.id(), new OutputPort(
-			interpreter,
-			n.id(),
-			n.protocolId(),
-			protocolConfigurationProcess,
-			n.location(),
-			getOutputPortInterface( n.id() ),
-			true
-			)
-		);
 	}
-
-
-	// public void visit( InputPortInfo n )
-	// {
-	// 	currentPortInterface = new Interface(
-	// 		new HashMap< String, OneWayTypeDescription >(),
-	// 		new HashMap< String, RequestResponseTypeDescription >()
-	// 	);
-	// 	for( OperationDeclaration op : n.operations() ) {
-	// 		op.accept( this );
-	// 	}
-		
-	// 	Map< String, OutputPort > redirectionMap =
-	// 		new HashMap< String, OutputPort > ();
-	// 	OutputPort oPort = null;
-	// 	for( Entry< String, String > entry : n.redirectionMap().entrySet() ) {
-	// 		try {
-	// 			oPort = interpreter.getOutputPort( entry.getValue() );
-	// 		} catch( InvalidIdException e ) {
-	// 			error( n.context(), "Unknown output port (" + entry.getValue() + ") in redirection for input port " + n.id() );
-	// 		}
-	// 		redirectionMap.put( entry.getKey(), oPort );
-	// 	}
-
-	// 	OutputPort outputPort;
-	// 	Map< String, OneWayTypeDescription > outputPortNotificationTypes;
-	// 	Map< String, RequestResponseTypeDescription > outputPortSolicitResponseTypes;
-	// 	Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
-	// 	InterfaceExtender extender;
-	// 	for( InputPortInfo.AggregationItemInfo item : n.aggregationList() ) {
-	// 		String outputPortName = item.outputPortList()[0];
-	// 		if ( item.interfaceExtender() == null ) {
-	// 			extender = null;
-	// 		} else {
-	// 			extender = interfaceExtenders.get( item.interfaceExtender().name() );
-	// 		}
-	// 		try {
-	// 			outputPort = interpreter.getOutputPort( outputPortName );
-	// 			outputPortNotificationTypes = notificationTypes.get( outputPortName );
-	// 			outputPortSolicitResponseTypes = solicitResponseTypes.get( outputPortName );
-	// 			for( String operationName : outputPortNotificationTypes.keySet() ) {
-	// 				aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.ONE_WAY, outputPort ) );
-	// 				putAggregationConfiguration( n.id(), operationName,
-	// 					new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
-	// 			}
-	// 			for( String operationName : outputPortSolicitResponseTypes.keySet() ) {
-	// 				aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.REQUEST_RESPONSE, outputPort ) );
-	// 				putAggregationConfiguration( n.id(), operationName,
-	// 					new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
-	// 			}
-	// 		} catch( InvalidIdException e ) {
-	// 			error( n.context(), e );
-	// 		}
-	// 	}
-		
-	// 	String pId = n.protocolId();
-	// 	CommProtocolFactory protocolFactory = null;
-
-	// 	VariablePath protocolConfigurationPath =
-	// 		new VariablePathBuilder( true )
-	// 		.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
-	// 		.add( n.id(), 0 )
-	// 		.add( Constants.PROTOCOL_NODE_NAME, 0 )
-	// 		.toVariablePath();
-	// 	try {
-	// 		protocolFactory = interpreter.commCore().getCommProtocolFactory( pId );
-	// 	} catch( IOException e ) {
-	// 		error( n.context(), e );
-	// 	}
-
-	// 	VariablePath locationPath =
-	// 		new VariablePathBuilder( true )
-	// 		.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
-	// 		.add( n.id(), 0 )
-	// 		.add( Constants.LOCATION_NODE_NAME, 0 )
-	// 		.toVariablePath();
-	// 	locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
-	// 	// Process assignLocation = new AssignmentProcess( locationPath, Value.create( n.location().toString() ) );
-	// 	if (n.location() == null){
-	// 		error( n.context(), "inputPort " + n.id() + " has undefined location" );
-	// 		return;
-	// 	}
-	// 	locationPath.getValue().setValue( n.location().toString() );
-
-	// 	VariablePath protocolPath =
-	// 		new VariablePathBuilder( true )
-	// 		.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
-	// 		.add( n.id(), 0 )
-	// 		.add( Constants.PROTOCOL_NODE_NAME, 0 )
-	// 		.toVariablePath();
-	// 	Process assignProtocol = new AssignmentProcess( protocolPath, Value.create( n.protocolId() ), n.context() );
-	// 	Process[] confChildren = new Process[] { buildProcess( n.protocolConfiguration() ), assignProtocol };
-	// 	SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
-
-	// 	InputPort inputPort = new InputPort(
-	// 		n.id(),
-	// 		locationPath,
-	// 		protocolConfigurationPath,
-	// 		currentPortInterface,
-	// 		aggregationMap,
-	// 		redirectionMap
-	// 	);
-		
-	// 	if ( n.location().toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
-	// 		try {
-	// 			interpreter.commCore().addLocalInputPort( inputPort );
-	// 			inputPorts.put( inputPort.name(), inputPort );
-	// 		} catch( IOException e ) {
-	// 			error( n.context(), e );
-	// 		}
-	// 	} else if ( protocolFactory != null || n.location().getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
-	// 		try {
-	// 			interpreter.commCore().addInputPort(
-	// 				inputPort,
-	// 				protocolFactory,
-	// 				protocolConfigurationSequence
-	// 			);
-	// 			inputPorts.put( inputPort.name(), inputPort );
-	// 		} catch( IOException ioe ) {
-	// 			error( n.context(), ioe );
-	// 		}
-	// 	} else {
-	// 		error( n.context(), "Communication protocol extension for protocol " + pId + " not found." );
-	// 	}
-	// 	currentPortInterface = null;
-	// }
-	
 
 	@Override
 	public void visit( ParameterizeInputPortInfo n )
 	{
 		String portId = n.id();
 
-		// aggregation and redirect is not support yet....
-		Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
+		// redirect is not support yet....
 		Map< String, OutputPort > redirectionMap = new HashMap< String, OutputPort > ();
+
+		OutputPort oPort = null;
+		for( Entry< String, String > entry : n.redirectionMap().entrySet() ) {
+			try {
+				oPort = interpreter.getOutputPort( entry.getValue() );
+			} catch( InvalidIdException e ) {
+				error( n.context(), "Unknown output port (" + entry.getValue() + ") in redirection for input port " + n.id() );
+			}
+			redirectionMap.put( entry.getKey(), oPort );
+		}
+
+		Map< String, OneWayTypeDescription > outputPortNotificationTypes;
+		Map< String, RequestResponseTypeDescription > outputPortSolicitResponseTypes;
+		Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
+		InterfaceExtender extender;
+		for( InputPortInfo.AggregationItemInfo item : n.aggregationList() ) {
+			String outputPortName = item.outputPortList()[0];
+			if ( item.interfaceExtender() == null ) {
+				extender = null;
+			} else {
+				extender = interfaceExtenders.get( item.interfaceExtender().name() );
+			}
+			try {
+				oPort = interpreter.getOutputPort( outputPortName );
+				outputPortNotificationTypes = notificationTypes.get( outputPortName );
+				outputPortSolicitResponseTypes = solicitResponseTypes.get( outputPortName );
+				for( String operationName : outputPortNotificationTypes.keySet() ) {
+					aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.ONE_WAY, oPort ) );
+					putAggregationConfiguration( n.id(), operationName,
+						new AggregationConfiguration( oPort, oPort.getInterface(), extender ) );
+				}
+				for( String operationName : outputPortSolicitResponseTypes.keySet() ) {
+					aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.REQUEST_RESPONSE, oPort ) );
+					putAggregationConfiguration( n.id(), operationName,
+						new AggregationConfiguration( oPort, oPort.getInterface(), extender ) );
+				}
+			} catch( InvalidIdException e ) {
+				error( n.context(), e );
+			}
+		}
 
 
 
@@ -2202,7 +2052,9 @@ public class OOITBuilder implements OLVisitor
 			portInfoPath,
 			expression,
 			currentPortInterface,
-			assignProtocol
+			assignProtocol,
+			aggregationMap,
+			redirectionMap
 		);
 
 		try {
@@ -2319,22 +2171,25 @@ public class OOITBuilder implements OLVisitor
 	@Override
 	public void visit( EmbeddedServiceNodeParameterize n )
 	{
-		n.expression().accept(this);
+		n.expression().accept( this );
 
 		Value argument = currExpression.evaluate();
-		
-		Pair < String ,Value > argumentParameter = new Pair < String ,Value > (n.embedService().parameterPath(), argument);
+		n.embedService().parameterType().accept( this );
+		try {
+			currType.check( argument );
+		} catch (TypeCheckingException e1) {
+			error( n.context(), e1 );
+		}
+		Pair< String, Value > argumentParameter =
+				new Pair< String, Value >( n.embedService().parameterPath(), argument );
 		try {
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
-					n.embedService().getType().equals( Constants.ServiceType.JOLIE )
-							? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration(
-									n.embedService().name(), n.embedService().program())
-							: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration2(
-									n.embedService().getType(), n.embedService().getTarget(),
-									n.embedService().program() );
+					new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration2(
+							n.embedService().name(), n.embedService().getType(),
+							n.embedService().getTarget(), n.embedService().program() );
 
-			interpreter.addEmbeddedServiceLoader(
-					EmbeddedServiceLoader.create( interpreter, embeddedServiceConfiguration, argumentParameter ) );
+			interpreter.addEmbeddedServiceLoader( EmbeddedServiceLoader.create( interpreter,
+					embeddedServiceConfiguration, argumentParameter ) );
 		} catch (EmbeddedServiceLoaderCreationException e) {
 			error( n.context(), e );
 		}

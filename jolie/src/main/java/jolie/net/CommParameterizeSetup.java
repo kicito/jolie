@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import jolie.ExecutionThread;
 import jolie.Interpreter;
+import jolie.lang.Constants;
 import jolie.net.ext.CommListenerFactory;
 import jolie.net.ext.CommProtocolFactory;
 import jolie.net.ports.InputPort;
@@ -69,16 +70,34 @@ public class CommParameterizeSetup extends ExecutionThread
 
             CommProtocolFactory protocolFactory = null;
             CommListenerFactory factory = null;
+
+
             try {
                 protocolFactory = this.interpreter.commCore().getCommProtocolFactory( protocol );
-                factory = this.interpreter.commCore().getCommListenerFactory( medium );
-                if ( factory == null ) {
-                    throw new UnsupportedCommMediumException( medium );
-                }
+            } catch (IOException e1) {
+                throw new FaultException( e1 );
+            }
 
-                listener = factory.createListener( interpreter, protocolFactory, inputPort );
-            } catch (IOException e) {
-                throw new FaultException( e );
+            if ( location.equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+                final LocalListener l = this.interpreter.commCore().localListener();
+                l.mergeInterface( inputPort.getInterface() );
+                l.addAggregations( inputPort.aggregationMap() );
+                l.addRedirections( inputPort.redirectionMap() );
+                listener = l;
+            } else if ( protocolFactory != null || inputPort.location().getScheme()
+                    .equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+                try {
+                    factory = this.interpreter.commCore().getCommListenerFactory( medium );
+                    if ( factory == null ) {
+                        throw new UnsupportedCommMediumException( medium );
+                    }
+                    listener = factory.createListener( interpreter, protocolFactory, inputPort );
+                } catch (IOException e) {
+                    throw new FaultException( e );
+                }
+            } else {
+                throw new FaultException( "Communication protocol extension for protocol "
+                        + protocol + " not found." );
             }
 
         } catch (FaultException | ExitingException e) {
