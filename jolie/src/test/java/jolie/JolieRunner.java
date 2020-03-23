@@ -6,11 +6,13 @@ import java.io.IOException;
 
 class JolieRunner
 {
-    public static void run( String[] args, ClassLoader parentClassLoader,
-            File programDirectory ) throws CommandLineException, FileNotFoundException, IOException,
-            InterpreterException
+
+    public static Interpreter interpreter;
+
+    public static void run( String[] args, ClassLoader parentClassLoader, File programDirectory )
+            throws CommandLineException, FileNotFoundException, IOException, InterpreterException
     {
-        Interpreter interpreter = new Interpreter( args, parentClassLoader, null );
+        interpreter = new Interpreter( args, parentClassLoader, null );
         interpreter.run();
 
         Runtime.getRuntime().addShutdownHook( new Thread() {
@@ -21,4 +23,11 @@ class JolieRunner
             }
         } );
     }
+
+    public static void stop()
+    {
+        interpreter.exit( -1 );
+    }
+
+
 }

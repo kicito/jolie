@@ -1,14 +1,16 @@
 package jolie;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(MethodOrderer.Alphanumeric.class)
 public class TestService
 {
     static {
@@ -36,171 +38,103 @@ public class TestService
         System.setOut( originalSystemOut );
         // print buffer
         System.out.println( systemOutContent.toString() );
+        JolieRunner.stop();
     }
 
     @Test
     void testService()
-            throws FileNotFoundException, CommandLineException, IOException, InterpreterException
     {
         String filePath = "jolie2/services/simple.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-        // Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
-        interpreter.run();
-
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
     }
 
 
     @Test
     void testEmbedService()
-            throws FileNotFoundException, CommandLineException, IOException, InterpreterException
     {
         String filePath = "jolie2/services/simple_embed.ol";
         String[] args = new String[launcherArgs.length + 1];
         System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
         args[args.length - 1] = filePath;
-        final Interpreter interpreter =
-                new Interpreter( args, this.getClass().getClassLoader(), null );
-        // Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
-        interpreter.run();
-
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
     }
 
     @Test
-    void testEmbedTwiceServiceWithStatic() throws FileNotFoundException, CommandLineException,
-            IOException, InterpreterException, InterruptedException
+    void testEmbedTwiceServiceWithStatic() 
     {
         String serverFilePath = "jolie2/services/twice_static.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
     }
 
 	@Test
-	void simpleEmbedJolieServiceWithStatic() throws Exception
+	void simpleEmbedJolieServiceWithStatic()
 	{
-
         String serverFilePath = "jolie2/services/twice_static.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
 	}
 
     @Test
-    void testEmbedTwiceServiceWithPortInfo() throws FileNotFoundException, CommandLineException,
-            IOException, InterpreterException, InterruptedException
+    void testEmbedTwiceServiceWithPortInfo()
     {
         String serverFilePath = "jolie2/services/twice_portInfo.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
     }
 
     @Test
-    void testEmbedTwiceService() throws FileNotFoundException, CommandLineException, IOException,
-            InterpreterException, InterruptedException
+    void testEmbedTwiceService()
     {
         String serverFilePath = "jolie2/services/twice.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
     }
 
     @Test
-    void testEmbedConsoleService() throws FileNotFoundException, CommandLineException, IOException,
-            InterpreterException, InterruptedException
+    void testEmbedConsoleService()
     {
         String serverFilePath = "jolie2/services/console_jolie.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
     }
 
     @Test
-    void testEmbedConsoleJavaService() throws FileNotFoundException, CommandLineException, IOException,
-            InterpreterException, InterruptedException
+    void testEmbedConsoleJavaService() 
     {
         String serverFilePath = "jolie2/services/console_java.ol";
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-        final Interpreter interpreter =
-                new Interpreter( serverArgs, this.getClass().getClassLoader(), null );
-        interpreter.run();
-        Runtime.getRuntime().addShutdownHook( new Thread() {
-            @Override
-            public void run()
-            {
-                interpreter.exit( -1 );
-            }
-        } );
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
 
         assertTrue( systemOutContent.toString().contains( "Hello" ) );
 
