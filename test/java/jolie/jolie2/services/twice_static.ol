@@ -3,7 +3,12 @@ interface SumInterface{
     RequestResponse: twice( int )( int )
 }
 
-decl service twiceService( p:portInfo ){ 
+type commConfig : void{
+    location: string
+    protocol: string
+}
+
+decl service twiceService( p: commConfig ){ 
     
     inputPort TwiceService ( p ) {
         Interfaces: SumInterface

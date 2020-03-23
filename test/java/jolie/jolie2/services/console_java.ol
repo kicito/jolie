@@ -86,21 +86,21 @@ decl service Java("joliex.io.ConsoleService") ConsoleService ( p:consoleParam ) 
 decl service console_java {
 
 	outputPort ConsoleServicePort {
-		location: "local://Console/"
+		location: "local://ConsoleJava/"
 		interfaces: IConsole
 	}
 
 	inputPort ConsoleInput {
-		location: "local://ConsoleIn"
+		location: "local://ConsoleJavaIn"
 		interfaces: IReceiver
 	}
 
     embed ConsoleService ( { 
         fromClient << {
-			location = "local://Console"
+			location = "local://ConsoleJava"
         }
         toClient << {
-			location = "local://ConsoleIn"
+			location = "local://ConsoleJavaIn"
         }
     })
 
