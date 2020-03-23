@@ -359,14 +359,18 @@ public class OLParser extends AbstractParser
 				getToken();
 				return new Pair< TypeDefinition, String >(TypeDefinitionUndefined.getInstance(), null);
 			} else { // case ( path: type  )
-
-
 				String paramPath = token.content();
 				getToken();
 
 				eat(TokenType.COLON, "expected :");
 				String typeName = token.content();
-				TypeDefinition parameterType = parseType( typeName );
+				TypeDefinition parameterType = null;
+				if (definedTypes.containsKey(typeName) ){
+					parameterType = definedTypes.get(typeName);
+					getToken();
+				}else{
+					parameterType = parseType( typeName );
+				}
 
 				eat(TokenType.RPAREN, "expected )");
 				return new Pair< TypeDefinition, String >(parameterType, paramPath);
