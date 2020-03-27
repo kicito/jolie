@@ -77,7 +77,6 @@ import jolie.net.SessionMessage;
 import jolie.net.ports.OutputPort;
 import jolie.process.DefinitionProcess;
 import jolie.process.InputOperationProcess;
-import jolie.process.Process;
 import jolie.process.SequentialProcess;
 import jolie.runtime.FaultException;
 import jolie.runtime.InputOperation;
@@ -94,6 +93,7 @@ import jolie.runtime.correlation.CorrelationSet;
 import jolie.runtime.embedding.EmbeddedServiceLoader;
 import jolie.runtime.embedding.EmbeddedServiceLoaderFactory;
 import jolie.tracer.*;
+import jolie.util.Pair;
 
 /**
  * The Jolie interpreter engine.
@@ -962,7 +962,8 @@ public class Interpreter
         this.internalServiceProgram = internalServiceProgram;
 	}
 
-	Pair <String, Value> argumentParameter = null;
+
+	protected Value paramValue;
 
 	public Interpreter( String[] args, ClassLoader parentClassLoader, File programDirectory, Interpreter parentInterpreter, Program internalServiceProgram, Pair <String, Value> argumentParameter )
 	throws CommandLineException, FileNotFoundException, IOException
@@ -971,7 +972,14 @@ public class Interpreter
 		
 		this.parentInterpreter = parentInterpreter;
 		this.internalServiceProgram = internalServiceProgram;
-		this.argumentParameter = argumentParameter;
+
+		// Initialize passing parameter value
+		if ( argumentParameter != null ){
+			ValueVector serviceArgs = ValueVector.create();
+			serviceArgs.add(argumentParameter.value());
+			this.paramValue = Value.createRootValue();
+			this.paramValue.getChildren( argumentParameter.key() ).deepCopy(serviceArgs);
+		}
 	}
 
 
@@ -1087,13 +1095,11 @@ public class Interpreter
 		try {
 			initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
 
-			// Initialize passing parameter value
-			if ( this.argumentParameter != null ){
-				ValueVector serviceArgs = ValueVector.create();
-				serviceArgs.add(this.argumentParameter.value());
-				initExecutionThread.state().root().getChildren( this.argumentParameter.key() ).deepCopy(serviceArgs);
+			// set parameter state to init thread
+			if ( this.paramValue != null ){
+				initExecutionThread.state().root().deepCopy(this.paramValue.clone());
+				paramValue.erase();
 			}
-			
 
 			commCore.init();
 

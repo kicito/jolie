@@ -25,11 +25,11 @@ package jolie.runtime.embedding;
 import jolie.Interpreter;
 import jolie.lang.Constants;
 import jolie.lang.parse.ast.Program;
-import jolie.lang.parse.ast.VariablePathNode;
 import jolie.net.CommChannel;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
 import jolie.runtime.expression.Expression;
+import jolie.runtime.typing.Type;
 import jolie.util.Pair;
 
 public abstract class EmbeddedServiceLoader
@@ -82,7 +82,8 @@ public abstract class EmbeddedServiceLoader
 	private static EmbeddedServiceLoader createLoader2(
 		Interpreter interpreter,
 		EmbeddedServiceConfiguration configuration,
-		Pair < String ,Value > argumentParameter
+		Pair < String ,Value > argumentParameter,
+		Type parameterType
 	)
 		throws EmbeddedServiceLoaderCreationException
 	{
@@ -93,12 +94,12 @@ public abstract class EmbeddedServiceLoader
 			switch (configuration.type()) {
 				case JAVA:
 					ret = new JavaServiceLoader2( externalConfiguration.name(), externalConfiguration.servicePath(),
-							interpreter, externalConfiguration.program(), argumentParameter );
+							interpreter, externalConfiguration.program(), argumentParameter,parameterType );
 					break;
 				case JOLIE:
 					ret = new JolieServiceLoader2( interpreter,
 							externalConfiguration.servicePath(),
-							externalConfiguration.program(), argumentParameter );
+							externalConfiguration.program(), argumentParameter,parameterType );
 					break;
 				default:
 					throw new EmbeddedServiceLoaderCreationException(
@@ -115,11 +116,12 @@ public abstract class EmbeddedServiceLoader
 	public static EmbeddedServiceLoader create(
 		Interpreter interpreter,
 		EmbeddedServiceConfiguration configuration,
-		Pair < String ,Value > argumentParameter
+		Pair < String ,Value > argumentParameter,
+		Type paramterType
 	)
 		throws EmbeddedServiceLoaderCreationException
 	{
-		return createLoader2( interpreter, configuration, argumentParameter );
+		return createLoader2( interpreter, configuration, argumentParameter,paramterType );
 	}
 
 	public static EmbeddedServiceLoader create(

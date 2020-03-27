@@ -1491,10 +1491,6 @@ public class OLParser extends AbstractParser
 
 		eat( Scanner.TokenType.RPAREN, "expected )" );
 
-		if ( token.is( TokenType.LCURLY ) ) {
-			p = (ParameterizeInputPortInfo) parseCurlyInputPort( p );
-		}
-
 		return p;
 	}
 
@@ -1909,10 +1905,6 @@ public class OLParser extends AbstractParser
 		p.setParameter( o );
 
 		eat( Scanner.TokenType.RPAREN, "expected )" );
-
-		if ( token.is( TokenType.LCURLY ) ) {
-			p = (ParameterizeOutputPortInfo) parseCurlyOutputPort( p );
-		}
 		
 		return p;
 	}

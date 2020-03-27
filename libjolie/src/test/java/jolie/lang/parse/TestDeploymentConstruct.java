@@ -1,6 +1,6 @@
 package jolie.lang.parse;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
@@ -17,7 +17,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
-import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.NullProcessStatement;
@@ -25,13 +24,8 @@ import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
-import jolie.lang.parse.ast.SequenceStatement;
-import jolie.lang.parse.ast.VariablePathNode;
-import jolie.lang.parse.ast.expression.ConstantIntegerExpression;
-import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
-import jolie.util.Pair;
 import jolie.util.Range;
 
 public class TestDeploymentConstruct
@@ -40,8 +34,6 @@ public class TestDeploymentConstruct
 	InputStream is;
 	InspectorVisitor iv = new InspectorVisitor();
 
-
-
 	static SemanticVerifier.Configuration configuration = new SemanticVerifier.Configuration();
 
 	@Test
@@ -49,7 +41,8 @@ public class TestDeploymentConstruct
 	{
 		String code = "include \"date.ol\"";
 		this.is = new ByteArrayInputStream( code.getBytes() );
-		InstanceCreator oc = new InstanceCreator( new String[] {"jolie2/import/simple-import/types/modules"} );
+		InstanceCreator oc =
+				new InstanceCreator( new String[] {"jolie2/import/simple-import/types/modules"} );
 		OLParser olParser = oc.createOLParser( is );
 
 		TypeInlineDefinition expected =
@@ -115,7 +108,7 @@ public class TestDeploymentConstruct
 		RequestResponseOperationDeclaration od = new RequestResponseOperationDeclaration( null,
 				"sum", intTD, intTD, new HashMap<>() );
 		expected.addOperation( od );
-		od.setDocumentation("");
+		od.setDocumentation( "" );
 		expected.setDocumentation( "" );
 
 		Program p = olParser.parse();
@@ -183,7 +176,7 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 	}
@@ -198,7 +191,7 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 	}
@@ -214,7 +207,7 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 	}
@@ -223,9 +216,10 @@ public class TestDeploymentConstruct
 	void testJavaService() throws Exception
 	{
 		StringBuilder code = new StringBuilder();
-		code.append("decl service Java(\"joliex.io.ConsoleService\") ConsoleService (portInfo p)");
-		code.append("{");
-		code.append("}");
+		code.append(
+				"decl service Java(\"joliex.io.ConsoleService\") ConsoleService (portInfo p)" );
+		code.append( "{" );
+		code.append( "}" );
 
 		this.is = new ByteArrayInputStream( code.toString().getBytes() );
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -233,20 +227,20 @@ public class TestDeploymentConstruct
 
 		Program p = olParser.parse();
 
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
 	}
 
 	@Test
-	void testParameterizeOutputPort() throws IOException, URISyntaxException, ParserException,
-			SemanticException
+	void testParameterizeOutputPort()
+			throws IOException, URISyntaxException, ParserException, SemanticException
 	{
-		
+
 		// variable node path
 		StringBuilder code = new StringBuilder();
-		code.append("outputPort myOP( a )");
+		code.append( "outputPort myOP( a )" );
 
 		this.is = new ByteArrayInputStream( code.toString().getBytes() );
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -256,35 +250,35 @@ public class TestDeploymentConstruct
 
 		p = OLParseTreeOptimizer.optimize( p );
 
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
 		// inlinetree
 
 		StringBuilder code2 = new StringBuilder();
-		code2.append("outputPort myOP( { location = \"socket://localhost:3000\" protocol = \"http\"			interfaces << \"SumInterface\"{ operations[0] << \"notice\"{ reqType = \"string\" } } } )");
+		code2.append(
+				"outputPort myOP( { location = \"socket://localhost:3000\" protocol = \"http\"			interfaces << \"SumInterface\"{ operations[0] << \"notice\"{ reqType = \"string\" } } } )" );
 
 		this.is = new ByteArrayInputStream( code2.toString().getBytes() );
 		OLParser olParser2 = oc.createOLParser( is );
-		
+
 		Program p2 = olParser2.parse();
 
 		p2 = OLParseTreeOptimizer.optimize( p2 );
 		semanticVerifier = new SemanticVerifier( p2, configuration );
 		semanticVerifier.validate();
 
-		// assertNotNull( olParser.services );
 	}
 
 	@Test
-	void testParameterizeInputPort() throws IOException, URISyntaxException, ParserException,
-			SemanticException
+	void testParameterizeInputPort()
+			throws IOException, URISyntaxException, ParserException, SemanticException
 	{
-		
+
 		// variable node path
 		StringBuilder code = new StringBuilder();
-		code.append("inputPort myIP( a )");
+		code.append( "inputPort myIP( a )" );
 
 		this.is = new ByteArrayInputStream( code.toString().getBytes() );
 		InstanceCreator oc = new InstanceCreator( new String[] {} );
@@ -294,37 +288,42 @@ public class TestDeploymentConstruct
 
 		p = OLParseTreeOptimizer.optimize( p );
 
-		configuration.setCheckForMain(false);
+		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		semanticVerifier.validate();
 
 		// inlinetree
 		StringBuilder code2 = new StringBuilder();
-		code2.append("inputPort myIP( { location = \"socket://localhost:3000\" protocol = \"http\"			interfaces << \"SumInterface\"{ operations[0] << \"notice\"{ reqType = \"string\" } } } )");
+		code2.append(
+				"inputPort myIP( { location = \"socket://localhost:3000\" protocol = \"http\"			interfaces << \"SumInterface\"{ operations[0] << \"notice\"{ reqType = \"string\" } } } )" );
 
 		this.is = new ByteArrayInputStream( code2.toString().getBytes() );
 		OLParser olParser2 = oc.createOLParser( is );
-		
+
 		Program p2 = olParser2.parse();
 
 		p2 = OLParseTreeOptimizer.optimize( p2 );
 		semanticVerifier = new SemanticVerifier( p2, configuration );
 		semanticVerifier.validate();
 
+	}
 
-		// parameterize + static
-		StringBuilder code3 = new StringBuilder();
-		code2.append("inputPort myIP( { location = \"socket://localhost:3000\" protocol = \"http\" } } { OneWay: ping(void)} )");
+	@Test
+	void testRefinedType()
+			throws IOException, URISyntaxException, ParserException, SemanticException
+	{
+		StringBuilder code = new StringBuilder();
+		code.append( "type a: int(3)" );
+		this.is = new ByteArrayInputStream( code.toString().getBytes() );
+		InstanceCreator oc = new InstanceCreator( new String[] {} );
+		OLParser olParser = oc.createOLParser( is );
 
-		this.is = new ByteArrayInputStream( code3.toString().getBytes() );
-		OLParser olParser3 = oc.createOLParser( is );
-		
-		Program p3 = olParser3.parse();
+		Program p = olParser.parse();
+		p = OLParseTreeOptimizer.optimize( p );
 
-		p3 = OLParseTreeOptimizer.optimize( p3 );
-		semanticVerifier = new SemanticVerifier( p3, configuration );
-		semanticVerifier.validate();
-
+		configuration.setCheckForMain( false );
+		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
+		assertDoesNotThrow( () -> semanticVerifier.validate() );
 	}
 
 
@@ -345,7 +344,8 @@ public class TestDeploymentConstruct
 	private static Stream< Arguments > importStatementExceptionTestProvider()
 	{
 		return Stream.of(
-				Arguments.of( "from \"jolie2/import/simple-import/importstatement-test.ol\" import AA",
+				Arguments.of(
+						"from \"jolie2/import/simple-import/importstatement-test.ol\" import AA",
 						"unable to find AA in" ),
 				Arguments.of( "from \"somewhere\" import AA", "unable to locate" ), Arguments.of(
 						"from \"somewhere\" AA ", "expected \"import\" for an import statement" ) );

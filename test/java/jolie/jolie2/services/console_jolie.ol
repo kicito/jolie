@@ -3,6 +3,7 @@
 type configParam: void{
     fromClient : void {
 		location: string
+		interfaces: interfaces
 	}
 }
 
@@ -12,9 +13,10 @@ interface ConsoleInterface{
 
 decl service Console( config: configParam ){
 
-    inputPort myInput( config.fromClient ){
-		interfaces:ConsoleInterface
-	}
+    inputPort myInput( config.fromClient )
+	// {
+	// 	interfaces:ConsoleInterface
+	// }
 
     // outputPort RemoteConsole { ... }
 
@@ -37,12 +39,12 @@ decl service console_jolie {
     embed Console( {
 		fromClient << { 
 			location = "local://Console"
-			// interfaces << "printIface" { 
-			// 	operations << "println"{
-            //         reqType = "string"
-            //         resType = "void"
-			// 	}
-			// }
+			interfaces << "printIface" { 
+				operations << "println"{
+                    reqType = "string"
+                    resType = "void"
+				}
+			}
 		}
 	} )
 

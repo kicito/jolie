@@ -1993,48 +1993,75 @@ public class OOITBuilder implements OLVisitor
 
 
 		Expression expression = null;
-		if (n.parameter() instanceof VariableExpressionNode){
-			if ( this.interpreter.argumentParameter == null ){
-				error(n.context(), "argument is undefined");
-			}
-			n.parameter().accept(this);
-			expression = currExpression;
+		Value v = null;
+		n.parameter().accept(this);
+		expression = currExpression;
+		ValueVector interfaceValues = null;
 
-			// processing Interfaces
-			currentPortInterface = new Interface(
-				new HashMap< String, OneWayTypeDescription >(),
-				new HashMap< String, RequestResponseTypeDescription >()
-			);
-			if (n.operations().size() > 0){ // operation is defined in CURLY
-				for( OperationDeclaration op : n.operations() ) {
-					op.accept( this );
-				}
-			}
+		if (n.parameter() instanceof VariableExpressionNode){
+			VariablePath varPath = (VariablePath)currExpression;
+			v = varPath.getValue(this.interpreter.paramValue);
 		} else { // inline case
 			n.parameter().accept(this);
-			expression = currExpression;
-			ValueVector interfaceValues = null;
-			Value v = null;
 			v = expression.evaluate();
-
-			// processing Interfaces
-			currentPortInterface = new Interface(
-				new HashMap< String, OneWayTypeDescription >(),
-				new HashMap< String, RequestResponseTypeDescription >()
-			);
-			if (n.operations().size() > 0){ // operation is defined in CURLY
-				for( OperationDeclaration op : n.operations() ) {
-					op.accept( this );
-				}
-			} else {
-				interfaceValues = v.children().get( "interfaces" );
-
-				interfaceValues.forEach( ifaceValue -> {
-					currentPortInterface = createInterfaceFromValue(ifaceValue);
-					ifaceValue.getChildren("operations").forEach(opValue -> registerInputOperationTypeValue(portId, opValue));
-				});
-			}
 		}
+		// processing Interfaces
+		currentPortInterface = new Interface(
+			new HashMap< String, OneWayTypeDescription >(),
+			new HashMap< String, RequestResponseTypeDescription >()
+		);
+		interfaceValues = v.children().get( "interfaces" );
+
+		interfaceValues.forEach( ifaceValue -> {
+			currentPortInterface = createInterfaceFromValue(ifaceValue);
+			ifaceValue.getChildren("operations").forEach(opValue -> registerInputOperationTypeValue(portId, opValue));
+		});
+
+		// if (n.parameter() instanceof VariableExpressionNode){
+		// 	if ( this.interpreter.argumentParameter == null ){
+		// 		error(n.context(), "argument is undefined");
+		// 	}
+		// 	n.parameter().accept(this);
+		// 	VariablePath varPath = (VariablePath)currExpression;
+		// 	varPath.getValue(this.interpreter.initThread().state().root());
+		// 	Value v = expression.evaluate();
+		// 	// this.interpreter.argumentParameter.value()
+
+		// 	// processing Interfaces
+		// 	currentPortInterface = new Interface(
+		// 		new HashMap< String, OneWayTypeDescription >(),
+		// 		new HashMap< String, RequestResponseTypeDescription >()
+		// 	);
+		// 	if (n.operations().size() > 0){ // operation is defined in CURLY
+		// 		for( OperationDeclaration op : n.operations() ) {
+		// 			op.accept( this );
+		// 		}
+		// 	}
+		// } else { // inline case
+		// 	n.parameter().accept(this);
+		// 	expression = currExpression;
+		// 	ValueVector interfaceValues = null;
+		// 	Value v = null;
+		// 	v = expression.evaluate();
+
+		// 	// processing Interfaces
+		// 	currentPortInterface = new Interface(
+		// 		new HashMap< String, OneWayTypeDescription >(),
+		// 		new HashMap< String, RequestResponseTypeDescription >()
+		// 	);
+		// 	if (n.operations().size() > 0){ // operation is defined in CURLY
+		// 		for( OperationDeclaration op : n.operations() ) {
+		// 			op.accept( this );
+		// 		}
+		// 	} else {
+		// 		interfaceValues = v.children().get( "interfaces" );
+
+		// 		interfaceValues.forEach( ifaceValue -> {
+		// 			currentPortInterface = createInterfaceFromValue(ifaceValue);
+		// 			ifaceValue.getChildren("operations").forEach(opValue -> registerInputOperationTypeValue(portId, opValue));
+		// 		});
+		// 	}
+		// }
 
 		VariablePath portInfoPath = new VariablePathBuilder( true )
 				.add( Constants.INPUT_PORTS_NODE_NAME, 0 ).add( portId, 0 )
@@ -2170,12 +2197,8 @@ public class OOITBuilder implements OLVisitor
 		n.expression().accept( this );
 
 		Value argument = currExpression.evaluate();
-		n.embedService().parameterType().accept( this );
-		try {
-			currType.check( argument );
-		} catch (TypeCheckingException e1) {
-			error( n.context(), e1 );
-		}
+		n.embedService().parameterType().accept(this);
+		Type type = currType;
 		Pair< String, Value > argumentParameter =
 				new Pair< String, Value >( n.embedService().parameterPath(), argument );
 		try {
@@ -2185,7 +2208,7 @@ public class OOITBuilder implements OLVisitor
 							n.embedService().getTarget(), n.embedService().program() );
 
 			interpreter.addEmbeddedServiceLoader( EmbeddedServiceLoader.create( interpreter,
-					embeddedServiceConfiguration, argumentParameter ) );
+					embeddedServiceConfiguration, argumentParameter, type ));
 		} catch (EmbeddedServiceLoaderCreationException e) {
 			error( n.context(), e );
 		}
