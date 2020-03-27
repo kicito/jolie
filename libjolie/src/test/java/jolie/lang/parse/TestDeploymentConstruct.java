@@ -26,6 +26,7 @@ import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.TypeInlineDefinitionRefined;
 import jolie.util.Range;
 
 public class TestDeploymentConstruct
@@ -321,9 +322,14 @@ public class TestDeploymentConstruct
 		Program p = olParser.parse();
 		p = OLParseTreeOptimizer.optimize( p );
 
+
 		configuration.setCheckForMain( false );
 		SemanticVerifier semanticVerifier = new SemanticVerifier( p, configuration );
 		assertDoesNotThrow( () -> semanticVerifier.validate() );
+
+		TypeInlineDefinitionRefined expected = new TypeInlineDefinitionRefined( null, "a",
+				NativeType.INT, new Range( 1, 1 ), "3" );
+		assertTrue( iv.programHasOLSyntaxNode( p, expected ) );
 	}
 
 

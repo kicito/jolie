@@ -137,6 +137,7 @@ import jolie.lang.parse.ast.types.TypeDefinitionOperation;
 import jolie.lang.parse.ast.types.TypeDefinitionPort;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.TypeInlineDefinitionRefined;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.ImportResult;
@@ -606,7 +607,31 @@ public class OLParser extends AbstractParser
 			}
 		}
 	}
-	
+
+	private String _parseRefinement( NativeType type ) throws 
+		IOException, ParserException
+	{
+		getToken();
+		switch (type) {
+			case ANY:
+				throwException( "refinement is not support for type " + type.name() );
+			case BOOL:
+				throwException( "refinement is not support for type " + type.name() );
+			case DOUBLE:
+			case INT:
+			case LONG:
+				String content = token.content();
+				getToken();
+				return content;
+			case RAW:
+				throwException( "refinement is not support for type " + type.name() );
+			case STRING:
+			case VOID:
+				throwException( "refinement is not support for type " + type.name() );
+		}
+		return null;
+	}
+
 	private TypeDefinition parseType( String typeName )
 			throws IOException, ParserException
 	{
@@ -618,13 +643,25 @@ public class OLParser extends AbstractParser
 					Constants.RANGE_ONE_TO_ONE, token.content() );
 			getToken();
 		} else {
-			currentType = new TypeInlineDefinition( getContext(), typeName, nativeType, Constants.RANGE_ONE_TO_ONE );
 			getToken();
+
+			if ( token.is( Scanner.TokenType.LPAREN ) ) {
+				String refinementCondition = _parseRefinement( nativeType );
+				currentType = new TypeInlineDefinitionRefined( getContext(), typeName, nativeType,
+						Constants.RANGE_ONE_TO_ONE, refinementCondition );
+				eat( Scanner.TokenType.RPAREN, typeName );
+
+			} else {
+				currentType = new TypeInlineDefinition( getContext(), typeName, nativeType,
+						Constants.RANGE_ONE_TO_ONE );
+			}
+
+
 			if ( token.is( Scanner.TokenType.LCURLY ) ) { // We have sub-types to parse
 				parseSubTypes( (TypeInlineDefinition) currentType );
 			}
 		}
-		
+
 		if ( token.is( Scanner.TokenType.PARALLEL ) ) { // It's a sum (union, choice) type
 			getToken();
 			final TypeDefinition secondType = parseType( typeName );

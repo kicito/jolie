@@ -126,6 +126,7 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeDefinitionPort;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.TypeInlineDefinitionRefined;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.argument.Argument;
 import jolie.lang.parse.module.argument.ArgumentID;
@@ -436,6 +437,10 @@ public class SemanticVerifier implements OLVisitor
 
 		if ( isTopLevelType ) {
 			definedTypes.put( n.id(), n );
+		}
+
+		if (n instanceof TypeInlineDefinitionRefined){
+			// TODO check refinement condition
 		}
 	}
 	
