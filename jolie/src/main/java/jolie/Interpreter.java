@@ -892,7 +892,8 @@ public class Interpreter
 		optionArgs = cmdParser.optionArgs();
 		programFilename = cmdParser.programFilepath().getName();
 		arguments = cmdParser.arguments();
-		printStackTraces = cmdParser.printStackTraces();
+		printStackTraces = true;
+		// printStackTraces = cmdParser.printStackTraces();
 		
 		responseTimeout = cmdParser.responseTimeout();
 
@@ -916,15 +917,15 @@ public class Interpreter
 		builder.append( "] " );
 		logPrefix = builder.toString();
 
-		if ( cmdParser.tracer() ) {
-			if ( cmdParser.tracerMode().equals("file")) {
-				tracer = new FileTracer( this, tracerLevel );
-			} else {
+		// if ( cmdParser.tracer() ) {
+		// 	if ( cmdParser.tracerMode().equals("file")) {
+		// 		tracer = new FileTracer( this, tracerLevel );
+		// 	} else {
 				tracer = new PrintingTracer(this, tracerLevel );
-			}
-		} else {
-			tracer = new DummyTracer();
-		}
+		// 	}
+		// } else {
+		// 	tracer = new DummyTracer();
+		// }
 		
 		logger.setLevel( cmdParser.logLevel() );
 		

@@ -118,6 +118,7 @@ public class SolicitResponseProcess implements Process
 			log( "SENDING", message );
 			if ( types.requestType() != null ) {
 				try {
+					Type.assignDefault(message.value(), types.requestType());
 					types.requestType().check( message.value() );
 				} catch ( TypeCheckingException e ) {
 					log( "TYPE MISMATCH", message );
@@ -165,6 +166,7 @@ public class SolicitResponseProcess implements Process
 				Type faultType = types.getFaultType( response.fault().faultName() );
 				if ( faultType != null ) {
 					try {
+						Type.assignDefault(response.fault().value(), faultType);
 						faultType.check( response.fault().value() );
 						if ( Interpreter.getInstance().isMonitoring() ) {
 							Interpreter.getInstance().fireMonitorEvent( new OperationReplyEvent( operationId, ExecutionThread.currentThread().getSessionId(), Long.valueOf( response.id()).toString(), OperationReplyEvent.FAULT, response.fault().faultName(), outputPort.id(), response.fault().value() ) );
@@ -184,6 +186,7 @@ public class SolicitResponseProcess implements Process
 			} else {
 				if ( types.responseType() != null ) {
 					try {
+						Type.assignDefault(response.value(), types.responseType());
 						types.responseType().check( response.value() );
 						if ( Interpreter.getInstance().isMonitoring() ) {
 							Interpreter.getInstance().fireMonitorEvent( new OperationReplyEvent( operationId, ExecutionThread.currentThread().getSessionId(), Long.valueOf( response.id()).toString(), OperationReplyEvent.SUCCESS, "", outputPort.id(), response.value() ) );

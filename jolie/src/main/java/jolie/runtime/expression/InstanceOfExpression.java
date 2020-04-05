@@ -24,6 +24,7 @@ package jolie.runtime.expression;
 
 import jolie.process.TransformationReason;
 import jolie.runtime.Value;
+import jolie.runtime.typing.TypeRefinement;
 import jolie.runtime.typing.Type;
 import jolie.runtime.typing.TypeCheckingException;
 
@@ -52,7 +53,7 @@ public class InstanceOfExpression implements Expression
 		boolean ret = true;
 		try {
 			type.check( expression.evaluate() );
-		} catch( TypeCheckingException e ) {
+		} catch (TypeCheckingException e) {
 			ret = false;
 		}
 		return Value.create( ret );

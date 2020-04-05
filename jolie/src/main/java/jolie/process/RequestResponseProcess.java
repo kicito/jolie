@@ -174,6 +174,7 @@ public class RequestResponseProcess implements InputOperationProcess
 		if ( operation.typeDescription().faults().containsKey( f.faultName() ) ) {
 			Type faultType = operation.typeDescription().faults().get( f.faultName() );
 			if ( faultType != null ) {
+				Type.assignDefault(f.value(), faultType);
 				faultType.check( f.value() );
 			}
 		} else {			
@@ -222,6 +223,7 @@ public class RequestResponseProcess implements InputOperationProcess
 						details = "";
 					if ( operation.typeDescription().responseType() != null ) {
 						try {
+							Type.assignDefault(response.value(), operation.typeDescription().responseType());
 							operation.typeDescription().responseType().check( response.value() );
 						} catch( TypeCheckingException e ) {
 							log( "TYPE MISMATCH", response );

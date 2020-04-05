@@ -36,6 +36,7 @@ import jolie.runtime.FaultException;
 import jolie.runtime.Value;
 import jolie.runtime.expression.Expression;
 import jolie.runtime.typing.OneWayTypeDescription;
+import jolie.runtime.typing.Type;
 import jolie.runtime.typing.TypeCheckingException;
 import jolie.tracer.MessageTraceAction;
 import jolie.tracer.Tracer;
@@ -101,7 +102,8 @@ public class NotificationProcess implements Process
 						CommMessage.createRequest( operationId, outputPort.getResourcePath(), outputExpression.evaluate() );
 			if ( oneWayDescription != null ) {
 				try  {
-				oneWayDescription.requestType().check( message.value() );
+					Type.assignDefault(message.value(), oneWayDescription.requestType());
+					oneWayDescription.requestType().check( message.value() );
 				} catch( TypeCheckingException e ) {
 					if ( Interpreter.getInstance().isMonitoring() ) {
 						Interpreter.getInstance().fireMonitorEvent( new OperationCallEvent( operationId, ExecutionThread.currentThread().getSessionId(), Long.valueOf( message.id()).toString(), OperationCallEvent.FAULT, "TypeMismatch:" + e.getMessage(), outputPort.id(), message.value() ) );

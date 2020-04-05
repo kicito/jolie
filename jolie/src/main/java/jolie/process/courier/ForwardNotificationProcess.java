@@ -37,6 +37,7 @@ import jolie.runtime.FaultException;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
 import jolie.runtime.typing.OneWayTypeDescription;
+import jolie.runtime.typing.Type;
 import jolie.runtime.typing.TypeCheckingException;
 import jolie.tracer.MessageTraceAction;
 import jolie.tracer.Tracer;
@@ -106,6 +107,7 @@ public class ForwardNotificationProcess implements Process
 			if ( extenderTypeDescription != null ) {
 				extenderTypeDescription.requestType().cutChildrenFromValue( messageValue );
 			}
+			Type.assignDefault(messageValue, aggregatedTypeDescription.requestType());
 			aggregatedTypeDescription.requestType().check( messageValue );
 			CommMessage message = CommMessage.createRequest( operationName, outputPort.getResourcePath(), messageValue );
 

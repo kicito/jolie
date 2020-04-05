@@ -79,13 +79,9 @@ public abstract class EmbeddedServiceLoader
 		return ret;
 	}
 
-	private static EmbeddedServiceLoader createLoader2(
-		Interpreter interpreter,
-		EmbeddedServiceConfiguration configuration,
-		Pair < String ,Value > argumentParameter,
-		Type parameterType
-	)
-		throws EmbeddedServiceLoaderCreationException
+	private static EmbeddedServiceLoader createLoader2( Interpreter interpreter,
+			EmbeddedServiceConfiguration configuration, Pair< String, Value > argumentParameter,
+			Type parameterType ) throws EmbeddedServiceLoaderCreationException
 	{
 		EmbeddedServiceLoader ret = null;
 		try {
@@ -93,35 +89,31 @@ public abstract class EmbeddedServiceLoader
 					(ExternalEmbeddedServiceConfiguration2) configuration;
 			switch (configuration.type()) {
 				case JAVA:
-					ret = new JavaServiceLoader2( externalConfiguration.name(), externalConfiguration.servicePath(),
-							interpreter, externalConfiguration.program(), argumentParameter,parameterType );
+					ret = new JavaServiceLoader2( externalConfiguration.name(),
+							externalConfiguration.servicePath(), interpreter,
+							externalConfiguration.program(), argumentParameter, parameterType );
 					break;
 				case JOLIE:
-					ret = new JolieServiceLoader2( interpreter,
-							externalConfiguration.servicePath(),
-							externalConfiguration.program(), argumentParameter,parameterType );
+					ret = new JolieServiceLoader2( interpreter, externalConfiguration.servicePath(),
+							externalConfiguration.program(), argumentParameter, parameterType );
 					break;
 				default:
 					throw new EmbeddedServiceLoaderCreationException(
 							"Could not find extension to load services of type "
 									+ configuration.type );
 			}
-		} catch( Exception e ) {
+		} catch (Exception e) {
 			throw new EmbeddedServiceLoaderCreationException( e );
 		}
 
 		return ret;
 	}
 
-	public static EmbeddedServiceLoader create(
-		Interpreter interpreter,
-		EmbeddedServiceConfiguration configuration,
-		Pair < String ,Value > argumentParameter,
-		Type paramterType
-	)
-		throws EmbeddedServiceLoaderCreationException
+	public static EmbeddedServiceLoader create( Interpreter interpreter,
+			EmbeddedServiceConfiguration configuration, Pair< String, Value > argumentParameter,
+			Type parameterType ) throws EmbeddedServiceLoaderCreationException
 	{
-		return createLoader2( interpreter, configuration, argumentParameter,paramterType );
+		return createLoader2( interpreter, configuration, argumentParameter, parameterType );
 	}
 
 	public static EmbeddedServiceLoader create(

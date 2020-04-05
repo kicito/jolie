@@ -24,11 +24,12 @@ package jolie.runtime.typing;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import jolie.lang.NativeType;
 import jolie.runtime.Value;
 import jolie.runtime.ValueVector;
+import jolie.runtime.expression.Expression;
 import jolie.util.Range;
 
 class TypeImpl extends Type
@@ -382,6 +383,50 @@ public abstract class Type implements Cloneable
 		Map< String, Type > subTypes
 	) {
 		return new TypeImpl( nativeType, cardinality, undefinedSubTypes, subTypes );
+	}
+
+
+	// creator method for create TypeRefinement instance
+	public static Type create(
+		NativeType nativeType,
+		Range cardinality,
+		boolean undefinedSubTypes,
+		Map< String, Type > subTypes,
+		RefinementType refinementType,
+		Expression defaultValue
+	)
+	{
+		if (defaultValue == null){
+			defaultValue = Value.create();
+		}
+		return new TypeRefinement( nativeType, cardinality, undefinedSubTypes, subTypes, refinementType, defaultValue );
+	}
+
+	public static void assignDefault( Value v, Type type )
+	{
+		if ( !v.isDefined() ) {
+			if ( type instanceof TypeRefinement ) {
+				((TypeRefinement) type).assignDefault( v );
+			}
+		}
+
+		if ( type instanceof TypeImpl ) {
+			TypeImpl impl = (TypeImpl) type;
+			if ( impl.subTypes() == null ) {
+				return;
+			}
+			for (Entry< String, Type > entry : impl.subTypes().entrySet()) {
+				Type subType = entry.getValue();
+				String path = entry.getKey();
+
+				if ( subType instanceof TypeRefinement ) {
+					TypeRefinement tr = (TypeRefinement) entry.getValue();
+					if ( !v.hasChildren( path ) ) {
+						tr.assignDefault( v.getNewChild( path ) );
+					}
+				}
+			}
+		}
 	}
 
 	public static TypeLink createLink( String linkedTypeName, Range cardinality )

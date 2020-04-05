@@ -1,6 +1,11 @@
 
 
 
+type customType: void{
+    x : int
+    y : int
+}
+
 // inputport with inlineTree, using Iface value type
 inputPort parameterizeInputPortInlineTreeParamIface ({
     location = "socket://localhost:5000"

@@ -14,9 +14,7 @@ outputPort SelfOut {
     Interfaces: LocalOperations
 }
 
-inputPort SelfIn ({location= "local"}){
-    Interfaces: LocalOperations
-}
+inputPort SelfIn ({location= "local" interfaces << "LocalOperations"})
 
 interface ExternalOperations{
     RequestResponse:
@@ -44,9 +42,11 @@ main{
     [ doubleExt( request )( response ){
         doubleLocal@SelfOut( request )( subRes );
         response = subRes
-    }]
+    }]{
+        exit
+    }
 
     [ doubleLocal( request )( response) {
-        response = request.x + request.y
+        response = int(request.x) + int(request.y)
     }]
 }

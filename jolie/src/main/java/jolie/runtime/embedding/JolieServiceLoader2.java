@@ -21,7 +21,9 @@ package jolie.runtime.embedding;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import jolie.CommandLineException;
@@ -35,18 +37,27 @@ import jolie.util.Pair;
 
 public class JolieServiceLoader2 extends EmbeddedServiceLoader
 {
-	private final Interpreter interpreter;
+	private final Interpreter parentInterpreter;
+	private Interpreter thisInterpreter;
+	private final String paramPath;
 	private final Value argumentValue;
 	private final Type parameterType;
+	private final String[] args;
+	private final Program program;
 
 	public JolieServiceLoader2( Interpreter currInterpreter, String serviceName, Program program,
 			Pair< String, Value > argument, Type parameterType )
-			throws IOException, CommandLineException
 	{
 		super( null );
-		this.argumentValue = argument.value();
-		this.parameterType = parameterType;
-
+		if ( argument != null ) {
+			this.paramPath = argument.key();
+			this.argumentValue = argument.value();
+			this.parameterType = parameterType;
+		} else {
+			this.paramPath = null;
+			this.argumentValue = null;
+			this.parameterType = null;
+		}
 		List< String > newArgs = new ArrayList<>();
 		newArgs.add( "-i" );
 		newArgs.add( currInterpreter.programDirectory().getAbsolutePath() );
@@ -54,24 +65,34 @@ public class JolieServiceLoader2 extends EmbeddedServiceLoader
 		String[] options = currInterpreter.optionArgs();
 		newArgs.addAll( Arrays.asList( options ) );
 		newArgs.add( "#" + serviceName + ".ol" );
-		interpreter = new Interpreter( newArgs.toArray( new String[newArgs.size()] ),
-				currInterpreter.getClassLoader(), currInterpreter.programDirectory(),
-				currInterpreter, program, argument );
+		this.args = newArgs.toArray( new String[newArgs.size()] );
+		this.program = program;
+		this.parentInterpreter = currInterpreter; 
 	}
 
 	@Override
 	public void load() throws EmbeddedServiceLoadingException
 	{
+		if ( parameterType != null ) {
+			try {
+				Type.assignDefault( this.argumentValue, this.parameterType );
+				parameterType.check( this.argumentValue );
+			} catch (TypeCheckingException e1) {
+				throw new EmbeddedServiceLoadingException( e1 );
+			}
+		}
 		try {
-			parameterType.check( argumentValue );
-		} catch (TypeCheckingException e1) {
+			thisInterpreter = new Interpreter( this.args, this.parentInterpreter.getClassLoader(),
+					this.parentInterpreter.programDirectory(), this.parentInterpreter, program,
+					new Pair< String, Value >( this.paramPath, this.argumentValue ) );
+		} catch (CommandLineException | IOException e1) {
 			throw new EmbeddedServiceLoadingException( e1 );
 		}
-		Future< Exception > f = interpreter.start2();
+		Future< Exception > f = thisInterpreter.start2();
 		try {
 			Exception e = f.get();
 			if ( e == null ) {
-				setChannel( interpreter.commCore().getLocalCommChannel() );
+				setChannel( thisInterpreter.commCore().getLocalCommChannel() );
 			} else {
 				throw new EmbeddedServiceLoadingException( e );
 			}
@@ -82,6 +103,6 @@ public class JolieServiceLoader2 extends EmbeddedServiceLoader
 
 	public Interpreter interpreter()
 	{
-		return interpreter;
+		return thisInterpreter;
 	}
 }

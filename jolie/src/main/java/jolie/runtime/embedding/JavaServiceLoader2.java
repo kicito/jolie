@@ -75,8 +75,14 @@ public class JavaServiceLoader2 extends EmbeddedServiceLoader
 	{
 		super( null );
 		this.serviceName = "JAVA_" + serviceName;
-		this.argumentValue = argument.value();
-		this.parameterType = parameterType;
+
+		if ( argument != null ) {
+			this.argumentValue = argument.value();
+			this.parameterType = parameterType;
+		} else {
+			this.argumentValue = null;
+			this.parameterType = null;
+		}
 
 		final JolieClassLoader cl = currInterpreter.getClassLoader();
 		try {
@@ -195,10 +201,13 @@ public class JavaServiceLoader2 extends EmbeddedServiceLoader
 	@Override
 	public void load() throws EmbeddedServiceLoadingException
 	{
-		try {
-			parameterType.check( argumentValue );
-		} catch (TypeCheckingException e1) {
-			throw new EmbeddedServiceLoadingException( e1 );
+		if (parameterType != null){
+			try {
+				Type.assignDefault(argumentValue, parameterType);
+				parameterType.check( argumentValue );
+			} catch (TypeCheckingException e1) {
+				throw new EmbeddedServiceLoadingException( e1 );
+			}
 		}
 
 		Future< Exception > f = interpreter.start2();

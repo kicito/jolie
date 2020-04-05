@@ -9,19 +9,19 @@ public class TypeInlineDefinitionRefined extends TypeInlineDefinition
 {
 
     private static final long serialVersionUID = Constants.serialVersionUID();
-    private String refinementCondition;
+    private RefinementCondition[] refinementConditions;
 
 
     public TypeInlineDefinitionRefined( ParsingContext context, String id, NativeType nativeType,
-            Range cardinality, String refinementCondition )
+            Range cardinality, RefinementCondition[] refinementConditions )
     {
         super( context, id, nativeType, cardinality );
-        this.refinementCondition = refinementCondition;
+        this.refinementConditions = refinementConditions;
     }
 
-    public String refinementCondition()
+    public RefinementCondition[] refinementConditions()
     {
-        return refinementCondition;
+        return refinementConditions;
     }
-
+    
 }

@@ -42,6 +42,7 @@ import jolie.runtime.OneWayOperation;
 import jolie.runtime.RequestResponseOperation;
 import jolie.runtime.VariablePath;
 import jolie.runtime.typing.OperationTypeDescription;
+import jolie.runtime.typing.Type;
 import jolie.runtime.typing.TypeCheckingException;
 
 /**
@@ -81,6 +82,7 @@ public abstract class AggregatedOperation
 		{
 			final Interpreter interpreter = Interpreter.getInstance();
 			try {
+				Type.assignDefault(requestMessage.value(), operation.requestType());
 				operation.requestType().check( requestMessage.value() );
 
 				ExecutionThread initThread = Interpreter.getInstance().initThread();
@@ -189,6 +191,7 @@ public abstract class AggregatedOperation
 		{
 			final Interpreter interpreter = Interpreter.getInstance();
 			try {
+				Type.assignDefault(requestMessage.value(), operation.requestType());
 				operation.requestType().check( requestMessage.value() );
 
 				ExecutionThread initThread = Interpreter.getInstance().initThread();

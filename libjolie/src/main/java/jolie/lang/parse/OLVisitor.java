@@ -105,6 +105,7 @@ import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.RefinementCondition;
 import jolie.lang.parse.ast.servicenode.*;
 
 public interface OLVisitor
@@ -199,5 +200,5 @@ public interface OLVisitor
 	public void visit( JolieServiceNode n );
 	public void visit( JavaServiceNode n );
 	public void visit( EmbeddedServiceNodeParameterize n );
-	
+	public void visit( RefinementCondition n );
 }

@@ -114,6 +114,7 @@ import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.servicenode.JavaServiceNode;
 import jolie.lang.parse.ast.servicenode.JolieServiceNode;
 import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
+import jolie.lang.parse.ast.types.RefinementCondition;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
@@ -548,4 +549,11 @@ public class ProgramInspectorCreatorVisitor implements OLVisitor
 
 	@Override
 	public void visit( EmbeddedServiceNodeParameterize n ) {}
+
+	@Override
+	public void visit( RefinementCondition n )
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

@@ -3,9 +3,6 @@ package jolie;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,74 +92,6 @@ public class TestParameterizePort
 
     }
 
-
-
-    @Test
-    void testParameterizeOutputPortInlineTreePredefinedIface() throws Exception
-    {
-        String serverFilePath = "jolie2/parameterizePort/outputPort/server.ol";
-
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-
-        String filePath = "jolie2/parameterizePort/outputPort/InlineTreePredefinedIface.ol";
-        String[] args = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
-        args[args.length - 1] = filePath;
-
-        Thread serverThread = new Thread( () -> {
-            assertDoesNotThrow(
-                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
-        } );
-
-        Thread clientThread = new Thread( () -> {
-            assertDoesNotThrow(
-                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
-        } );
-
-        serverThread.start();
-        clientThread.start();
-        clientThread.join();
-        serverThread.join();
-
-    }
-
-    @Test
-    void testParameterizeInputPortInlineTreeStaticPredefinedIface() throws Exception
-    {
-        String serverFilePath =
-                "jolie2/parameterizePort/inputPort/InlineTreeStaticPredefinedIface.ol";
-
-        String[] serverArgs = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, serverArgs, 0, launcherArgs.length );
-        serverArgs[serverArgs.length - 1] = serverFilePath;
-
-        String filePath = "jolie2/parameterizePort/inputPort/client.ol";
-        String[] args = new String[launcherArgs.length + 1];
-        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
-        args[args.length - 1] = filePath;
-
-        Thread serverThread = new Thread( () -> {
-            assertDoesNotThrow(
-                    () -> JolieRunner.run( serverArgs, this.getClass().getClassLoader(), null ) );
-        } );
-
-        Thread clientThread = new Thread( () -> {
-            assertDoesNotThrow(
-                    () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
-        } );
-
-        serverThread.start();
-        Thread.sleep( 1000 );
-        clientThread.start();
-        clientThread.join();
-        serverThread.join();
-
-    }
-
-
-
     @Test
     void testParameterizeInputPortInlineTreeParamIface() throws Exception
     {
@@ -225,17 +154,16 @@ public class TestParameterizePort
 
     }
 
-    // @Test
-    // void testParameterizeInputPortLocalLocation()
-    // {
+    @Test
+    void testParameterizeInputPortLocalLocation()
+    {
+        String filePath = "jolie2/parameterizePort/localLocation.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
 
-    //     String filePath = "jolie2/parameterizePort/localLocation.ol";
-    //     String[] args = new String[launcherArgs.length + 1];
-    //     System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
-    //     args[args.length - 1] = filePath;
-
-    //     assertDoesNotThrow(
-    //         () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
-    // }
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
+    }
 
 }

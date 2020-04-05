@@ -83,6 +83,7 @@ import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.servicenode.JavaServiceNode;
 import jolie.lang.parse.ast.servicenode.JolieServiceNode;
+import jolie.lang.parse.ast.types.RefinementCondition;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
@@ -727,28 +728,44 @@ class InspectorVisitor implements OLVisitor
     }
 
     @Override
-    public void visit( ServiceNode n ) {
+    public void visit( ServiceNode n )
+    {
         isFound = n.equals( target );
     }
 
-	@Override
-	public void visit( EmbeddedServiceNode2 n ){
+    @Override
+    public void visit( EmbeddedServiceNode2 n )
+    {
         isFound = n.equals( target );
     }
 
-	@Override
-	public void visit( ParameterizeOutputPortInfo n )
-	{ }
+    @Override
+    public void visit( ParameterizeOutputPortInfo n )
+    {
+    }
 
-	@Override
-	public void visit( ParameterizeInputPortInfo n ) {}
+    @Override
+    public void visit( ParameterizeInputPortInfo n )
+    {
+    }
 
-	@Override
-	public void visit( JolieServiceNode n ) {}
+    @Override
+    public void visit( JolieServiceNode n )
+    {
+    }
 
-	@Override
-	public void visit( JavaServiceNode n ) {}
+    @Override
+    public void visit( JavaServiceNode n )
+    {
+    }
 
-	@Override
-	public void visit( EmbeddedServiceNodeParameterize n ) {}
+    @Override
+    public void visit( EmbeddedServiceNodeParameterize n )
+    {
+    }
+
+    @Override
+    public void visit( RefinementCondition n )
+    {
+    }
 }

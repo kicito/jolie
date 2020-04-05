@@ -39,6 +39,7 @@ import java.util.function.BiPredicate;
 import jolie.lang.Constants;
 import jolie.lang.Constants.ExecutionMode;
 import jolie.lang.Constants.OperandType;
+import jolie.lang.NativeType;
 import jolie.lang.parse.CorrelationFunctionInfo;
 import jolie.lang.parse.CorrelationFunctionInfo.CorrelationPairInfo;
 import jolie.lang.parse.OLParser;
@@ -131,10 +132,12 @@ import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.servicenode.JavaServiceNode;
 import jolie.lang.parse.ast.servicenode.JolieServiceNode;
 import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
+import jolie.lang.parse.ast.types.RefinementCondition;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.TypeInlineDefinitionRefined;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.net.AggregatedOperation;
 import jolie.net.ext.CommProtocolFactory;
@@ -229,9 +232,11 @@ import jolie.runtime.expression.ValueVectorSizeExpression;
 import jolie.runtime.expression.VoidExpression;
 import jolie.runtime.typing.OneWayTypeDescription;
 import jolie.runtime.typing.OperationTypeDescription;
+import jolie.runtime.typing.RefinementType;
+import jolie.runtime.typing.RefinementTypeException;
+import jolie.runtime.typing.RefinementTypeFactory;
 import jolie.runtime.typing.RequestResponseTypeDescription;
 import jolie.runtime.typing.Type;
-import jolie.runtime.typing.TypeCheckingException;
 import jolie.util.ArrayListMultiMap;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
@@ -660,30 +665,66 @@ public class OOITBuilder implements OLVisitor
 	private final Map< String, Map< String, RequestResponseTypeDescription > > solicitResponseTypes =
 		new HashMap< String, Map< String, RequestResponseTypeDescription > >(); // Maps output ports to their RR operation types
 
+	RefinementTypeFactory currRefinementFactory = null;
+
+	private RefinementType createRefinementType( NativeType type, RefinementCondition[] conds )
+			throws RefinementTypeException
+	{
+		currRefinementFactory = RefinementType.getFactory( type );
+		RefinementType rType = null;
+		for (RefinementCondition cond : conds) {
+			cond.accept( this );
+			if ( rType != null ) {
+				rType.extend( currentRefinementType );
+			} else {
+				rType = currentRefinementType;
+			}
+		}
+		currRefinementFactory = null;
+		currentRefinementType = null;
+		return rType;
+	}
+
 	public void visit( TypeInlineDefinition n )
 	{
 		boolean backupInsideType = insideType;
 		insideType = true;
 
 		if ( n.untypedSubTypes() ) {
-			currType = Type.create( n.nativeType(), n.cardinality(), true, null );
+			if ( n instanceof TypeInlineDefinitionRefined ) {
+				try {
+					RefinementType refinement = createRefinementType( n.nativeType(),
+							((TypeInlineDefinitionRefined) n).refinementConditions() );
+					currType =
+							Type.create( n.nativeType(), n.cardinality(), true, null, refinement, defaultExpression );
+				} catch (RefinementTypeException e) {
+					error( n.context(), e );
+				}
+			} else {
+				currType = Type.create( n.nativeType(), n.cardinality(), true, null );
+			}
 		} else {
 			Map< String, Type > subTypes = new HashMap< String, Type >();
 			if ( n.subTypes() != null ) {
-				for( Entry< String, TypeDefinition > entry : n.subTypes() ) {
+				for (Entry< String, TypeDefinition > entry : n.subTypes()) {
 					subTypes.put( entry.getKey(), buildType( entry.getValue() ) );
 				}
 			}
-			currType = Type.create(
-				n.nativeType(),
-				n.cardinality(),
-				false,
-				subTypes
-			);
+			if ( n instanceof TypeInlineDefinitionRefined ) {
+				try {
+					RefinementType refinement = createRefinementType( n.nativeType(),
+							((TypeInlineDefinitionRefined) n).refinementConditions() );
+					currType = Type.create( n.nativeType(), n.cardinality(), false, subTypes,
+							refinement, defaultExpression );
+				} catch (RefinementTypeException e) {
+					error( n.context(), e );
+				}
+			} else {
+				currType = Type.create( n.nativeType(), n.cardinality(), false, subTypes );
+			}
 		}
 
 		insideType = backupInsideType;
-
 		// if ( insideType == false && insideOperationDeclaration == false ) {
 		// 	types.put( n.id(), currType );
 		// }
@@ -1551,6 +1592,8 @@ public class OOITBuilder implements OLVisitor
 			return null;
 		}
 		n.accept( this );
+		defaultExpression = null;
+
 		return currType;
 	}
 
@@ -2014,54 +2057,27 @@ public class OOITBuilder implements OLVisitor
 
 		interfaceValues.forEach( ifaceValue -> {
 			currentPortInterface = createInterfaceFromValue(ifaceValue);
-			ifaceValue.getChildren("operations").forEach(opValue -> registerInputOperationTypeValue(portId, opValue));
+
+			currentPortInterface.oneWayOperations().forEach( ( name, ow ) -> {
+				try {
+					final OneWayOperation op =
+							interpreter.getOneWayOperation( name );
+				} catch (InvalidIdException e) {
+					interpreter.register( name,
+							new OneWayOperation( name, ow.requestType() ) );
+				}
+			} );
+
+			currentPortInterface.requestResponseOperations().forEach( ( name, rr ) -> {
+				try {
+					final RequestResponseOperation op =
+							interpreter.getRequestResponseOperation( name );
+				} catch (InvalidIdException e) {
+					interpreter.register( name,
+							new RequestResponseOperation( name, rr.asRequestResponseTypeDescription()  ) );
+				}
+			} );
 		});
-
-		// if (n.parameter() instanceof VariableExpressionNode){
-		// 	if ( this.interpreter.argumentParameter == null ){
-		// 		error(n.context(), "argument is undefined");
-		// 	}
-		// 	n.parameter().accept(this);
-		// 	VariablePath varPath = (VariablePath)currExpression;
-		// 	varPath.getValue(this.interpreter.initThread().state().root());
-		// 	Value v = expression.evaluate();
-		// 	// this.interpreter.argumentParameter.value()
-
-		// 	// processing Interfaces
-		// 	currentPortInterface = new Interface(
-		// 		new HashMap< String, OneWayTypeDescription >(),
-		// 		new HashMap< String, RequestResponseTypeDescription >()
-		// 	);
-		// 	if (n.operations().size() > 0){ // operation is defined in CURLY
-		// 		for( OperationDeclaration op : n.operations() ) {
-		// 			op.accept( this );
-		// 		}
-		// 	}
-		// } else { // inline case
-		// 	n.parameter().accept(this);
-		// 	expression = currExpression;
-		// 	ValueVector interfaceValues = null;
-		// 	Value v = null;
-		// 	v = expression.evaluate();
-
-		// 	// processing Interfaces
-		// 	currentPortInterface = new Interface(
-		// 		new HashMap< String, OneWayTypeDescription >(),
-		// 		new HashMap< String, RequestResponseTypeDescription >()
-		// 	);
-		// 	if (n.operations().size() > 0){ // operation is defined in CURLY
-		// 		for( OperationDeclaration op : n.operations() ) {
-		// 			op.accept( this );
-		// 		}
-		// 	} else {
-		// 		interfaceValues = v.children().get( "interfaces" );
-
-		// 		interfaceValues.forEach( ifaceValue -> {
-		// 			currentPortInterface = createInterfaceFromValue(ifaceValue);
-		// 			ifaceValue.getChildren("operations").forEach(opValue -> registerInputOperationTypeValue(portId, opValue));
-		// 		});
-		// 	}
-		// }
 
 		VariablePath portInfoPath = new VariablePathBuilder( true )
 				.add( Constants.INPUT_PORTS_NODE_NAME, 0 ).add( portId, 0 )
@@ -2153,21 +2169,25 @@ public class OOITBuilder implements OLVisitor
 
 		String interfaceName = interfaceValue.strValue();
 
-		Interface iface = new Interface( new HashMap< String, OneWayTypeDescription >(),
-				new HashMap< String, RequestResponseTypeDescription >() );
-		interfaceValue.getChildren( "operations" ).forEach( opValue -> {
-			String opName = opValue.strValue();
-			OperationTypeDescription otd = createTypeDescriptionFromValue( opValue );
-			if ( otd.asOneWayTypeDescription() != null ) {
-				iface.oneWayOperations().put( opName, otd.asOneWayTypeDescription() );
-			} else if ( otd.asRequestResponseTypeDescription() != null ) {
-				iface.requestResponseOperations().put( opName,
-						otd.asRequestResponseTypeDescription() );
-			}
+		// look up at pre declared interfaces
+		if ( interfaces.containsKey( interfaceName ) ) {
+			return interfaces.get( interfaceName );
+		} else {
+			Interface iface = new Interface( new HashMap< String, OneWayTypeDescription >(),
+					new HashMap< String, RequestResponseTypeDescription >() );
+			interfaceValue.getChildren( "operations" ).forEach( opValue -> {
+				String opName = opValue.strValue();
+				OperationTypeDescription otd = createTypeDescriptionFromValue( opValue );
+				if ( otd.asOneWayTypeDescription() != null ) {
+					iface.oneWayOperations().put( opName, otd.asOneWayTypeDescription() );
+				} else if ( otd.asRequestResponseTypeDescription() != null ) {
+					iface.requestResponseOperations().put( opName,
+							otd.asRequestResponseTypeDescription() );
+				}
+			} );
+			return iface;
 		}
 
-		);
-		return iface;
 	}
 
 	@Override
@@ -2197,10 +2217,13 @@ public class OOITBuilder implements OLVisitor
 		n.expression().accept( this );
 
 		Value argument = currExpression.evaluate();
-		n.embedService().parameterType().accept(this);
+		n.embedService().parameterType().accept( this );
 		Type type = currType;
-		Pair< String, Value > argumentParameter =
-				new Pair< String, Value >( n.embedService().parameterPath(), argument );
+		Pair< String, Value > argumentParameter = null;
+		if ( n.embedService().parameterPath() != null ) {
+			argumentParameter =
+					new Pair< String, Value >( n.embedService().parameterPath(), argument );
+		}
 		try {
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
 					new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration2(
@@ -2208,9 +2231,38 @@ public class OOITBuilder implements OLVisitor
 							n.embedService().getTarget(), n.embedService().program() );
 
 			interpreter.addEmbeddedServiceLoader( EmbeddedServiceLoader.create( interpreter,
-					embeddedServiceConfiguration, argumentParameter, type ));
+					embeddedServiceConfiguration, argumentParameter, type ) );
 		} catch (EmbeddedServiceLoaderCreationException e) {
 			error( n.context(), e );
+		}
+	}
+	
+	RefinementType currentRefinementType;
+	Expression defaultExpression;
+
+	@Override
+	public void visit( RefinementCondition n )
+	{
+
+		List< Expression > expressions = new ArrayList< Expression >();
+		for (OLSyntaxNode node : n.arguments()) {
+			node.accept( this );
+			expressions.add( currExpression );
+		}
+
+		if ( n.name().equals( "default" ) ) {
+			if (expressions.size() != 1){
+				error(n.context(), "default requires parameter of length 1");
+			}
+			defaultExpression = expressions.get(0);
+			return;
+		} else {
+			try {
+				currentRefinementType = currRefinementFactory.create( n.name(),
+						expressions.toArray( new Expression[0] ) );
+			} catch (RefinementTypeException e) {
+				error( n.context(), e );
+			}
 		}
 	}
 }

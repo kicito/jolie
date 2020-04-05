@@ -110,6 +110,8 @@ public class ForwardSolicitResponseProcess implements Process
 			if ( extenderTypeDescription != null ) {
 				extenderTypeDescription.requestType().cutChildrenFromValue( messageValue );
 			}
+
+			Type.assignDefault(messageValue, aggregatedTypeDescription.requestType());
 			aggregatedTypeDescription.requestType().check( messageValue );
 			CommMessage message = CommMessage.createRequest( operationName, outputPort.getResourcePath(), messageValue );
 
@@ -138,6 +140,7 @@ public class ForwardSolicitResponseProcess implements Process
 				Type faultType = aggregatedTypeDescription.getFaultType( response.fault().faultName() );
 				if ( faultType != null ) {
 					try {
+						Type.assignDefault(response.fault().value(), faultType);
 						faultType.check( response.fault().value() );
 					} catch( TypeCheckingException e ) {
 						throw new FaultException( Constants.TYPE_MISMATCH_FAULT_NAME, "Received fault " + response.fault().faultName() + " TypeMismatch (" + operationName + "@" + outputPort.id() + "): " + e.getMessage() );
@@ -147,6 +150,7 @@ public class ForwardSolicitResponseProcess implements Process
 			} else {
 				if ( aggregatedTypeDescription.responseType() != null ) {
 					try {
+						Type.assignDefault(response.value(), aggregatedTypeDescription.responseType());
 						aggregatedTypeDescription.responseType().check( response.value() );
 					} catch( TypeCheckingException e ) {
 						throw new FaultException( Constants.TYPE_MISMATCH_FAULT_NAME, "Received message TypeMismatch (" + operationName + "@" + outputPort.id() + "): " + e.getMessage() );

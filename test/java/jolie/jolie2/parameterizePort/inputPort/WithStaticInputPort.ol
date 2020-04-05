@@ -23,33 +23,8 @@ inputPort parameterizeInputPortInlineTreeParamIface ({
 
 
 main{
-
-    
-    // notice@parameterizeInputPortInlineTreeParamIface("hello")
-    // rr@parameterizeInputPortInlineTreeParamIface(void{x=1 y=2})(res)
-}
-
-
-service Console( config: undefined ){
-
-    inputPort myInput( config.fromClient )
-
-    main{
-        println()(){
-            println@RemoteConsole( msg )()
-        }
-    }
-}
-
- 
-
-service main {
-
-    outputPort ConsolePort { location: "local://Console" interfaces: ConsoleInterface }
-
-    embed Console( { fromClient << { location = "local://Console", interfaces << { operations << { ... } } )
-
-    main {
-        println@ConsolePort( "hi" )()
+    notice(n)
+    rr(req)(res){
+        res = "hello"
     }
 }

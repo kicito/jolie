@@ -73,6 +73,7 @@ import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
 import jolie.runtime.correlation.CorrelationError;
 import jolie.runtime.expression.Expression;
+import jolie.runtime.typing.Type;
 import jolie.runtime.typing.TypeCheckingException;
 
 /** 
@@ -567,6 +568,7 @@ public class CommCore
 				InputOperation operation =
 					interpreter.getInputOperation( message.operationName() );
 				try {
+					Type.assignDefault(message.value(), operation.requestType());
 					operation.requestType().check( message.value() );
 					interpreter.correlationEngine().onMessageReceive( message, channel );
 					if ( operation instanceof OneWayOperation ) {

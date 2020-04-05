@@ -22,8 +22,8 @@ package jolie.lang.parse;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import jolie.lang.Constants;
-import jolie.lang.Constants.EmbeddedServiceType;
 import jolie.lang.parse.ast.AddAssignStatement;
 import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.CompareConditionNode;
@@ -109,10 +109,12 @@ import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.servicenode.JavaServiceNode;
 import jolie.lang.parse.ast.servicenode.JolieServiceNode;
 import jolie.lang.parse.ast.servicenode.ServiceNodeParameterize;
+import jolie.lang.parse.ast.types.RefinementCondition;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.ast.types.TypeInlineDefinitionRefined;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.util.Pair;
 
@@ -219,13 +221,10 @@ public class OLParseTreeOptimizer
 		{
 			programChildren.add( n );
 		}
-		private boolean inDefNode = false;
 		@Override
 		public void visit( DefinitionNode n )
 		{
-			inDefNode = true;
 			programChildren.add( new DefinitionNode( n.context(), n.id(), optimizeNode( n.body() ) ) );
-			inDefNode = false;
 		}
 
 		@Override
@@ -562,13 +561,11 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( AssignStatement n )
 		{
-			if ( inDefNode ) {
-				currNode = new AssignStatement( n.context(), optimizePath( n.variablePath() ),
-						optimizeNode( n.expression() ) );
-			} else {
-				programChildren.add( new AssignStatement( n.context(),
-						optimizePath( n.variablePath() ), optimizeNode( n.expression() ) ) );
-			}
+			currNode = new AssignStatement(
+				n.context(),
+				optimizePath( n.variablePath() ),
+				optimizeNode( n.expression() )
+			);
 		}
 
 		@Override
@@ -610,14 +607,12 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( DeepCopyStatement n )
 		{
-			if ( inDefNode ) {
-				currNode = new DeepCopyStatement( n.context(), optimizePath( n.leftPath() ),
-						optimizeNode( n.rightExpression() ), n.copyLinks() );
-			} else {
-				programChildren
-						.add( new DeepCopyStatement( n.context(), optimizePath( n.leftPath() ),
-								optimizeNode( n.rightExpression() ), n.copyLinks() ) );
-			}
+			currNode = new DeepCopyStatement(
+				n.context(),
+				optimizePath( n.leftPath() ),
+				optimizeNode( n.rightExpression() ),
+				n.copyLinks()
+			);
 		}
 
 		@Override
@@ -762,10 +757,49 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( RunStatement n ) { currNode = n; }
 
+		private RefinementCondition[] optimizeConditions( RefinementCondition[] conditions )
+		{
+			List<OLSyntaxNode> condList = new ArrayList<>(); 
+			for (RefinementCondition cond : conditions) {
+				cond.accept(this);
+				condList.add(currNode);
+			}
+			return condList.toArray(new RefinementCondition[0]);
+		}
+
+		private TypeInlineDefinition optimizeTypeInlineDefinition( TypeInlineDefinition n )
+		{
+			TypeInlineDefinition ret;
+			if ( n instanceof TypeInlineDefinitionRefined ) {
+				RefinementCondition[] optimized = optimizeConditions(
+						((TypeInlineDefinitionRefined) n).refinementConditions() );
+				ret = new TypeInlineDefinitionRefined( n.context(), n.name(),
+						n.nativeType(), n.cardinality(), optimized );
+			}else{
+				ret = n;
+			}
+
+			if ( n.hasSubTypes() ) {
+				for (Entry< String, TypeDefinition > entry : n.subTypes()) {
+					if (entry.getValue() instanceof TypeInlineDefinitionRefined){
+						ret.putSubType(optimizeTypeInlineDefinition( (TypeInlineDefinition)entry.getValue() ));
+					}else{
+						ret.putSubType(entry.getValue());
+					}
+				}
+			}
+
+			return ret;
+		}
+
 		@Override
 		public void visit( TypeInlineDefinition n )
 		{
-			programChildren.add( n );
+			if ( n instanceof TypeInlineDefinitionRefined ) {
+				programChildren.add( optimizeTypeInlineDefinition(n) );
+			} else {
+				programChildren.add( n );
+			}
 		}
 
 		@Override
@@ -886,9 +920,7 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( CourierDefinitionNode n )
 		{
-			inDefNode = true;
 			programChildren.add( new CourierDefinitionNode( n.context(), n.inputPortName(), optimizeNode( n.body() ) ) );
-			inDefNode = false;
 		}
 	
 		@Override
@@ -979,38 +1011,13 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( ServiceNode n )
 		{
-			ServiceNode node = new ServiceNode( n.context(), n.name(), n.type() );
-			node.addBindings( n.getBindings() );
-			n.embeddings().forEach( em -> node.addEmbedding( em ) );
-			n.deploymentInstructions().forEach(
-					di -> node.addDeploymentInstruction( OLParseTreeOptimizer.optimize( di ) != null
-							? OLParseTreeOptimizer.optimize( di )
-							: di ) );
-			if ( n.type() == EmbeddedServiceType.JAVA ) {
-				node.addParameter( n.getParameter( 0 ) );
-			}
-			node.addParameters( n.getAssignableParameters() );
-			n.getInputPortInfos().values().forEach( p -> node.addInputPortInfo( p ) );
-			n.getOutputPortInfos().values().forEach( p -> node.addOutputPortInfo( p ) );
-			if ( n.init() != null ) {
-				node.addInit(OLParseTreeOptimizer.optimize( n.init() ) );
-			}
-			if ( n.main() != null ) {
-				node.setMain( new DefinitionNode( n.main().context(), "main",
-						OLParseTreeOptimizer.optimize( n.main() ) ) );
-			}
-			// currNode = node;
-			programChildren.add( node );
 		}
 
 
 		@Override
 		public void visit( EmbeddedServiceNode2 n )
 		{
-			programChildren.add( n );
 		}
-
-
 
 		@Override
 		public void visit( ParameterizeOutputPortInfo p )
@@ -1019,6 +1026,7 @@ public class OLParseTreeOptimizer
 				p.parameter().accept(this);
 				p.setParameter( currNode );
 			}
+			currNode = p;
 			programChildren.add( p );
 		}
 
@@ -1029,6 +1037,7 @@ public class OLParseTreeOptimizer
 				p.parameter().accept(this);
 				p.setParameter( currNode );
 			}
+			currNode = p;
 			programChildren.add( p );
 		}
 
@@ -1068,10 +1077,10 @@ public class OLParseTreeOptimizer
 						oldNode.parameterPath() );
 			}
 			if ( oldNode.getInputPortInfos().size() > 0){
-				oldNode.getInputPortInfos().values().forEach( p -> newNode.addInputPortInfo( p ) );
+				oldNode.getInputPortInfos().values().forEach( p -> newNode.addInputPortInfo( (InputPortInfo) OLParseTreeOptimizer.optimize( p ) ) );
 			}
 			if ( oldNode.getOutputPortInfos().size() > 0){
-				oldNode.getOutputPortInfos().values().forEach( p -> newNode.addOutputPortInfo( p ) );
+				oldNode.getOutputPortInfos().values().forEach( p -> newNode.addOutputPortInfo( (OutputPortInfo) OLParseTreeOptimizer.optimize( p ) ) );
 			}
 
 			if ( oldNode.init() != null ) {
@@ -1088,6 +1097,16 @@ public class OLParseTreeOptimizer
 		{
 			n.setExpression( OLParseTreeOptimizer.optimize( n.expression() ) );
 			programChildren.add( n );
+		}
+
+		@Override
+		public void visit( RefinementCondition n )
+		{
+			OLSyntaxNode[] arguments = new OLSyntaxNode[n.arguments().length];
+			for (int i = 0; i < n.arguments().length; i++) {
+				arguments[i] = optimize(n.arguments()[i]);
+			}
+			currNode = new RefinementCondition(n.context(), n.name(), arguments);
 		}
 	}
 

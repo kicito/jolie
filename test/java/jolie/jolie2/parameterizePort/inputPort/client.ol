@@ -16,5 +16,5 @@ outputPort op {
 
 main{
     notice@op("hello")
-    rr@op(void{x=1 y=2})(res)
+    rr@op({x=1 y=2})(res)
 }
