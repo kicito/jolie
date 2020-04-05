@@ -2,9 +2,11 @@ include "../AbstractTestUnit.iol"
 include "metajolie.iol"
 include "string_utils.iol"
 include "console.iol"
+include "time.iol"
 
 define doTest
 {
+  sleep@Time( 1000 )()
   with( rq ) {
       .filename = "private/sample_service.ol"
   };
@@ -36,7 +38,10 @@ define doTest
   if ( meta_description.input.interfaces.operations.operation_name != "tmp" ) {
       throw( TestFailed, "Expected operation_name equal to \"tmp\", found " + meta_description.input.interfaces.operations.operation_name )
   };
-  if ( meta_description.input.interfaces.operations[1].operation_name != "tmp3" ) {
+  if ( meta_description.input.interfaces.operations[1].operation_name != "tmp2" ) {
+      throw( TestFailed, "Expected second operation_name equal to \"tmp2\", found " + meta_description.input.interfaces.operations[1].operation_name )
+  }
+  if ( meta_description.input.interfaces.operations[2].operation_name != "tmp3" ) {
       throw( TestFailed, "Expected second operation_name equal to \"tmp3\", found " + meta_description.input.interfaces.operations[1].operation_name )
   }
   ops -> meta_description.input.interfaces.operations
@@ -114,4 +119,65 @@ define doTest
   if ( mcom.dependencies.name != "print" || mcom.dependencies.port != "Console" || mcom.dependencies.type != "SolicitResponse" ) {
       throw( TestFailed, "Wrong dependencies in communication_dependencies metadata, expected print@Console found " +  mcom.dependencies.name + "," +  mcom.dependencies.type + "," +  mcom.dependencies.port )
   }
+
+  getNativeTypeStringList@MetaJolie()( ntype_list )
+  if ( #ntype_list.native_type != 8 ) {
+      throw( TestFailed, "Expected 8 native types found " + #ntype_list.native_type )
+  }
+  for( t in ntype_list.native_type ) {
+      checkNativeType@MetaJolie({ .type_name = t } )( is_native )
+      if ( !is_native.result ) {
+          throw( TestFailed, "Native Type " + t + " retrieved from getNativeTypeStringList is not native" )
+      } else {
+          getNativeTypeFromString@MetaJolie({ .type_name = t } )( ntype )
+          if ( !is_defined( ntype.( t + "_type" ) ) ) {
+              valueToPrettyString@StringUtils( ntype )( s )
+              throw( TestFailed, "getNativeTypeFromString does not return the correct native type for Native Type " + t + ", got " + s )
+          }
+      }
+  }
+
+  // comparing nodes
+  a.b.c.d.m.n.l.o = 1
+  a.b.c.d.m.n.l = 2
+  a.b.c.d.m.n = 3
+  a.b.c.d = 4
+  a.b.c = 5
+
+  z.b.c.d.m.n.l.o = 1
+  z.b.c.d.m.n.l = 2
+  z.b.c.d.m.n = 3
+  z.b.c.d = 4
+  z.b.c = 5
+
+  with( comp_rq ) {
+      .v1 -> a;
+      .v2 -> z
+  }
+  scope( compare_values ) {
+      install( ComparisonFailed => throw( TestFailed, compare_values.ComparisonFailed ) )
+      compareValuesStrict@MetaJolie( comp_rq )()
+  }
+
+  with( comp_rq ) {
+      .v1 -> z;
+      .v2 -> a
+  }
+  scope( compare_values ) {
+      install( ComparisonFailed => throw( TestFailed, compare_values.ComparisonFailed ) )
+      compareValuesStrict@MetaJolie( comp_rq )()
+  }
+
+  scope( compare_values ) {
+      install( ComparisonFailed => throw( TestFailed, compare_values.ComparisonFailed ) )
+      compareValuesVectorLight@MetaJolie( comp_rq )()
+  }
+
+  undef ( a.b.c )
+  scope( compare_values ) {
+      install( ComparisonFailed => nullProcess )
+      compareValuesStrict@MetaJolie( comp_rq )()
+      throw( TestFailed, "Expected values are different but comparison succeeded" )
+  }
+
 }

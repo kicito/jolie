@@ -297,6 +297,7 @@ public class Interpreter
 		Executors.newSingleThreadExecutor( new NativeJolieThreadFactory( this ) );
 
 	private final String programFilename;
+	private final String programFilepath;
 	private final File programDirectory;
 	private OutputPort monitor = null;
 	
@@ -857,15 +858,6 @@ public class Interpreter
 		return classLoader;
 	}
 
-	/**
-	 * Returns <code>true</code> if this interpreter is in verbose mode.
-	 * @return <code>true</code> if this interpreter is in verbose mode
-	 */
-	/* public boolean verbose()
-	{
-		return verbose;
-	} */
-
 	/** Constructor.
 	 *
 	 * @param args The command line arguments.
@@ -891,6 +883,7 @@ public class Interpreter
 		classLoader = cmdParser.jolieClassLoader();
 		optionArgs = cmdParser.optionArgs();
 		programFilename = cmdParser.programFilepath().getName();
+		programFilepath = cmdParser.programFilepath().toString();
 		arguments = cmdParser.arguments();
 		printStackTraces = true;
 		// printStackTraces = cmdParser.printStackTraces();
@@ -1005,6 +998,15 @@ public class Interpreter
 	public String programFilename()
 	{
 		return programFilename;
+	}
+
+	/**
+	 * Returns the path at which the file to be interpreted has been found
+	 * @return the path at which the file to be interpreted has been found
+	 */
+	public String programFilepath()
+	{
+		return programFilepath;
 	}
 
 	/**

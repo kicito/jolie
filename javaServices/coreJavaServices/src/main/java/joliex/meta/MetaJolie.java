@@ -54,6 +54,15 @@ public class MetaJolie extends JavaService {
     private final int MAX_CARD = 2147483647;
     private ArrayList<TypeDefinition> listOfGeneratedTypesInTypeDefinition;
     private ArrayList<Value> listOfGeneratedTypesInValues;
+    private ArrayList<String> nativeTypeList = new ArrayList<>( Arrays.asList("any", "string", "double", "int", "void", "bool", "long", "raw") );
+
+    private class ValueTypeComparator implements Comparator<Value> {
+
+        @Override
+        public int compare(Value o1, Value o2) {
+            return o1.getFirstChild("name").strValue().compareTo( o2.getFirstChild("name").strValue());
+        }
+    }
 
     private Value getNativeType(NativeType type) {
         Value response = Value.create();
@@ -122,15 +131,7 @@ public class MetaJolie extends JavaService {
     }
 
     private boolean isNativeType(String type) {
-        return type.equals("any")
-                || type.equals("string")
-                || type.equals("double")
-                || type.equals("int")
-                || type.equals("void")
-                || type.equals("raw")
-                || type.equals("any")
-                || type.equals("bool")
-                || type.equals("long");
+        return nativeTypeList.contains(type);
     }
 
     private Value addCardinality(Range range) {
@@ -288,11 +289,18 @@ public class MetaJolie extends JavaService {
 
         // scans operations and types
         Map< String, OperationDeclaration> operationMap = interfaceDefinition.operationsMap();
+        ArrayList<String> opkeylist = new ArrayList<>();
+        for( String opkey: operationMap.keySet() ) {
+            opkeylist.add( opkey );
+        }
+        Collections.sort( opkeylist );
 
-        for (Entry< String, OperationDeclaration> operationEntry : operationMap.entrySet()) {
+
+        for ( String operationName : opkeylist ) {
             Value current_operation = Value.create();;
-            if (operationEntry.getValue() instanceof OneWayOperationDeclaration) {
-                OneWayOperationDeclaration oneWayOperation = (OneWayOperationDeclaration) operationEntry.getValue();
+            OperationDeclaration operationDeclaration = operationMap.get( operationName );
+            if ( operationDeclaration instanceof OneWayOperationDeclaration) {
+                OneWayOperationDeclaration oneWayOperation = (OneWayOperationDeclaration) operationDeclaration;
                 current_operation.getFirstChild("operation_name").setValue(oneWayOperation.id());
                 current_operation.getFirstChild("documentation").setValue(oneWayOperation.getDocumentation());
                 current_operation.getFirstChild("input").setValue(oneWayOperation.requestType().id());
@@ -306,7 +314,7 @@ public class MetaJolie extends JavaService {
                 }
 
             } else {
-                RequestResponseOperationDeclaration requestResponseOperation = (RequestResponseOperationDeclaration) operationEntry.getValue();
+                RequestResponseOperationDeclaration requestResponseOperation = (RequestResponseOperationDeclaration) operationDeclaration;
                 current_operation.getFirstChild("operation_name").setValue(requestResponseOperation.id());
                 current_operation.getFirstChild("documentation").setValue(requestResponseOperation.getDocumentation());
                 current_operation.getFirstChild("input").setValue(requestResponseOperation.requestType().id());
@@ -507,6 +515,8 @@ public class MetaJolie extends JavaService {
 
         inputInterface.deepCopy(getInterface(interfaceDefinition, owExtender, rrExtender));
 
+
+        listOfGeneratedTypesInValues.sort( new ValueTypeComparator() );
         listOfGeneratedTypesInValues.stream().forEach(v -> {
             inputInterface.getChildren("types").add(v);
         });
@@ -839,6 +849,9 @@ public class MetaJolie extends JavaService {
             URI originalFile = program.context().source();
 
             cmdParser.close();
+
+            // TODO: now the name of the service cannot be retrieved, to be considered during Jolie 2.0 refactoring
+            response.getFirstChild("service").getFirstChild("name").setValue("");
  
             OutputPortInfo[] outputPortList = inspector.getOutputPorts();
             if (outputPortList.length > 0) {
@@ -944,6 +957,25 @@ public class MetaJolie extends JavaService {
                 i++;
             }
             throw new FaultException("SemanticException", fault);
+        }
+        return response;
+    }
+
+    @RequestResponse
+    public Value getNativeTypeFromString( Value request ) throws FaultException {
+        if ( isNativeType(request.getFirstChild("type_name").strValue()) ) {
+            Value response = Value.create();
+            return getNativeType(request.getFirstChild("type_name").strValue());
+        } else {
+            throw new FaultException("NativeTypeDoesNotExist");
+        }
+    }
+
+    @RequestResponse
+    public Value getNativeTypeStringList( Value request ) {
+        Value response = Value.create();
+        for( int i = 0; i < nativeTypeList.size(); i++ ) {
+            response.getChildren("native_type").get(i).setValue( nativeTypeList.get(i) );
         }
         return response;
     }

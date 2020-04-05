@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -151,6 +152,7 @@ import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
 import jolie.util.Pair;
 import jolie.util.Range;
+import jolie.util.UriUtils;
 
 /**
  * Parser for a .ol file.
@@ -165,9 +167,10 @@ public class OLParser extends AbstractParser
 		public void parse() throws IOException, ParserException;
 	}
 
-	private Optional< String > serviceName = Optional.empty();
+	private Optional<String> serviceName = Optional.empty();
+	private final Map< String, Scanner.Token > constantsMap =
+		new HashMap<>();
 	private ProgramBuilder programBuilder;
-	private final Map< String, Scanner.Token > constantsMap = new HashMap<>();
 	private boolean insideInstallFunction = false;
 	private String[] includePaths;
 	private final Map< String, InterfaceDefinition > interfaces = new HashMap<>();
@@ -1036,63 +1039,84 @@ public class OLParser extends AbstractParser
 		}
 		return null;
 	}
-	
-	private IncludeFile retrieveIncludeFile( final String path, final String filename )
+
+	private IncludeFile retrieveIncludeFile( final String context, final String target )
+		throws URISyntaxException
 	{
 		IncludeFile ret;
-		
-		String urlStr = build( path, Constants.fileSeparator, filename );
 
+		String urlStr = UriUtils.normalizeJolieUri( UriUtils.resolve( context, target ) );
+		
 		ret = tryAccessIncludeFile( urlStr );
+
 		if ( ret == null ) {
-			final URL url = guessIncludeFilepath( urlStr, filename, path );
+			final URL url = guessIncludeFilepath( urlStr, target, context );
 			if ( url != null ) {
 				ret = tryAccessIncludeFile( url.toString() );
 			}
 		}
+
 		return ret;
 	}
 	
 	private final Map< String, URL > resourceCache = new HashMap<>();
 	
-	private IncludeFile tryAccessIncludeFile( String includeStr )
+	private IncludeFile tryAccessIncludeFile( String origIncludeStr )
 	{
-		if ( Helpers.getOperatingSystemType() == Helpers.OSType.Windows ) {
-			includeStr = includeStr.replace( "\\", "/" );
-			if ( includeStr.charAt( 1 ) == ':' ) {
-				// Remove the drive name if present
-				includeStr = includeStr.substring( 2 );
-			}
-		}
-		final URL includeURL = resourceCache.computeIfAbsent(
-			includeStr,
-			classLoader::getResource
-		);
-		
-		if ( includeURL != null ) {
-			try {
-				String parent;
-				URI uri;
-				try {
-					Path path = Paths.get( includeURL.toURI() );
-					parent = path.getParent().toString();
-					uri = path.toUri();
-				} catch( FileSystemNotFoundException e ) {
-					if ( includeURL.toURI().getScheme().equals( "jap" ) ) {
-						parent = includeURL.toURI().toString();
-						parent = parent.substring( 0, parent.lastIndexOf( '/' ) );
-					} else {
-						parent = null;
-					}
-					uri = includeURL.toURI();
+		final String includeStr = UriUtils.normalizeWindowsPath( origIncludeStr );
+
+		final Optional< IncludeFile > optIncludeFile = Helpers.firstNonNull(
+			() -> {
+				final URL url = resourceCache.get( includeStr );
+				if ( url == null ) {
+					return null;
 				}
-				return new IncludeFile( new BufferedInputStream( includeURL.openStream() ), parent, uri );
-			} catch( IOException | URISyntaxException e ) {
+				try {
+					return new IncludeFile( new BufferedInputStream( url.openStream() ), Helpers.parentFromURL( url ), url.toURI() );
+				} catch( IOException | URISyntaxException e ) {
+					return null;
+				}
+			},
+			() -> {
+				try {
+					Path path = Paths.get( includeStr );
+					return new IncludeFile( new BufferedInputStream( Files.newInputStream( path ) ), path.getParent().toString(), path.toUri() );
+				} catch( FileSystemNotFoundException | IOException e ) {
+					return null;
+				}
+			},
+			() -> {
+				try {
+					final URL url = new URL( includeStr );
+					final InputStream is = url.openStream();
+					return new IncludeFile( new BufferedInputStream( is ), Helpers.parentFromURL( url ), url.toURI() );
+				} catch( IOException | URISyntaxException e ) {
+					return null;
+				}
+			},
+			() -> {
+				final URL url = classLoader.getResource( includeStr );
+				if ( url == null ) {
+					return null;
+				}
+
+				try {
+					return new IncludeFile( new BufferedInputStream( url.openStream() ), Helpers.parentFromURL( url ), url.toURI() );
+				} catch( IOException | URISyntaxException e ) {
+					return null;
+				}
+			}
+		);
+
+		optIncludeFile.ifPresent( includeFile -> {
+			try {
+				resourceCache.putIfAbsent( includeStr, includeFile.uri.toURL() );
+			} catch( MalformedURLException e ) {
 				e.printStackTrace();
 			}
-		}
-
-		return null;
+		} );
+		
+		return optIncludeFile.orElse( null );
 	}
 
 	private void parseImport() throws IOException, ParserException
@@ -1197,7 +1221,11 @@ public class OLParser extends AbstractParser
 			includeFile = null;
 
 			for ( int i = 0; i < includePaths.length && includeFile == null; i++ ) {
-				includeFile = retrieveIncludeFile( includePaths[i], includeStr );
+				try {
+					includeFile = retrieveIncludeFile( includePaths[i], includeStr );
+				} catch( URISyntaxException e ) {
+					throw new ParserException( getContext(), e.getMessage() );
+				}
 			}
 			
 			if ( includeFile == null ) {

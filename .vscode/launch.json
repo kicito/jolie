@@ -1,78 +1,88 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-  "version": "0.2.0",
-  "inputs": [
-    {
-      "description": "Jolie file to parse",
-      "id": "JolieFile",
-      "type": "promptString"
-    }
-  ],
-  "configurations": [
-    {
-      "type": "java",
-      "name": "Debug (Launch) - Current File",
-      "request": "launch",
-      "mainClass": "${file}"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-JolieDummyCreator<jolie2dummy>",
-      "request": "launch",
-      "mainClass": "joliex.dummycreator.JolieDummyCreator",
-      "projectName": "jolie2dummy"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-Jolie2Java<jolie2java>",
-      "request": "launch",
-      "mainClass": "joliex.java.Jolie2Java",
-      "projectName": "jolie2java"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-Jolie2Plasma<jolie2plasma>",
-      "request": "launch",
-      "mainClass": "joliex.plasma.Jolie2Plasma",
-      "projectName": "jolie2plasma"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-GetSurface<jolie2surface>",
-      "request": "launch",
-      "mainClass": "joliex.surface.GetSurface",
-      "projectName": "jolie2surface"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-Jolie2Wsdl<jolie2wsdl>",
-      "request": "launch",
-      "mainClass": "joliex.wsdl.Jolie2Wsdl",
-      "projectName": "jolie2wsdl"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-Main<joliec>",
-      "request": "launch",
-      "mainClass": "jolie.compiler.Main",
-      "projectName": "joliec"
-    },
-    {
-      "type": "java",
-      "name": "Debug (Launch)-Jolie<jolie>",
-      "request": "launch",
-      "mainClass": "jolie.Jolie",
-      "projectName": "jolie",
-      "classPaths": [],
-      "args": [
-        "-l",
-        "${workspaceFolder}/dist/jolie/lib:${workspaceFolder}/dist/jolie/javaServices/*:${workspaceFolder}/dist/jolie/extensions/*",
-        "-i",
-        "${workspaceFolder}/dist/jolie/include",
-        "test/modules/main.ol",
-      ]
-    }
-  ]
+	"version": "0.2.0",
+	"configurations": [
+
+		{
+			"type": "java",
+			"name": "Debug (Launch) - Current File",
+			"request": "launch",
+			"mainClass": "${file}"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-JolieDummyCreator<jolie2dummy>",
+			"request": "launch",
+			"mainClass": "joliex.dummycreator.JolieDummyCreator",
+			"projectName": "jolie2dummy"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-Jolie2Java<jolie2java>",
+			"request": "launch",
+			"mainClass": "joliex.java.Jolie2Java",
+			"projectName": "jolie2java"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-Jolie2Plasma<jolie2plasma>",
+			"request": "launch",
+			"mainClass": "joliex.plasma.Jolie2Plasma",
+			"projectName": "jolie2plasma"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-GetSurface<jolie2surface>",
+			"request": "launch",
+			"mainClass": "joliex.surface.GetSurface",
+			"projectName": "jolie2surface"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-Jolie2Wsdl<jolie2wsdl>",
+			"request": "launch",
+			"mainClass": "joliex.wsdl.Jolie2Wsdl",
+			"projectName": "jolie2wsdl"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-Main<joliec>",
+			"request": "launch",
+			"mainClass": "jolie.compiler.Main",
+			"projectName": "joliec"
+		},
+		{
+			"type": "java",
+			"name": "Debug (Launch)-Jolie<jolie>",
+			"request": "launch",
+			"mainClass": "jolie.Jolie",
+			"projectName": "jolie"
+		},
+		{
+			"type": "java",
+			"name": "Tests - All",
+			"request": "launch",
+			"mainClass": "jolie.Jolie",
+			"projectName": "jolie",
+			"cwd": "${workspaceFolder}/test",
+			"args": ["-l", "./lib/\\'*\\':${workspaceFolder}/dist/jolie/lib:${workspaceFolder}/dist/jolie/javaServices/\\'*\\':${workspaceFolder}/dist/jolie/extensions/\\'*\\'", "-i", "${workspaceFolder}/include", "--stackTraces", "test.ol"]
+		},
+		{
+			"type": "java",
+			"name": "Tests - Jap",
+			"request": "launch",
+			"mainClass": "jolie.Jolie",
+			"projectName": "jolie",
+			"cwd": "${workspaceFolder}/test",
+			"args": ["-l", "./lib/\\'*\\':${workspaceFolder}/dist/jolie/lib:${workspaceFolder}/dist/jolie/javaServices/\\'*\\':${workspaceFolder}/dist/jolie/extensions/\\'*\\'", "-i", "${workspaceFolder}/include", "test.ol", ".\\'*\\'jap.\\'*\\'"]
+		},
+		{
+			"type": "java",
+			"name": "Tests - HTTP GET",
+			"request": "launch",
+			"mainClass": "jolie.Jolie",
+			"projectName": "jolie",
+			"cwd": "${workspaceFolder}/test",
+			"args": ["-l", "./lib/\\'*\\':${workspaceFolder}/dist/jolie/lib:${workspaceFolder}/dist/jolie/javaServices/\\'*\\':${workspaceFolder}/dist/jolie/extensions/\\'*\\'", "-i", "${workspaceFolder}/include", "test.ol", ".\\'*\\'http_get.\\'*\\'"]
+		}
+	]
 }
