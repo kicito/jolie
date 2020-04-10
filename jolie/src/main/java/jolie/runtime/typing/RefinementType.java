@@ -24,16 +24,21 @@ public abstract class RefinementType
         }
     }
 
-    protected RefinementType rType;
+    protected RefinementType rType = null;
+    protected boolean checked = false;
 
     public void extend( RefinementType rType )
     {
+        if (this.rType != null && this.rType.equals(rType)){
+            return;
+        }
         this.rType = rType;
     }
 
     public void check( Value v ) throws TypeCheckingException
     {
-        if ( this.rType != null ) {
+        if ( this.rType != null && !checked ) {
+            checked = true;
             this.rType.check( v );
         }
         checkValue( v );
@@ -43,4 +48,42 @@ public abstract class RefinementType
 
     public abstract NativeType nativeType();
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((rType == null) ? 0 : rType.hashCode());
+        return result;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        RefinementType other = (RefinementType) obj;
+        if (rType == null) {
+            if (other.rType != null)
+                return false;
+        } else if (!rType.equals(other.rType))
+            return false;
+        return true;
+    }
+
+    
 }
