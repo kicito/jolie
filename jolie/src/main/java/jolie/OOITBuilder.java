@@ -1881,35 +1881,29 @@ public class OOITBuilder implements OLVisitor
 		notificationTypes.put( portId, new HashMap<>() );
 		solicitResponseTypes.put( portId, new HashMap<>() );
 
-		// static interface
-		if (n.operations().size() > 0) {
-			currentOutputPort = portId;
-			for( OperationDeclaration decl : n.operations() ) {
-				decl.accept( this );
-			}
-			currentOutputPort = null;
-		} else { // look for interfaces in parameter
-			if ( n.parameter() instanceof InlineTreeExpressionNode ){
-				n.parameter().accept(this);
-				v = currExpression.evaluate();
-				if (v.children().get( "interfaces" ) != null && !v.children().get( "interfaces" ).isEmpty() ){
-					ValueVector interfaceValue = v.children().get( "interfaces" );
-					// construct operation from interface 
-					interfaceValue.forEach( iface -> {
-						String interfaceName = iface.toString();
-						if (!iface.hasChildren()){ // uses pre-defined interface 
-							Interface preDefIface = interfaces.get(interfaceName);
-							registerOutputOperation(portId, preDefIface);
-						}else{
-							iface.getChildren("operations").forEach(opValue -> registerOutputOperation(portId, opValue));
-						}
-					} );
-				} else {
-					error(n.context(), "interface is undefined");
+		if ( n.parameter() instanceof InlineTreeExpressionNode ){
+			n.parameter().accept(this);
+			v = currExpression.evaluate();
+		} else if ( n.parameter() instanceof VariableExpressionNode ) {
+			n.parameter().accept(this);
+			VariablePath varPath = (VariablePath)currExpression;
+			v = varPath.getValue(this.interpreter.paramValue);
+		}
+
+		if (v.children().get( "interfaces" ) != null && !v.children().get( "interfaces" ).isEmpty() ){
+			ValueVector interfaceValue = v.children().get( "interfaces" );
+			// construct operation from interface 
+			interfaceValue.forEach( iface -> {
+				String interfaceName = iface.toString();
+				if (!iface.hasChildren()){ // uses pre-defined interface 
+					Interface preDefIface = interfaces.get(interfaceName);
+					registerOutputOperation(portId, preDefIface);
+				}else{
+					iface.getChildren("operations").forEach(opValue -> registerOutputOperation(portId, opValue));
 				}
-			}else{
-				error(n.context(), "interface is undefined");
-			}
+			} );
+		} else {
+			error(n.context(), "interface is undefined");
 		}
 
 		// CommChannel construct
@@ -2055,29 +2049,31 @@ public class OOITBuilder implements OLVisitor
 		);
 		interfaceValues = v.children().get( "interfaces" );
 
-		interfaceValues.forEach( ifaceValue -> {
-			currentPortInterface = createInterfaceFromValue(ifaceValue);
-
-			currentPortInterface.oneWayOperations().forEach( ( name, ow ) -> {
-				try {
-					final OneWayOperation op =
-							interpreter.getOneWayOperation( name );
-				} catch (InvalidIdException e) {
-					interpreter.register( name,
-							new OneWayOperation( name, ow.requestType() ) );
-				}
-			} );
-
-			currentPortInterface.requestResponseOperations().forEach( ( name, rr ) -> {
-				try {
-					final RequestResponseOperation op =
-							interpreter.getRequestResponseOperation( name );
-				} catch (InvalidIdException e) {
-					interpreter.register( name,
-							new RequestResponseOperation( name, rr.asRequestResponseTypeDescription()  ) );
-				}
-			} );
-		});
+		if (interfaceValues != null){
+			interfaceValues.forEach( ifaceValue -> {
+				currentPortInterface = createInterfaceFromValue(ifaceValue);
+	
+				currentPortInterface.oneWayOperations().forEach( ( name, ow ) -> {
+					try {
+						final OneWayOperation op =
+								interpreter.getOneWayOperation( name );
+					} catch (InvalidIdException e) {
+						interpreter.register( name,
+								new OneWayOperation( name, ow.requestType() ) );
+					}
+				} );
+	
+				currentPortInterface.requestResponseOperations().forEach( ( name, rr ) -> {
+					try {
+						final RequestResponseOperation op =
+								interpreter.getRequestResponseOperation( name );
+					} catch (InvalidIdException e) {
+						interpreter.register( name,
+								new RequestResponseOperation( name, rr.asRequestResponseTypeDescription()  ) );
+					}
+				} );
+			});
+		}
 
 		VariablePath portInfoPath = new VariablePathBuilder( true )
 				.add( Constants.INPUT_PORTS_NODE_NAME, 0 ).add( portId, 0 )

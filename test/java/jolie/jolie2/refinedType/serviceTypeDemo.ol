@@ -9,7 +9,7 @@ type twiceParam: void{
         default("socket://localhost:3000")
     )
     .protocol: string(default("sodep"))
-    .interfaces: string(pattern("^twiceIface$")){} // receiving interface name has to be exact "twiceIface"
+    .interfaces: string(pattern("^twiceIface$")) // receiving interface name has to be exact "twiceIface"
 }
 
 decl service twiceService(param : twiceParam){

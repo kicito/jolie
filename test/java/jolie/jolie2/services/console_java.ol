@@ -55,10 +55,12 @@ interface IReceiver {
 
 type consoleParam: void{
 	fromClient : void {
-		location: string
+		.location: string
+		// .interfaces: string(pattern("^IConsole$"))
 	}
 	toClient : void {
-		location: string
+		.location: string
+		.interfaces: string(pattern("^IReceiver$"))
 	}
 }
 
@@ -73,7 +75,7 @@ decl service Java("joliex.io.ConsoleService") ConsoleService ( p:consoleParam ) 
 		Interfaces: IReceiver
 	}
 
-	execution { concurrent }
+	// execution { concurrent }
 	
     main{
 		[in(incoming)]{
@@ -83,45 +85,34 @@ decl service Java("joliex.io.ConsoleService") ConsoleService ( p:consoleParam ) 
 }
 
 decl service console_java() {
-
-
-	// type localLocation : string( \local://*\ ) 
-	// type localLocation : string( ~"local://*" )
-	// type localLocation : string( ~"\jksadgbfksdgf" )
-	 
-	// type localLocation : string( ="local://*" ) 
 	
-	
-	// - > type three : int(3)
-	// - > type consolePort : string("local://ConsolePort")
+	outputPort ConsoleServicePort {
+		location: "local://ConsoleJava/"
+		interfaces: IConsole
+	}
 
-
-	// type three : int(=3)
-
-	// outputPort ConsoleServicePort {
-	// 	location: "local://ConsoleJava/"
-	// 	interfaces: IConsole
-	// }
-
-	// inputPort ConsoleInput {
-	// 	location: "local://ConsoleJavaIn"
-	// 	interfaces: IReceiver
-	// }
-	// outputPort Receiver ({interfaces:})
+	inputPort ConsoleInput {
+		location: "local://ConsoleJavaIn"
+		interfaces: IReceiver
+	}
 
     embed ConsoleService ( { 
         fromClient << {
 			location = "local://ConsoleJava"
+			// interfaces << "IConsole"
         }
         toClient << {
 			location = "local://ConsoleJavaIn"
+			interfaces << "IReceiver"
         }
     })
 
 	main{
+		// nullProcess
 		println@ConsoleServicePort("Hello")()
-		registerForInput@ConsoleServicePort()()
-		in(req)
-		println@ConsoleServicePort("receive "+ req)()
+		println@ConsoleServicePort("Hello2")()
+		// registerForInput@ConsoleServicePort()()
+		// in(req)
+		// println@ConsoleServicePort("receive "+ req)()
 	}
 }

@@ -180,6 +180,7 @@ public class OLParseTreeOptimizer
 				p.setProtocolConfiguration( currNode );
 			}
 			programChildren.add( p );
+			currNode = p;
 		}
 
 		@Override
@@ -203,8 +204,10 @@ public class OLParseTreeOptimizer
 				iport.operationsMap().putAll( p.operationsMap() );
 				iport.getInterfaceList().addAll( p.getInterfaceList() );
 				programChildren.add( iport );
+				currNode = iport;
 			} else {
 				programChildren.add( p );
+				currNode = p;
 			}
 		}
 
