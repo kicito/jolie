@@ -4,7 +4,6 @@
  */
 package joliex.java;
 
-import java.io.IOException;
 import jolie.CommandLineException;
 import jolie.lang.parse.ParserException;
 import jolie.lang.parse.SemanticException;
@@ -14,7 +13,8 @@ import jolie.lang.parse.util.ProgramInspector;
 import jolie.runtime.FaultException;
 import joliex.java.impl.JavaDocumentCreator;
 import joliex.java.impl.JavaGWTDocumentCreator;
-import joliex.java.impl.ProgramVisitor;
+
+import java.io.IOException;
 
 /**
  *
@@ -32,16 +32,16 @@ public class Jolie2Java {
                     cmdParser.programFilepath().toURI(), cmdParser.charset(),
                     cmdParser.includePaths(), cmdParser.jolieClassLoader(), cmdParser.definedConstants(), false );
 
-            //Program program = parser.parse();
             ProgramInspector inspector = ParsingUtils.createInspector(program);
-            ProgramVisitor visitor = new ProgramVisitor(program);
-            visitor.run();
+
 
             String format = cmdParser.getFormat();
 			String packageName = cmdParser.getPackageName();
 			if ( format == null ) { format = "java"; }
             if (format.equals("java") && packageName != null ) {
-                JavaDocumentCreator documentJava = new JavaDocumentCreator(inspector, cmdParser.getPackageName(), cmdParser.getTargetPort(), cmdParser.isAddSource(), cmdParser.getOutputDirectory(), cmdParser.isBuildXmlenabled());
+                JavaDocumentCreator documentJava = new JavaDocumentCreator(inspector, cmdParser.getPackageName(),
+                        cmdParser.getTargetPort(), cmdParser.isAddSource(), cmdParser.getOutputDirectory(),
+                        cmdParser.isBuildXmlenabled(), cmdParser.getJavaservice());
                 documentJava.ConvertDocument();
             } else if (format.equals("gwt") && packageName != null) {
 				System.out.println("WARNING: gwt conversion is deprecated, use it at your own risk");

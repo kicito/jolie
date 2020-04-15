@@ -180,4 +180,28 @@ define doTest
       throw( TestFailed, "Expected values are different but comparison succeeded" )
   }
 
+  // test aggregation with extender 
+   with( rq ) {
+      .filename = "private/sample_service2.ol"
+   };
+   getInputPortMetaData@MetaJolie( rq )( meta_description )
+   for( intf in meta_description.input.interfaces ) {
+       if ( intf.name == "TmpInterface" ) {
+           for( t in intf.types ) {
+               if ( t.name == "T1" ) {
+                   if ( t.type.sub_type.name != "ext" ) {
+                       throw( TestFailed, "Expected subnode ext in type T1" )
+                   }
+               }
+               if ( t.name == "T2" ) {
+                   for( s in t.type.sub_type ) {
+                       if ( s.name == "ext" ) {
+                           throw( TestFailed, "Subnode ext should not be declated in type T2" )
+                       }
+                   }
+               }
+           }
+       }
+   }
+
 }
