@@ -9,14 +9,23 @@ public class ParameterizeInputPortInfo extends InputPortInfo
 {
 
     private OLSyntaxNode parameter;
+    private boolean isJavaPort;
 
     public ParameterizeInputPortInfo( ParsingContext context, String id, AggregationItemInfo[] aggregationList,
     Map< String, String > redirectionMap)
     {
         super( context, id, null, null, new NullProcessStatement( context ), aggregationList, redirectionMap );
+        isJavaPort = false;
+    }
+
+    public void setIsJavaSerivePort(boolean isJavaPort){
+        this.isJavaPort = isJavaPort;
+    }
+
+    public boolean isJavaSerivePort(){
+        return isJavaPort;
     }
     
-
     public void setParameter( OLSyntaxNode parameter )
     {
         this.parameter = parameter;

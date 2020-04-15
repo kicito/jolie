@@ -1889,7 +1889,6 @@ public class OOITBuilder implements OLVisitor
 			VariablePath varPath = (VariablePath)currExpression;
 			v = varPath.getValue(this.interpreter.paramValue);
 		}
-
 		if (v.children().get( "interfaces" ) != null && !v.children().get( "interfaces" ).isEmpty() ){
 			ValueVector interfaceValue = v.children().get( "interfaces" );
 			// construct operation from interface 
@@ -2047,32 +2046,35 @@ public class OOITBuilder implements OLVisitor
 			new HashMap< String, OneWayTypeDescription >(),
 			new HashMap< String, RequestResponseTypeDescription >()
 		);
-		interfaceValues = v.children().get( "interfaces" );
+		if (!n.isJavaSerivePort()){
 
-		if (interfaceValues != null){
-			interfaceValues.forEach( ifaceValue -> {
-				currentPortInterface = createInterfaceFromValue(ifaceValue);
-	
-				currentPortInterface.oneWayOperations().forEach( ( name, ow ) -> {
-					try {
-						final OneWayOperation op =
-								interpreter.getOneWayOperation( name );
-					} catch (InvalidIdException e) {
-						interpreter.register( name,
-								new OneWayOperation( name, ow.requestType() ) );
-					}
-				} );
-	
-				currentPortInterface.requestResponseOperations().forEach( ( name, rr ) -> {
-					try {
-						final RequestResponseOperation op =
-								interpreter.getRequestResponseOperation( name );
-					} catch (InvalidIdException e) {
-						interpreter.register( name,
-								new RequestResponseOperation( name, rr.asRequestResponseTypeDescription()  ) );
-					}
-				} );
-			});
+			interfaceValues = v.children().get( "interfaces" );
+
+			if (interfaceValues != null){
+				interfaceValues.forEach( ifaceValue -> {
+					currentPortInterface = createInterfaceFromValue(ifaceValue);
+		
+					currentPortInterface.oneWayOperations().forEach( ( name, ow ) -> {
+						try {
+							final OneWayOperation op =
+									interpreter.getOneWayOperation( name );
+						} catch (InvalidIdException e) {
+							interpreter.register( name,
+									new OneWayOperation( name, ow.requestType() ) );
+						}
+					} );
+		
+					currentPortInterface.requestResponseOperations().forEach( ( name, rr ) -> {
+						try {
+							final RequestResponseOperation op =
+									interpreter.getRequestResponseOperation( name );
+						} catch (InvalidIdException e) {
+							interpreter.register( name,
+									new RequestResponseOperation( name, rr.asRequestResponseTypeDescription()  ) );
+						}
+					} );
+				});
+			}
 		}
 
 		VariablePath portInfoPath = new VariablePathBuilder( true )

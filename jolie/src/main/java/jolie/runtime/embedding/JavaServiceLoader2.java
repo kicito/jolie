@@ -46,6 +46,7 @@ import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.ParameterizeInputPortInfo;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
+import jolie.lang.parse.ast.VariablePathNode;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.net.CommChannel;
@@ -139,6 +140,7 @@ public class JavaServiceLoader2 extends EmbeddedServiceLoader
 		ParameterizeInputPortInfo newIp = new ParameterizeInputPortInfo( ip.context(), ip.id(),
 				aggregationList, redirection );
 		newIp.setParameter( ip.parameter() );
+		newIp.setIsJavaSerivePort(true);
 
 		if ( ip.getDocumentation() != null && ip.getDocumentation().length() > 0 ) {
 			newIp.setDocumentation( ip.getDocumentation() );
