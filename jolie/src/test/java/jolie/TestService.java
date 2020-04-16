@@ -137,6 +137,18 @@ public class TestService
             () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
 
         assertTrue( systemOutContent.toString().contains( "Hello" ) );
+    }
 
+    @Test
+    void testEmbedTwiceWithRefinedService() 
+    {
+        String serverFilePath = "jolie2/refinedType/service/twiceClient.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = serverFilePath;
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
+
+        assertTrue( systemOutContent.toString().contains( "Hello" ) );
     }
 }

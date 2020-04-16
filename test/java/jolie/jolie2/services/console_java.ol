@@ -56,7 +56,7 @@ interface IReceiver {
 type consoleParam: void{
 	fromClient : void {
 		.location: string
-		// .interfaces: string(pattern("^IConsole$"))
+		.interfaces: string(pattern("^IConsole$"))
 	}
 	toClient : void {
 		.location: string
@@ -99,7 +99,7 @@ decl service console_java() {
     embed ConsoleService ( { 
         fromClient << {
 			location = "local://ConsoleJava"
-			// interfaces << "IConsole"
+			interfaces << "IConsole"
         }
         toClient << {
 			location = "local://ConsoleJavaIn"

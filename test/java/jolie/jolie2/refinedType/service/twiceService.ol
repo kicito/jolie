@@ -1,5 +1,3 @@
-
-
 interface twiceIface{
     RequestResponse: twice(int)(int)
 }
@@ -9,8 +7,8 @@ type twiceParam: void{
         // transformer:
         default("socket://localhost:3000")
     )
-    .protocol: string({ default = "sodep" })
-    .interfaces: string({ pattern = "^twiceIface$" default = "foo" })
+    .protocol: string(default("sodep"))
+    .interfaces: string(pattern("^twiceIface$"))
 }
 
 decl service twiceService(param : twiceParam){
