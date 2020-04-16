@@ -28,8 +28,7 @@ import jolie.runtime.ByteArray;
 import jolie.runtime.Value;
 import jolie.runtime.ValueVector;
 import jolie.runtime.embedding.Jolie2JavaInterface;
-import joliex.java.Jolie2Java;
-import joliex.java.Jolie2JavaCommandLineParser;
+import joliex.java.*;
 import org.junit.*;
 
 import javax.tools.JavaCompiler;
