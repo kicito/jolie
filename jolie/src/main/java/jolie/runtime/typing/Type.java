@@ -419,13 +419,9 @@ public abstract class Type implements Cloneable
 				Type subType = entry.getValue();
 				String path = entry.getKey();
 
-				if ( !v.hasChildren( path ) ) {
+				if ( !v.hasChildren( path ) && subType instanceof TypeRefinement ) {
 					assignDefault( v.getNewChild( path ), subType );
 				}
-
-				// if ( subType instanceof TypeRefinement ) {
-				// 	TypeRefinement tr = (TypeRefinement) entry.getValue();
-				// }
 			}
 		}
 	}
