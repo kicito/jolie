@@ -60,6 +60,32 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 	private final boolean isConstant;
 	private final Interface iface;
 
+	public OutputPort( Interpreter interpreter, String id, Expression locationExpr,
+			Expression protocolExpr, Process protocolConfigurationProcess, Interface iface,
+			boolean isConstant )
+	{
+		super( id );
+		this.interpreter = interpreter;
+
+		this.protocolVariablePath = new VariablePathBuilder( false ).add( id(), 0 )
+				.add( Constants.PROTOCOL_NODE_NAME, 0 ).toVariablePath();
+
+		this.locationVariablePath = new VariablePathBuilder( false ).add( id(), 0 )
+				.add( Constants.LOCATION_NODE_NAME, 0 ).toVariablePath();
+
+		this.locationExpression = locationVariablePath;
+		
+		// Create the location configuration Process
+		List< Process > children = new LinkedList<>();
+		children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
+		children.add( new AssignmentProcess( this.protocolVariablePath, protocolExpr, null ) );
+		this.configurationProcess = new SequentialProcess( children.toArray( new Process[ children.size() ] ) );
+
+		this.isConstant = isConstant;
+
+		this.iface = iface;
+	}
+
 	/* To be called at runtime, after main is run.
 	 * Requires the caller to set the variables by itself.
 	 */

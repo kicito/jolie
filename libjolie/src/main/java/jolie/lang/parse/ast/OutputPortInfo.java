@@ -28,16 +28,16 @@ import jolie.lang.parse.context.ParsingContext;
 
 public class OutputPortInfo extends PortInfo
 {	
-	private String protocolId = null;
+	private OLSyntaxNode protocolId = null;
 	private OLSyntaxNode protocolConfiguration = null;
-	private URI location = null;
+	private OLSyntaxNode location = null;
 	
 	public OutputPortInfo( ParsingContext context, String id )
 	{
 		super( context, id );
 	}
 	
-	public void setProtocolId( String protocolId )
+	public void setProtocolId( OLSyntaxNode protocolId )
 	{
 		this.protocolId = protocolId;
 	}
@@ -47,7 +47,7 @@ public class OutputPortInfo extends PortInfo
 		this.protocolConfiguration = protocolConfiguration;
 	}
 	
-	public void setLocation( URI location )
+	public void setLocation( OLSyntaxNode location )
 	{
 		this.location = location;
 	}
@@ -58,7 +58,7 @@ public class OutputPortInfo extends PortInfo
 		visitor.visit( this );
 	}
 	
-	public String protocolId()
+	public OLSyntaxNode protocolId()
 	{
 		return protocolId;
 	}
@@ -68,7 +68,7 @@ public class OutputPortInfo extends PortInfo
 		return protocolConfiguration;
 	}
 	
-	public URI location()
+	public OLSyntaxNode location()
 	{
 		return location;
 	}

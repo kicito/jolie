@@ -951,21 +951,17 @@ public class OLParser extends AbstractParser
 	{
 		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
 		InputPortInfo iport = null;
-		try {
-			iport = new InputPortInfo(
-				getContext(),
-				serviceName + "InputPort", //input port name
-				new URI( Constants.LOCAL_LOCATION_KEYWORD ),
-				null,
-				protocolConfiguration,
-				new InputPortInfo.AggregationItemInfo[]{},
-				Collections.<String, String>emptyMap() );
+		iport = new InputPortInfo(
+			getContext(),
+			serviceName + "InputPort", //input port name
+			new ConstantStringExpression(getContext(), Constants.LOCAL_LOCATION_KEYWORD),
+			null,
+			protocolConfiguration,
+			new InputPortInfo.AggregationItemInfo[]{},
+			Collections.<String, String>emptyMap() );
 
-			for( InterfaceDefinition i : interfaceList ) {
-				i.copyTo( iport );
-			}
-		} catch( URISyntaxException e ) {
-			throwException( e );
+		for( InterfaceDefinition i : interfaceList ) {
+			i.copyTo( iport );
 		}
 		return iport;
 	}
@@ -1091,8 +1087,8 @@ public class OLParser extends AbstractParser
 		throws IOException, ParserException
 	{
 		String inputPortName;
-		String protocolId;
-		URI inputPortLocation;
+		OLSyntaxNode protocolId;
+		OLSyntaxNode inputPortLocation;
 		List< InterfaceDefinition > interfaceList = new ArrayList<>();
 		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
 		
@@ -1119,13 +1115,7 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected : after location" );
 				checkConstant();
-				assertToken( Scanner.TokenType.STRING, "expected inputPort location string" );
-				try {
-					inputPortLocation = new URI( token.content() );
-				} catch ( URISyntaxException e ) {
-					throwException( e );
-				}
-				getToken();
+				inputPortLocation = parseExpression();
 			} else if ( token.isKeyword( "interfaces" ) || token.isKeyword( "Interfaces" ) ) {
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected : after interfaces" );
@@ -1153,9 +1143,7 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
-				assertToken( Scanner.TokenType.ID, "expected protocol identifier" );
-				protocolId = token.content();
-				getToken();
+				protocolId = parseExpression();
 				if ( token.is( Scanner.TokenType.LCURLY ) ) {
 					addTokens( Arrays.asList(
 						new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
@@ -1202,7 +1190,7 @@ public class OLParser extends AbstractParser
 			throwException( "expected location URI for " + inputPortName );
 		} else if ( iface.operationsMap().isEmpty() && redirectionMap.isEmpty() && aggregationList.isEmpty() ) {
 			throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
-		} else if ( protocolId == null && !inputPortLocation.toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) && !inputPortLocation.getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+		} else if ( protocolId == null ) {
 			throwException( "expected protocol for inputPort " + inputPortName );
 		}
 		InputPortInfo iport = new InputPortInfo( getContext(), inputPortName, inputPortLocation, protocolId, protocolConfiguration, aggregationList.toArray( new InputPortInfo.AggregationItemInfo[ aggregationList.size() ] ), redirectionMap );
@@ -1355,16 +1343,8 @@ public class OLParser extends AbstractParser
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
 
-				assertToken( Scanner.TokenType.STRING, "expected location string" );
-				URI location = null;
-				try {
-					location = new URI( token.content() );
-				} catch ( URISyntaxException e ) {
-					throwException( e );
-				}
-
-				p.setLocation( location );
-				getToken();
+				OLSyntaxNode expr = parseBasicExpression();
+				p.setLocation( expr );
 			} else if ( token.isKeyword( "protocol" ) || token.isKeyword( "Protocol" ) ) {
 				if ( p.protocolId() != null ) {
 					throwException( "Protocol already defined for output port " + p.id() );
@@ -1373,10 +1353,9 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
+				OLSyntaxNode expr = parseBasicExpression();
 
-				assertToken( Scanner.TokenType.ID, "expected protocol identifier" );
-				p.setProtocolId( token.content() );
-				getToken();
+				p.setProtocolId( expr );
 
 				if ( token.is( Scanner.TokenType.LCURLY ) ) {
 					addTokens( Arrays.asList(

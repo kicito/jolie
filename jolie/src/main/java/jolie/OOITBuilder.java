@@ -440,12 +440,15 @@ public class OOITBuilder implements OLVisitor
 		}
 		currentOutputPort = null;
 
+		final Expression locationExpression = buildExpression( n.location() );
+		final Expression protocolExpression = buildExpression( n.protocolId() );
+
 		interpreter.register( n.id(), new OutputPort(
 				interpreter,
 				n.id(),
-				n.protocolId(),
+				locationExpression,
+				protocolExpression,
 				protocolConfigurationProcess,
-				n.location(),
 				getOutputPortInterface( n.id() ),
 				isConstant
 			)
@@ -562,8 +565,8 @@ public class OOITBuilder implements OLVisitor
 			}
 		}
 		
-		String pId = n.protocolId();
-		CommProtocolFactory protocolFactory = null;
+		// String pId = n.protocolId();
+		// CommProtocolFactory protocolFactory = null;
 
 		VariablePath protocolConfigurationPath =
 			new VariablePathBuilder( true )
@@ -571,11 +574,6 @@ public class OOITBuilder implements OLVisitor
 			.add( n.id(), 0 )
 			.add( Constants.PROTOCOL_NODE_NAME, 0 )
 			.toVariablePath();
-		try {
-			protocolFactory = interpreter.commCore().getCommProtocolFactory( pId );
-		} catch( IOException e ) {
-			error( n.context(), e );
-		}
 
 		VariablePath locationPath =
 			new VariablePathBuilder( true )
@@ -584,8 +582,8 @@ public class OOITBuilder implements OLVisitor
 			.add( Constants.LOCATION_NODE_NAME, 0 )
 			.toVariablePath();
 		locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
-		// Process assignLocation = new AssignmentProcess( locationPath, Value.create( n.location().toString() ) );
-		locationPath.getValue().setValue( n.location().toString() );
+		Expression locationExpr = buildExpression(n.location());
+		Process assignLocation = new AssignmentProcess( locationPath, locationExpr, n.context() );
 
 		VariablePath protocolPath =
 			new VariablePathBuilder( true )
@@ -593,8 +591,9 @@ public class OOITBuilder implements OLVisitor
 			.add( n.id(), 0 )
 			.add( Constants.PROTOCOL_NODE_NAME, 0 )
 			.toVariablePath();
-		Process assignProtocol = new AssignmentProcess( protocolPath, Value.create( n.protocolId() ), n.context() );
-		Process[] confChildren = new Process[] { buildProcess( n.protocolConfiguration() ), assignProtocol };
+		Expression protocolExpr = buildExpression(n.protocolId());
+		Process assignProtocol = new AssignmentProcess( protocolPath, protocolExpr, n.context() );
+		Process[] confChildren = new Process[] { buildProcess( n.protocolConfiguration() ) };
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
 
 		InputPort inputPort = new InputPort(
@@ -606,27 +605,27 @@ public class OOITBuilder implements OLVisitor
 			redirectionMap
 		);
 		
-		if ( n.location().toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
-			try {
-				interpreter.commCore().addLocalInputPort( inputPort );
-				inputPorts.put( inputPort.name(), inputPort );
-			} catch( IOException e ) {
-				error( n.context(), e );
-			}
-		} else if ( protocolFactory != null || n.location().getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
-			try {
-				interpreter.commCore().addInputPort(
-					inputPort,
-					protocolFactory,
-					protocolConfigurationSequence
-				);
-				inputPorts.put( inputPort.name(), inputPort );
-			} catch( IOException ioe ) {
-				error( n.context(), ioe );
-			}
-		} else {
-			error( n.context(), "Communication protocol extension for protocol " + pId + " not found." );
-		}
+		// if ( n.location().toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+		// 	try {
+		// 		interpreter.commCore().addLocalInputPort( inputPort );
+		// 		inputPorts.put( inputPort.name(), inputPort );
+		// 	} catch( IOException e ) {
+		// 		error( n.context(), e );
+		// 	}
+		// } else if ( protocolFactory != null || n.location().getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+		// 	try {
+		// 		interpreter.commCore().addInputPort(
+		// 			inputPort,
+		// 			protocolFactory,
+		// 			protocolConfigurationSequence
+		// 		);
+		// 		inputPorts.put( inputPort.name(), inputPort );
+		// 	} catch( IOException ioe ) {
+		// 		error( n.context(), ioe );
+		// 	}
+		// } else {
+		// 	error( n.context(), "Communication protocol extension for protocol " + pId + " not found." );
+		// }
 		currentPortInterface = null;
 	}
 
@@ -1418,7 +1417,8 @@ public class OOITBuilder implements OLVisitor
 	
 	public void visit( InstanceOfExpressionNode n )
 	{
-		currExpression = new InstanceOfExpression( buildExpression( n.expression() ), buildType( n.type() ) );
+		
+		currExpression = new InstanceOfExpression( buildExpression( n.expression() ),  buildType( n.type() ) );
 	}
 	
 	public void visit( TypeCastExpressionNode n )

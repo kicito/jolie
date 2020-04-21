@@ -51,8 +51,8 @@ public class InputPortInfo extends PortInfo
 		}
 	}
 	
-	private final URI location;
-	private final String protocolId;
+	private final OLSyntaxNode location;
+	private final OLSyntaxNode protocolId;
 	private final OLSyntaxNode protocolConfiguration;
 	private final AggregationItemInfo[] aggregationList;
 	private final Map< String, String > redirectionMap;
@@ -60,8 +60,8 @@ public class InputPortInfo extends PortInfo
 	public InputPortInfo(
 		ParsingContext context,
 		String id,
-		URI location,
-		String protocolId,
+		OLSyntaxNode location,
+		OLSyntaxNode protocolId,
 		OLSyntaxNode protocolConfiguration,
 		AggregationItemInfo[] aggregationList,
 		Map< String, String > redirectionMap
@@ -89,12 +89,12 @@ public class InputPortInfo extends PortInfo
 		return protocolConfiguration;
 	}
 
-	public String protocolId()
+	public OLSyntaxNode protocolId()
 	{
 		return protocolId;
 	}
 
-	public URI location()
+	public OLSyntaxNode location()
 	{
 		return location;
 	}
