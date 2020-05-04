@@ -374,7 +374,8 @@ public class MetaJolie extends JavaService {
             response.getFirstChild("location").setValue("undefined");
         }
         if (port.protocolId() != null) {
-            response.getFirstChild("protocol").setValue(port.protocolId());
+            String protocol = port.protocolId().toString();
+            response.getFirstChild("protocol").setValue(protocol);
         } else {
             response.getFirstChild("protocol").setValue("");
         }
@@ -399,7 +400,8 @@ public class MetaJolie extends JavaService {
         InputPortInfo port = (InputPortInfo) portInfo;
         response.getFirstChild("location").setValue(port.location().toString());
         if (port.protocolId() != null) {
-            response.getFirstChild("protocol").setValue(port.protocolId());
+            String protocol = port.protocolId().toString();
+            response.getFirstChild("protocol").setValue(protocol);
         } else {
             response.getFirstChild("protocol").setValue("");
         }
@@ -459,7 +461,8 @@ public class MetaJolie extends JavaService {
         InputPortInfo port = (InputPortInfo) portInfo;
         response.getFirstChild("location").setValue(port.location().toString());
         if (port.protocolId() != null) {
-            response.getFirstChild("protocol").setValue(port.protocolId());
+            String protocol = port.protocolId().toString();
+            response.getFirstChild("protocol").setValue(protocol);
         } else {
             response.getFirstChild("protocol").setValue("");
         }
@@ -540,7 +543,8 @@ public class MetaJolie extends JavaService {
                 response.getFirstChild("location").setValue("local");
             }
             if (port.protocolId() != null) {
-                response.getFirstChild("protocol").setValue(port.protocolId());
+                String protocol = port.protocolId().toString();
+                response.getFirstChild("protocol").setValue(protocol);
             } else {
                 response.getFirstChild("protocol").setValue("");
             }
@@ -553,7 +557,8 @@ public class MetaJolie extends JavaService {
                 response.getFirstChild("location").setValue("local");
             }
             if (port.protocolId() != null) {
-                response.getFirstChild("protocol").setValue(port.protocolId());
+                String protocol = port.protocolId().toString();
+                response.getFirstChild("protocol").setValue(protocol);
             } else {
                 response.getFirstChild("protocol").setValue("");
             }

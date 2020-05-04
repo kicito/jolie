@@ -440,14 +440,24 @@ public class OOITBuilder implements OLVisitor
 		}
 		currentOutputPort = null;
 
-		final Expression locationExpression = buildExpression( n.location() );
-		final Expression protocolExpression = buildExpression( n.protocolId() );
+		Expression locationExpr = buildExpression( n.location() );
+		Expression protocolExpr = buildExpression( n.protocolId() );
+
+		if ( protocolExpr instanceof VariablePath ) {
+			// backward compatibility for symbols
+			VariablePath protocolExprPath = (VariablePath) protocolExpr;
+			if (protocolExprPath.path().length == 1){
+				// backward compatibility for symbols
+				protocolExpr =  protocolExprPath.path()[0].key().evaluate();
+			}
+			// error( n.context(), "Variable path protocol is not support to create inputPort" );
+		}
 
 		interpreter.register( n.id(), new OutputPort(
 				interpreter,
 				n.id(),
-				locationExpression,
-				protocolExpression,
+				locationExpr,
+				protocolExpr,
 				protocolConfigurationProcess,
 				getOutputPortInterface( n.id() ),
 				isConstant
@@ -607,13 +617,10 @@ public class OOITBuilder implements OLVisitor
 				protocol = protocolExprPath.path()[0].key().evaluate().strValue();
 			}
 			// error( n.context(), "Variable path protocol is not support to create inputPort" );
-		} else {
-			error( n.context(), "protocol expression is not valid" );
 		}
 
-		Process assignProtocol = new AssignmentProcess( protocolPath, protocolExpr, n.context() );
 		Process[] confChildren =
-				new Process[] {buildProcess( n.protocolConfiguration() ), assignProtocol};
+				new Process[] {buildProcess( n.protocolConfiguration() )};
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
 
 		CommProtocolFactory protocolFactory = null;

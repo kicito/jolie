@@ -1111,6 +1111,7 @@ public class OLParser extends AbstractParser
 		protocolId = null;
 		Map<String, String> redirectionMap = new HashMap<>();
 		List< InputPortInfo.AggregationItemInfo > aggregationList = new ArrayList<>();
+		boolean isLocalLocation = false;
 		while ( token.isNot( Scanner.TokenType.RCURLY ) ) {
 			if ( token.is( Scanner.TokenType.OP_OW ) ) {
 				parseOneWayOperations( iface );
@@ -1123,6 +1124,10 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected : after location" );
 				checkConstant();
+				if ( token.content().startsWith( "local" ) ) {
+					// check if the inputPort is listening to local protocol
+					isLocalLocation = true;
+				}
 				inputPortLocation = parseExpression();
 			} else if ( token.isKeyword( "interfaces" ) || token.isKeyword( "Interfaces" ) ) {
 				getToken();
@@ -1198,7 +1203,7 @@ public class OLParser extends AbstractParser
 			throwException( "expected location URI for " + inputPortName );
 		} else if ( iface.operationsMap().isEmpty() && redirectionMap.isEmpty() && aggregationList.isEmpty() ) {
 			throwException( "expected at least one operation, interface, aggregation or redirection for inputPort " + inputPortName );
-		} else if ( protocolId == null ) {
+		} else if ( protocolId == null && !isLocalLocation ) {
 			throwException( "expected protocol for inputPort " + inputPortName );
 		}
 		InputPortInfo iport = new InputPortInfo( getContext(), inputPortName, inputPortLocation, protocolId, protocolConfiguration, aggregationList.toArray( new InputPortInfo.AggregationItemInfo[ aggregationList.size() ] ), redirectionMap );
