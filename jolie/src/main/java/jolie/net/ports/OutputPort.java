@@ -77,9 +77,17 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 		
 		// Create the location configuration Process
 		List< Process > children = new LinkedList<>();
-		children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
-		children.add( new AssignmentProcess( this.protocolVariablePath, protocolExpr, null ) );
-		this.configurationProcess = new SequentialProcess( children.toArray( new Process[ children.size() ] ) );
+		if ( locationExpr != null ) {
+			children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
+		}
+		if ( protocolExpr != null ) {
+			children.add( new AssignmentProcess( this.protocolVariablePath, protocolExpr, null ) );
+		}
+		if ( children.size() == 0 ) {
+			children.add( NullProcess.getInstance() );
+		}
+		this.configurationProcess =
+				new SequentialProcess( children.toArray( new Process[children.size()] ) );
 
 		this.isConstant = isConstant;
 
