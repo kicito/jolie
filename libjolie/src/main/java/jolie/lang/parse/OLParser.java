@@ -589,28 +589,40 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	private void parseCorrelationSets()
-		throws IOException, ParserException
+	private void parseCorrelationSets() throws IOException, ParserException
 	{
-		while( token.isKeyword( "cset" ) ) {
+		if ( token.isKeyword( "cset" ) ) {
+			for (CorrelationSetInfo csetInfo : _parseCorrelationSets() ){
+				programBuilder.addChild( csetInfo );
+			}
+		}
+	}
+
+	private CorrelationSetInfo[] _parseCorrelationSets() throws IOException, ParserException
+	{
+		List< CorrelationSetInfo > result = new ArrayList< CorrelationSetInfo >();
+		while (token.isKeyword( "cset" )) {
 			getToken();
-			/*assertToken( Scanner.TokenType.ID, "expected correlation set name" );
-			String csetName = token.content();
-			getToken();*/
+			/*
+			 * assertToken( Scanner.TokenType.ID, "expected correlation set name" );
+			 * String csetName = token.content();
+			 * getToken();
+			 */
 			eat( Scanner.TokenType.LCURLY, "expected {" );
 			List< CorrelationVariableInfo > variables = new LinkedList<>();
 			List< CorrelationAliasInfo > aliases;
 			VariablePathNode correlationVariablePath;
 			String typeName;
-			while ( token.is( Scanner.TokenType.ID ) ) {
+			while (token.is( Scanner.TokenType.ID )) {
 				aliases = new LinkedList<>();
 				correlationVariablePath = parseVariablePath();
 				eat( Scanner.TokenType.COLON, "expected correlation variable alias list" );
 				assertToken( Scanner.TokenType.ID, "expected correlation variable alias" );
-				while ( token.is( Scanner.TokenType.ID ) ) {
+				while (token.is( Scanner.TokenType.ID )) {
 					typeName = token.content();
 					getToken();
-					eat( Scanner.TokenType.DOT, "expected . after message type name in correlation alias" );
+					eat( Scanner.TokenType.DOT,
+							"expected . after message type name in correlation alias" );
 					aliases.add( new CorrelationAliasInfo( typeName, parseVariablePath() ) );
 				}
 				variables.add( new CorrelationVariableInfo( correlationVariablePath, aliases ) );
@@ -620,38 +632,44 @@ public class OLParser extends AbstractParser
 					break;
 				}
 			}
-
-			programBuilder.addChild( new CorrelationSetInfo( getContext(), variables ) );
+			result.add( new CorrelationSetInfo( getContext(), variables ) );
 			eat( Scanner.TokenType.RCURLY, "expected }" );
 		}
+		return result.toArray( new CorrelationSetInfo[0] );
 	}
 
 	private void parseExecution()
 		throws IOException, ParserException
 	{
 		if ( token.is( Scanner.TokenType.EXECUTION ) ) {
-			Constants.ExecutionMode mode = Constants.ExecutionMode.SEQUENTIAL;
-			getToken();
-			eat( Scanner.TokenType.LCURLY, "{ expected" );
-			assertToken( Scanner.TokenType.ID, "expected execution modality" );
-			switch( token.content() ) {
-				case "sequential":
-					mode = Constants.ExecutionMode.SEQUENTIAL;
-					break;
-				case "concurrent":
-					mode = Constants.ExecutionMode.CONCURRENT;
-					break;
-				case "single":
-					mode = Constants.ExecutionMode.SINGLE;
-					break;
-				default:
-					throwException( "Expected execution mode, found " + token.content() );
-					break;
-			}
-			programBuilder.addChild( new ExecutionInfo( getContext(), mode ) );
-			getToken();
-			eat( Scanner.TokenType.RCURLY, "} expected" );
+			programBuilder.addChild(_parseExecutionInfo());
 		}
+	}
+
+	private ExecutionInfo _parseExecutionInfo()
+		throws IOException, ParserException
+	{
+		Constants.ExecutionMode mode = Constants.ExecutionMode.SEQUENTIAL;
+		getToken();
+		eat( Scanner.TokenType.LCURLY, "{ expected" );
+		assertToken( Scanner.TokenType.ID, "expected execution modality" );
+		switch( token.content() ) {
+			case "sequential":
+				mode = Constants.ExecutionMode.SEQUENTIAL;
+				break;
+			case "concurrent":
+				mode = Constants.ExecutionMode.CONCURRENT;
+				break;
+			case "single":
+				mode = Constants.ExecutionMode.SINGLE;
+				break;
+			default:
+				throwException( "Expected execution mode, found " + token.content() );
+				break;
+		}
+		getToken();
+		eat( Scanner.TokenType.RCURLY, "} expected" );
+		return new ExecutionInfo( getContext(), mode ) ;
 	}
 
 	private void parseConstants()
@@ -880,15 +898,7 @@ public class OLParser extends AbstractParser
 		if ( token.isKeyword( "inputPort" ) ) {
 			portInfo = parseInputPortInfo();
 		} else if ( token.isKeyword( "outputPort" ) ) {
-			getToken();
-			assertToken( Scanner.TokenType.ID, "expected output port identifier" );
-			OutputPortInfo p = new OutputPortInfo( getContext(), token.content() );
-			getToken();
-			eat( Scanner.TokenType.LCURLY, "expected {" );
-			parseOutputPortInfo( p );
-			programBuilder.addChild( p );
-			eat( Scanner.TokenType.RCURLY, "expected }" );
-			portInfo = p;
+			portInfo = parseOutputPortInfo();
 		}
 		return portInfo;
 	}
@@ -950,10 +960,11 @@ public class OLParser extends AbstractParser
 		Optional< Scanner.Token > forwardDocToken = parseForwardDocumentation();
 		
 		final DocumentedNode node;
-		if ( token.isKeyword( "inputPort" ) ) {
-			node = parsePort();
-		} else if ( token.isKeyword( "outputPort" ) ) {
-			node = parsePort();
+		final PortInfo p;
+		if ( token.isKeyword( "inputPort" ) || token.isKeyword( "outputPort" ) ) {
+			p = parsePort();
+			programBuilder.addChild(p);
+			node = p;
 		} else {
 			node = null;
 		}
@@ -1390,7 +1401,6 @@ public class OLParser extends AbstractParser
 			iport.addInterface( i );
 		}
 		iface.copyTo( iport );
-		programBuilder.addChild( iport );
 		return iport;
 	}
 	
@@ -1495,9 +1505,15 @@ public class OLParser extends AbstractParser
 		}
 	}
 
-	private void parseOutputPortInfo( OutputPortInfo p )
+	private OutputPortInfo parseOutputPortInfo()
 		throws IOException, ParserException
 	{
+		getToken();
+		assertToken( Scanner.TokenType.ID, "expected output port identifier" );
+		OutputPortInfo p = new OutputPortInfo( getContext(), token.content() );
+		getToken();
+		eat( Scanner.TokenType.LCURLY, "expected {" );
+
 		boolean keepRun = true;
 		while ( keepRun ) {
 			if ( token.is( Scanner.TokenType.OP_OW ) ) {
@@ -1573,6 +1589,8 @@ public class OLParser extends AbstractParser
 			}
 
 		}
+		eat( Scanner.TokenType.RCURLY, "expected }" );
+		return p;
 	}
 
 	private void parseOneWayOperations( OperationCollector oc )
