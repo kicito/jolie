@@ -93,6 +93,7 @@ import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -198,19 +199,8 @@ public class OLParser extends AbstractParser
 	public Program parse()
 		throws IOException, ParserException
 	{
-		getToken();
-		boolean explicitServiceBlock = token.isKeyword( "service" );
-		if ( token.isKeyword( "service" ) ) { // Top-level service definition
-			getToken();
-			assertToken( Scanner.TokenType.ID, "expected service name" );
-			serviceName = Optional.of( token.content() );
-			getToken();
-			assertToken( Scanner.TokenType.LCURLY, "expected { after the opening clause of service " + serviceName.get() );
-		} else {
-			addToken( token );
-		}
 		
-		_parse( explicitServiceBlock );
+		_parse( false );
 
 		if ( initSequence != null ) {
 			programBuilder.addChild( new DefinitionNode( getContext(), "init", initSequence ) );
@@ -258,7 +248,7 @@ public class OLParser extends AbstractParser
 	
 	private void _parse( boolean explicitServiceBlock )
 		throws IOException, ParserException
-	{		
+	{
 		parseLoop( explicitServiceBlock,
 			this::parseImport,
 			this::parseConstants,
@@ -1041,7 +1031,7 @@ public class OLParser extends AbstractParser
 		}
 		getToken();
 		assertToken( Scanner.TokenType.ID, "expected service name" );
-
+		ParsingContext ctx = getContext();
 		String serviceName = token.content();
 		getToken();
 
@@ -1055,40 +1045,93 @@ public class OLParser extends AbstractParser
 		DefinitionNode internalMain = null;
 		SequenceStatement internalInit = null;
 
+		ProgramBuilder serviceNodeBuilder = new ProgramBuilder(ctx); 
+
 		boolean keepRun = true;
-		do {
-			if ( token.isKeyword( "Interfaces" ) ) {
-				internalIfaces = parseInternalServiceInterface();
-			} else if ( token.isKeyword( "main" ) ) {
-				if ( internalMain != null ) {
-					throwException( "you must specify only one main definition" );
-				}
-				internalMain = parseMain();
-			} else if ( token.is( Scanner.TokenType.INIT ) ) {
-				if ( internalInit == null ) {
-					internalInit = new SequenceStatement( getContext() );
-				}
-				internalInit.addChild( parseInit() );
-			} else if ( token.is( TokenType.RCURLY ) ) {
-				keepRun = false;
-				getToken();
+		while (keepRun) {
+			switch (token.content()) {
+				case "Interfaces":
+					internalIfaces = parseInternalServiceInterface();
+				case "cset":
+					for (CorrelationSetInfo csetInfo : _parseCorrelationSets()) {
+						serviceNodeBuilder.addChild( csetInfo );
+					}
+					break;
+				case "execution":
+					serviceNodeBuilder.addChild( _parseExecutionInfo() );
+					break;
+				case "init":
+					if ( internalInit == null ) {
+						internalInit = new SequenceStatement( getContext() );
+					}
+					internalInit.addChild( parseInit() );
+					break;
+				case "main":
+					if ( internalMain != null ) {
+						throwException( "you must specify only one main definition" );
+					}
+					internalMain = parseMain();
+					break;
+				case "inputPort":
+				case "outputPort":
+					serviceNodeBuilder.addChild( parsePort() );
+					break;
+				default:
+					keepRun = false;
 			}
-		} while (keepRun);
-
-
-		//main in service needs to be defined
-		if ( internalMain == null ) {
-			throwException( "You must specify a main for service " + serviceName );
 		}
 
-		// it is a Jolie's internal service
+		eat( TokenType.RCURLY, "expected }" );
+
+
+		// it is a Jolie 1's internal service
 		if ( internalIfaces != null && internalIfaces.length > 0 ) {
-			createInternalService(serviceName, internalIfaces, initSequence, internalMain, programBuilder);
+			if (serviceNodeBuilder.children().size() > 0) {
+				// prohibit mixing syntax of internal service and service
+				throwException( "Service cannot be mixed with Internal ServiceNode" );
+			}
+			// main in service needs to be defined
+			if ( internalMain == null ) {
+				throwException( "You must specify a main for service " + serviceName );
+			}
+			createInternalService( ctx, serviceName, internalIfaces, initSequence, internalMain,
+					programBuilder );
+		} else {
+			createServiceNode( ctx, serviceName, parameter.value(), parameter.key(), initSequence,
+					internalMain, serviceNodeBuilder );
 		}
 
 	}
 
+	private void createServiceNode(
+			ParsingContext ctx,
+		String serviceName,
+		String paramPath,
+		TypeDefinition paramType,
+		SequenceStatement initNode,
+		DefinitionNode main,
+		ProgramBuilder serviceProgramBuilder
+	) 
+	{
+		ServiceNode node = new ServiceNode(ctx, serviceName);
+		node.setAcceptParameter(paramPath, paramType);
+
+		//add init if defined in internal service
+		if ( initSequence != null ) {
+			serviceProgramBuilder.addChild( new DefinitionNode( getContext(), "init", initSequence ) );
+		}
+		//add main defined in internal service
+		serviceProgramBuilder.addChild( main );
+
+		//add internal service program to embedded service node
+		node.setProgram( serviceProgramBuilder.toProgram() );
+
+		//add embedded service node to program that is embedding it
+		programBuilder.addChild( node );
+	}
+
 	private void createInternalService( 
+		ParsingContext ctx,
 		String serviceName,
 		InterfaceDefinition[] ifaces,
 		SequenceStatement initNode,
@@ -1100,13 +1143,11 @@ public class OLParser extends AbstractParser
 		parentProgramBuilder.addChild( createInternalServicePort( serviceName, ifaces ) );
 
 		// create Program representing the internal service
-		ProgramBuilder internalServiceProgramBuilder = new ProgramBuilder( getContext() );
+		ProgramBuilder internalServiceProgramBuilder = new ProgramBuilder( ctx );
 
 		// copy children of parent to embedded service
-		for( OLSyntaxNode child : parentProgramBuilder.children() ) {
-			if ( child instanceof InterfaceDefinition
-				|| child instanceof OutputPortInfo
-				|| child instanceof TypeDefinition ) {
+		for( OLSyntaxNode child : parentProgramBuilder.children()) {
+			if ( child instanceof OutputPortInfo ) {
 				internalServiceProgramBuilder.addChild( child );
 			}
 		}
