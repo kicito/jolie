@@ -68,6 +68,7 @@ import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -188,4 +189,5 @@ public interface OLVisitor
 	public void visit( ProvideUntilStatement n );
 	public void visit( TypeChoiceDefinition n );
 	public void visit( ImportStatement n );
+	public void visit( ServiceNode n );
 }

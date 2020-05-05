@@ -30,10 +30,12 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -69,10 +71,11 @@ import jolie.lang.parse.TypeChecker;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.module.GlobalSymbolReferenceResolver;
 import jolie.lang.parse.module.ModuleCrawler;
-import jolie.lang.parse.module.ModuleException;
 import jolie.lang.parse.module.ModuleParser;
 import jolie.lang.parse.module.ModuleRecord;
 import jolie.lang.parse.module.SymbolTable;
+import jolie.lang.parse.module.SymbolTableGenerator;
+import jolie.lang.parse.util.Jolie2Utility;
 import jolie.monitoring.MonitoringEvent;
 import jolie.monitoring.events.MonitorAttachedEvent;
 import jolie.monitoring.events.OperationStartedEvent;
@@ -1266,6 +1269,7 @@ public class Interpreter
 				if ( this.internalServiceProgram != null ) {
 					program = this.internalServiceProgram;
 					program = OLParseTreeOptimizer.optimize( program );
+					program = Jolie2Utility.transform(program);
 				} else {
 					final ModuleParser parser =
 							new ModuleParser( cmdParser.charset(), includePaths, classLoader );

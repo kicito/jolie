@@ -92,6 +92,7 @@ import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -438,7 +439,7 @@ public class OOITBuilder implements OLVisitor
 			( n.protocolConfiguration() != null ) ? buildProcess( n.protocolConfiguration() )
 			: NullProcess.getInstance();
 		
-		final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
+		// final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
 
 		currentOutputPort = n.id();
 		notificationTypes.put( currentOutputPort, new HashMap<>() );
@@ -455,7 +456,7 @@ public class OOITBuilder implements OLVisitor
 				protocolConfigurationProcess,
 				n.location(),
 				getOutputPortInterface( n.id() ),
-				isConstant
+				false
 			)
 		);
 	}
@@ -691,8 +692,16 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( Program p )
 	{
-		for( OLSyntaxNode node : p.children() )
-			node.accept( this );
+		for( OLSyntaxNode node : p.children() ){
+			if (node instanceof DefinitionNode){
+				DefinitionNode defNode = (DefinitionNode) node;
+				if (defNode.id().equals("init") || defNode.id().equals("main")){
+					node.accept(this);
+				} 
+			}else{
+				node.accept( this );
+			}
+		}
 	}
 
 	private boolean insideOperationDeclarationOrInstanceOf = false;
@@ -884,7 +893,6 @@ public class OOITBuilder implements OLVisitor
 					registerSessionStarter( guard, currProcess );
 				}
 			} catch( Exception e ) {
-				e.printStackTrace();
 			}
 		}
 		
@@ -910,6 +918,7 @@ public class OOITBuilder implements OLVisitor
 				registerSessionStarter( inputProcess, NullProcess.getInstance() );
 			}
 		} catch( InvalidIdException e ) {
+			e.printStackTrace();
 			error( n.context(), e ); 
 		}
 
@@ -941,6 +950,7 @@ public class OOITBuilder implements OLVisitor
 				registerSessionStarter( inputProcess, NullProcess.getInstance() );
 			}
 		} catch( InvalidIdException e ) {
+			e.printStackTrace();
 			error( n.context(), e ); 
 		}
 
@@ -964,6 +974,7 @@ public class OOITBuilder implements OLVisitor
 						n.context()
 					);
 		} catch( InvalidIdException e ) {
+			e.printStackTrace();
 			error( n.context(), e );
 		}
 	}
@@ -985,6 +996,7 @@ public class OOITBuilder implements OLVisitor
 						n.context()
 					);
 		} catch( InvalidIdException e ) {
+			e.printStackTrace();
 			error( n.context(), e );
 		}
 	}
@@ -1185,11 +1197,11 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( DefinitionCallStatement n )
 	{
-		try {
-			interpreter.getDefinition( n.id() );
-		} catch (InvalidIdException e) {
+		// try {
+		// 	interpreter.getDefinition( n.id() );
+		// } catch (InvalidIdException e) {
 			n.definition().accept( this );
-		}
+		// }
 		currProcess = new CallProcess( n.id() );
 	}
 
@@ -1734,6 +1746,7 @@ public class OOITBuilder implements OLVisitor
 				n.context()
 			);
 		} catch( InvalidIdException e ) {
+			e.printStackTrace();
 			error( n.context(), e );
 		}
 	}
@@ -1784,5 +1797,13 @@ public class OOITBuilder implements OLVisitor
 	
 	@Override
 	public void visit( ImportStatement n ){}
+	
+	@Override
+	public void visit( ServiceNode n ){
+		if (n.name().equals("main")){
+			n.program().accept( this );
+		}
+	}
+
 }
 

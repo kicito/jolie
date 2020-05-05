@@ -169,7 +169,10 @@ public class SymbolTable
 
     public Optional< SymbolInfo > symbol( String name )
     {
-        return Optional.of( this.symbols.get( name ) );
+        if (this.symbols.containsKey(name)){
+            return Optional.of( this.symbols.get( name ) );
+        }
+        return Optional.empty();
     }
 
     private boolean isDuplicateSymbol( String name )

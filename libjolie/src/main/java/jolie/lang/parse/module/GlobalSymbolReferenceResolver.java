@@ -73,6 +73,7 @@ import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -623,6 +624,9 @@ public class GlobalSymbolReferenceResolver
         @Override
         public void visit( EmbeddedServiceNode n )
         {
+            if (n.program() != null){
+                n.program().accept(this);
+            }
         }
 
         @Override
@@ -780,6 +784,11 @@ public class GlobalSymbolReferenceResolver
         @Override
         public void visit( ImportStatement n )
         {
+        }
+        
+        @Override
+        public void visit( ServiceNode n ) {
+            n.program().accept(this);
         }
     }
 

@@ -71,6 +71,7 @@ import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -963,6 +964,17 @@ public class OLParseTreeOptimizer
 		public void visit( ImportStatement n ) {
 			programChildren.add(n);
 		}
+
+
+		@Override
+		public void visit( ServiceNode n )
+		{
+			if ( n.name().equals( "main" ) ) {
+				n.setProgram( OLParseTreeOptimizer.optimize( n.program() ) );
+			}
+			programChildren.add( n );
+		}
+
 	}
 
 	public static Program optimize( Program originalProgram )

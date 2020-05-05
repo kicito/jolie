@@ -42,6 +42,7 @@ import java.util.Map;
 import java.util.Optional;
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.Scanner.TokenType;
 import jolie.lang.parse.ast.AddAssignStatement;
 import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.CompareConditionNode;
@@ -131,7 +132,7 @@ import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.SymbolInfo;
-import jolie.lang.parse.module.SymbolInfo.Privacy;
+import jolie.lang.parse.util.Jolie2Utility;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
 import jolie.util.Pair;
@@ -218,8 +219,12 @@ public class OLParser extends AbstractParser
 		if ( main != null ) {
 			programBuilder.addChild( main );
 		}
-		
-		return programBuilder.toProgram();
+
+		Program program = programBuilder.toProgram();
+		if ( Jolie2Utility.isJolie1(program) ) {
+			return Jolie2Utility.transform( program );
+		}
+		return program;
 	}
 		
 	private void parseLoop( boolean explicitServiceBlock, ParsingRunnable... parseRunnables )
@@ -262,7 +267,7 @@ public class OLParser extends AbstractParser
 			this::parseSymbols,
 			this::parsePorts,
 			this::parseEmbedded,
-			this::parseInternalService,
+			this::parseService,
 			this::parseCode
 		);
 	}
@@ -956,18 +961,17 @@ public class OLParser extends AbstractParser
 		parseBackwardAndSetDocumentation( node, forwardDocToken );
     }
 
-    private OutputPortInfo createInternalServicePort( String name, List< InterfaceDefinition> interfaceList )
+    private OutputPortInfo createInternalServicePort( String name, InterfaceDefinition[] interfaces )
 		throws ParserException
 	{
 		OutputPortInfo p = new OutputPortInfo( getContext(), name );
-
-		for( InterfaceDefinition interfaceDefinition : interfaceList ) {
-			interfaceDefinition.copyTo( p );
+		for( InterfaceDefinition interfaceDefinition : interfaces ) {
+			p.addInterface(interfaceDefinition);
 		}
 		return p;
 	}
     
-	private InputPortInfo createInternalServiceInputPort( String serviceName, List< InterfaceDefinition> interfaceList )
+	private InputPortInfo createInternalServiceInputPort( String serviceName, InterfaceDefinition[] interfaces )
 		throws ParserException
 	{
 		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
@@ -982,100 +986,113 @@ public class OLParser extends AbstractParser
 				new InputPortInfo.AggregationItemInfo[]{},
 				Collections.<String, String>emptyMap() );
 
-			for( InterfaceDefinition i : interfaceList ) {
-				i.copyTo( iport );
+			for( InterfaceDefinition i : interfaces ) {
+				iport.addInterface(i);
 			}
 		} catch( URISyntaxException e ) {
 			throwException( e );
 		}
 		return iport;
 	}
-    
-	/**
-	 * Parses an internal service, i.e. service service_name {}
-	 *
-	 * @throws IOException
-	 * @throws ParserException
-	 */
-	private void parseInternalService()
+
+	private Pair<TypeDefinition, String> parseServiceParameter()
+		throws IOException, ParserException
+	{
+		if (token.is(TokenType.LPAREN)){
+			getToken();
+			if (token.is(TokenType.RPAREN)){ // case ( )
+				getToken();
+				return new Pair< TypeDefinition, String >(TypeDefinitionUndefined.getInstance(), null);
+			} else { // case ( path: type  )
+				String paramPath = token.content();
+				getToken();
+
+				eat( TokenType.COLON, "expected :" );
+				String typeName = token.content();
+				TypeDefinition parameterType = parseType( typeName );
+
+				eat( TokenType.RPAREN, "expected )" );
+				return new Pair< TypeDefinition, String >( parameterType, paramPath );
+			}
+		} else {
+			return new Pair< TypeDefinition, String >( TypeDefinitionUndefined.getInstance(),
+					null );
+		}
+	}
+
+
+	private void parseService()
 		throws IOException, ParserException
 	{
 		//only proceed if a service declaration
 		if ( !token.isKeyword( "service" ) ) {
 			return;
 		}
-
-		//get service name
 		getToken();
 		assertToken( Scanner.TokenType.ID, "expected service name" );
-		String internalServiceName = token.content();
 
-		//validate token
+		String serviceName = token.content();
 		getToken();
+
+		Pair<TypeDefinition, String> parameter = parseServiceParameter();
+		this.serviceName = Optional.of(serviceName);
+
 		eat( Scanner.TokenType.LCURLY, "{ expected" );
+		// jolie internal service's Interface
+		InterfaceDefinition[] internalIfaces = null;
 
-		//initialize internal interface and interface list
-		List< InterfaceDefinition> interfaceList = new ArrayList<>();
-
-		OLSyntaxNode internalMain = null;
+		DefinitionNode internalMain = null;
 		SequenceStatement internalInit = null;
 
-		boolean keepRunning = true;
-		while( keepRunning ) {
+		boolean keepRun = true;
+		do {
 			if ( token.isKeyword( "Interfaces" ) ) {
-				getToken();
-				eat( Scanner.TokenType.COLON, "expected : after Interfaces" );
-				boolean keepRun = true;
-				while( keepRun ) {
-					assertToken( Scanner.TokenType.ID, "expected interface name" );
-					InterfaceDefinition i = interfaces.get( token.content() );
-					if ( i == null ) {
-						throwException( "Invalid interface name: " + token.content() );
-					}
-					interfaceList.add( i );
-					getToken();
-
-					if ( token.is( Scanner.TokenType.COMMA ) ) {
-						getToken();
-					} else {
-						keepRun = false;
-					}
-				}
+				internalIfaces = parseInternalServiceInterface();
 			} else if ( token.isKeyword( "main" ) ) {
 				if ( internalMain != null ) {
 					throwException( "you must specify only one main definition" );
 				}
-
 				internalMain = parseMain();
 			} else if ( token.is( Scanner.TokenType.INIT ) ) {
 				if ( internalInit == null ) {
 					internalInit = new SequenceStatement( getContext() );
 				}
-
 				internalInit.addChild( parseInit() );
-			} else if ( token.is( Scanner.TokenType.RCURLY ) ) {
-				keepRunning = false;
-			} else {
-				throwException( "Unrecognized token in inline service." );
+			} else if ( token.is( TokenType.RCURLY ) ) {
+				keepRun = false;
+				getToken();
 			}
-		}
+		} while (keepRun);
 
-		//validate ending
-		eat( Scanner.TokenType.RCURLY, "} expected" );
 
 		//main in service needs to be defined
 		if ( internalMain == null ) {
-			throwException( "You must specify a main for internal service " + internalServiceName );
+			throwException( "You must specify a main for service " + serviceName );
 		}
 
-		//add output port to main program
-		programBuilder.addChild( createInternalServicePort( internalServiceName, interfaceList ) );
-		
-		//create Program representing the internal service
+		// it is a Jolie's internal service
+		if ( internalIfaces != null && internalIfaces.length > 0 ) {
+			createInternalService(serviceName, internalIfaces, initSequence, internalMain, programBuilder);
+		}
+
+	}
+
+	private void createInternalService( 
+		String serviceName,
+		InterfaceDefinition[] ifaces,
+		SequenceStatement initNode,
+		DefinitionNode main,
+		ProgramBuilder parentProgramBuilder )
+		throws IOException, ParserException
+	{
+		// add output port to main program
+		parentProgramBuilder.addChild( createInternalServicePort( serviceName, ifaces ) );
+
+		// create Program representing the internal service
 		ProgramBuilder internalServiceProgramBuilder = new ProgramBuilder( getContext() );
 
 		// copy children of parent to embedded service
-		for( OLSyntaxNode child : programBuilder.children() ) {
+		for( OLSyntaxNode child : parentProgramBuilder.children() ) {
 			if ( child instanceof InterfaceDefinition
 				|| child instanceof OutputPortInfo
 				|| child instanceof TypeDefinition ) {
@@ -1087,19 +1104,19 @@ public class OLParser extends AbstractParser
 		internalServiceProgramBuilder.addChild( new ExecutionInfo( getContext(), Constants.ExecutionMode.CONCURRENT ) );
 
 		//add input port to internal service
-		internalServiceProgramBuilder.addChild( createInternalServiceInputPort( internalServiceName, interfaceList ) );
+		internalServiceProgramBuilder.addChild( createInternalServiceInputPort( serviceName, ifaces ) );
 
 		//add init if defined in internal service
-		if ( internalInit != null ) {
-			internalServiceProgramBuilder.addChild( new DefinitionNode( getContext(), "init", internalInit ) );
+		if ( initNode != null ) {
+			internalServiceProgramBuilder.addChild( new DefinitionNode( getContext(), "init", initNode ) );
 		}
 
 		//add main defined in internal service
-		internalServiceProgramBuilder.addChild( internalMain );
+		internalServiceProgramBuilder.addChild( main );
 
 		//create internal embedded service node
 		EmbeddedServiceNode internalServiceNode
-			= new EmbeddedServiceNode( getContext(), Constants.EmbeddedServiceType.INTERNAL, internalServiceName, internalServiceName );
+			= new EmbeddedServiceNode( getContext(), Constants.EmbeddedServiceType.INTERNAL, serviceName, serviceName );
 
 		//add internal service program to embedded service node
 		internalServiceNode.setProgram( internalServiceProgramBuilder.toProgram() );
@@ -1107,6 +1124,146 @@ public class OLParser extends AbstractParser
 		//add embedded service node to program that is embedding it
 		programBuilder.addChild( internalServiceNode );
 	}
+
+	private InterfaceDefinition[] parseInternalServiceInterface() 
+		throws IOException, ParserException
+	{
+		getToken();
+		eat( Scanner.TokenType.COLON, "expected : after Interfaces" );
+		boolean keepRun = true;
+		List< InterfaceDefinition > currInternalServiceIfaceList = new ArrayList<>();
+
+		while (keepRun) {
+			assertToken( Scanner.TokenType.ID, "expected interface name" );
+			InterfaceDefinition i = new InterfaceDefinition( getContext(), token.content() );
+			currInternalServiceIfaceList.add( i );
+			getToken();
+
+			if ( token.is( Scanner.TokenType.COMMA ) ) {
+				getToken();
+			} else {
+				keepRun = false;
+			}
+		}
+		return currInternalServiceIfaceList.toArray( new InterfaceDefinition[0] );
+	}
+    
+	// /**
+	//  * Parses an internal service, i.e. service service_name {}
+	//  *
+	//  * @throws IOException
+	//  * @throws ParserException
+	//  */
+	// private void parseInternalService()
+	// 	throws IOException, ParserException
+	// {
+	// 	//only proceed if a service declaration
+	// 	if ( !token.isKeyword( "service" ) ) {
+	// 		return;
+	// 	}
+
+	// 	//get service name
+	// 	getToken();
+	// 	assertToken( Scanner.TokenType.ID, "expected service name" );
+	// 	String internalServiceName = token.content();
+
+	// 	//validate token
+	// 	getToken();
+	// 	eat( Scanner.TokenType.LCURLY, "{ expected" );
+
+	// 	//initialize internal interface and interface list
+	// 	List< InterfaceDefinition> interfaceList = new ArrayList<>();
+
+	// 	OLSyntaxNode internalMain = null;
+	// 	SequenceStatement internalInit = null;
+
+	// 	boolean keepRunning = true;
+	// 	while( keepRunning ) {
+	// 		if ( token.isKeyword( "Interfaces" ) ) {
+	// 			getToken();
+	// 			eat( Scanner.TokenType.COLON, "expected : after Interfaces" );
+	// 			boolean keepRun = true;
+	// 			while( keepRun ) {
+	// 				assertToken( Scanner.TokenType.ID, "expected interface name" );
+	// 				InterfaceDefinition i = interfaces.get( token.content() );
+	// 				if ( i == null ) {
+	// 					throwException( "Invalid interface name: " + token.content() );
+	// 				}
+	// 				interfaceList.add( i );
+	// 				getToken();
+
+	// 				if ( token.is( Scanner.TokenType.COMMA ) ) {
+	// 					getToken();
+	// 				} else {
+	// 					keepRun = false;
+	// 				}
+	// 			}
+	// 		} else if ( token.isKeyword( "main" ) ) {
+	// 			if ( internalMain != null ) {
+	// 				throwException( "you must specify only one main definition" );
+	// 			}
+
+	// 			internalMain = parseMain();
+	// 		} else if ( token.is( Scanner.TokenType.INIT ) ) {
+	// 			if ( internalInit == null ) {
+	// 				internalInit = new SequenceStatement( getContext() );
+	// 			}
+
+	// 			internalInit.addChild( parseInit() );
+	// 		} else if ( token.is( Scanner.TokenType.RCURLY ) ) {
+	// 			keepRunning = false;
+	// 		} else {
+	// 			throwException( "Unrecognized token in inline service." );
+	// 		}
+	// 	}
+
+	// 	//validate ending
+	// 	eat( Scanner.TokenType.RCURLY, "} expected" );
+
+	// 	//main in service needs to be defined
+	// 	if ( internalMain == null ) {
+	// 		throwException( "You must specify a main for internal service " + internalServiceName );
+	// 	}
+
+	// 	//add output port to main program
+	// 	programBuilder.addChild( createInternalServicePort( internalServiceName, interfaceList ) );
+		
+	// 	//create Program representing the internal service
+	// 	ProgramBuilder internalServiceProgramBuilder = new ProgramBuilder( getContext() );
+
+	// 	// copy children of parent to embedded service
+	// 	for( OLSyntaxNode child : programBuilder.children() ) {
+	// 		if ( child instanceof InterfaceDefinition
+	// 			|| child instanceof OutputPortInfo
+	// 			|| child instanceof TypeDefinition ) {
+	// 			internalServiceProgramBuilder.addChild( child );
+	// 		}
+	// 	}
+
+	// 	// set execution to always concurrent
+	// 	internalServiceProgramBuilder.addChild( new ExecutionInfo( getContext(), Constants.ExecutionMode.CONCURRENT ) );
+
+	// 	//add input port to internal service
+	// 	internalServiceProgramBuilder.addChild( createInternalServiceInputPort( internalServiceName, interfaceList ) );
+
+	// 	//add init if defined in internal service
+	// 	if ( internalInit != null ) {
+	// 		internalServiceProgramBuilder.addChild( new DefinitionNode( getContext(), "init", internalInit ) );
+	// 	}
+
+	// 	//add main defined in internal service
+	// 	internalServiceProgramBuilder.addChild( internalMain );
+
+	// 	//create internal embedded service node
+	// 	EmbeddedServiceNode internalServiceNode
+	// 		= new EmbeddedServiceNode( getContext(), Constants.EmbeddedServiceType.INTERNAL, internalServiceName, internalServiceName );
+
+	// 	//add internal service program to embedded service node
+	// 	internalServiceNode.setProgram( internalServiceProgramBuilder.toProgram() );
+
+	// 	//add embedded service node to program that is embedding it
+	// 	programBuilder.addChild( internalServiceNode );
+	// }
     
 	private InputPortInfo parseInputPortInfo()
 		throws IOException, ParserException

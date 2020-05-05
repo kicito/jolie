@@ -83,6 +83,7 @@ import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.RunStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -486,7 +487,11 @@ public class SemanticVerifier implements OLVisitor
 	public void visit( Program n )
 	{
 		for( OLSyntaxNode node : n.children() ) {
-			node.accept( this );
+			if (node instanceof DefinitionNode){
+				
+			}else{
+				node.accept( this );
+			}
 		}
 	}
 
@@ -962,6 +967,7 @@ public class SemanticVerifier implements OLVisitor
 		if ( !subroutineNames.contains( n.id() ) && n.definition() == null ) {
 			error( n, "Call to undefined definition: " + n.id() );
 		}
+		n.definition().accept(this);
 	}
 
 	@Override
@@ -1366,4 +1372,14 @@ public class SemanticVerifier implements OLVisitor
 
 	@Override
 	public void visit( ImportStatement n ) {}
+
+	
+	@Override
+	public void visit( ServiceNode n )
+	{
+		if ( n.name().equals( "main" ) ) {
+			mainDefined = true;
+			n.program().accept( this );
+		}
+	}
 }
