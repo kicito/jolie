@@ -610,12 +610,12 @@ public class SymbolTableGenerator
     }
 
     /**
-     * generate a SymbolTable of a Jolie ASTree. As the current implementation, it is walk through
+     * generate a SymbolTable of a Jolie AST. As the current implementation, it is walk through
      * the Jolie's program and read the definition of types and interfaces and create a SymbolInfo
-     * node for the ASTree. The import statement is consumed here to create an external SymbolInfo
+     * node for the AST. The import statement is consumed here to create an external SymbolInfo
      * to be resolve later by SymbolReferenceResolver class
      * 
-     * @param program a Jolie AST tree
+     * @param program a Jolie AST
      * @throws ModuleException when the duplication of SymbolDeclaration is detected.
      */
     public static SymbolTable generate( Program program ) throws ModuleException

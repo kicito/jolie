@@ -604,8 +604,8 @@ public class SemanticVerifier implements OLVisitor
 	{
 		if ( definedTypes.get( n.requestType().id() ) == null ) {
 			// check from symbolTable
-			if ( symbolTables.get( n.context().source() ) == null || !symbolTables
-					.get( n.context().source() ).symbol( n.requestType().id() ).isPresent() ) {
+			if ( symbolTables.get( program.context().source() ) == null || !symbolTables
+					.get( program.context().source() ).symbol( n.requestType().id() ).isPresent() ) {
 				error( n, "unknown type: " + n.requestType().id() + " for operation " + n.id() );
 			}
 		}
@@ -625,23 +625,23 @@ public class SemanticVerifier implements OLVisitor
 	{
 		if ( definedTypes.get( n.requestType().id() ) == null ) {
 			// check form symbolTable
-			if ( symbolTables.get( n.context().source() ) == null || !symbolTables
-					.get( n.context().source() ).symbol( n.requestType().id() ).isPresent() ) {
+			if ( symbolTables.get( program.context().source() ) == null || !symbolTables
+					.get( program.context().source() ).symbol( n.requestType().id() ).isPresent() ) {
 				error( n, "unknown type: " + n.requestType().id() + " for operation " + n.id() );
 			}
 		}
 		if ( definedTypes.get( n.responseType().id() ) == null ) {
 			// check form symbolTable
-			if ( symbolTables.get( n.context().source() ) == null || !symbolTables
-					.get( n.context().source() ).symbol( n.responseType().id() ).isPresent() ) {
+			if ( symbolTables.get( program.context().source() ) == null || !symbolTables
+					.get( program.context().source() ).symbol( n.responseType().id() ).isPresent() ) {
 				error( n, "unknown type: " + n.responseType().id() + " for operation " + n.id() );
 			}
 		}
 		for (Entry< String, TypeDefinition > fault : n.faults().entrySet()) {
 			if ( definedTypes.containsKey( fault.getValue().id() ) == false ) {
 				// check form symbolTable
-				if ( symbolTables.get( n.context().source() ) == null || !symbolTables
-						.get( n.context().source() ).symbol( fault.getValue().id() ).isPresent() ) {
+				if ( symbolTables.get( program.context().source() ) == null || !symbolTables
+						.get( program.context().source() ).symbol( fault.getValue().id() ).isPresent() ) {
 					error( n, "unknown type for fault " + fault.getKey() );
 				}
 			}

@@ -310,6 +310,7 @@ public class Interpreter
 	private final String programFilepath;
 	private final File programDirectory;
 	private OutputPort monitor = null;
+	private Map<URI, SymbolTable> symbolTables;
 
 	public void setMonitor( OutputPort monitor )
 	{
@@ -928,6 +929,8 @@ public class Interpreter
 		} else {
 			tracer = new DummyTracer();
 		}
+
+		// tracer = new PrintingTracer(this, tracerLevel );
 		
 		logger.setLevel( cmdParser.logLevel() );
 		
@@ -961,7 +964,8 @@ public class Interpreter
         this( args, parentClassLoader, programDirectory, true );
         
 		this.parentInterpreter = parentInterpreter;
-        this.internalServiceProgram = internalServiceProgram;
+		this.internalServiceProgram = internalServiceProgram;
+		this.symbolTables = parentInterpreter.symbolTables();
 	}
 
 	/**
@@ -976,6 +980,15 @@ public class Interpreter
 	public Interpreter parentInterpreter()
 	{
 		return parentInterpreter;
+	}
+
+	/**
+	 * Returns the program symbol tabal this interpreter was assigned from SymbolGenerator.
+	 * @return the program symbol tabal this interpreter was assigned from SymbolGenerator
+	 */
+	public Map <URI, SymbolTable> symbolTables()
+	{
+		return symbolTables;
 	}
 
 	/**
@@ -1130,7 +1143,7 @@ public class Interpreter
 						mainSession.start();
 						mainSession.join();
 					}
-				} catch( InterruptedException e ) {
+				} catch( Exception e ) {
 					logSevere( e );
 				}
 			} else {
@@ -1254,7 +1267,6 @@ public class Interpreter
 	{ 
 		try {
 			Program program;
-			Map<URI, SymbolTable> symbolTables = null;
 			if ( cmdParser.isProgramCompiled() ) {
 				try ( final ObjectInputStream istream = new ObjectInputStream( cmdParser.programStream() ) ) {
 					final Object o = istream.readObject();
@@ -1333,7 +1345,8 @@ public class Interpreter
 					.build();
 			}
 
-		} catch( IOException | ParserException | ClassNotFoundException | ModuleException e ) {
+		} catch( Exception e ) {
+			e.printStackTrace();
 			throw new InterpreterException( e );
 		} finally {
 			cmdParser = null; // Free memory
