@@ -22,9 +22,7 @@
 package jolie.lang.parse.ast;
 
 import java.io.Serializable;
-import java.net.URI;
 import java.util.Map;
-
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
 

@@ -1147,8 +1147,8 @@ public class OLParser extends AbstractParser
                         getToken();
                     } else {
                         keepRun = false;
-                    }
-                }
+                 	}
+				}
 			} else if ( token.isKeyword( "protocol" ) || token.isKeyword( "Protocol" ) ) {
 				if ( protocolId != null ) {
 					throwException( "Protocol already defined for inputPort " + inputPortName );
@@ -1156,7 +1156,17 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
-				protocolId = parseExpression();
+
+				// backward compatability for protocol symbol
+				if ( token.isIdentifier() ) {
+					protocolId = new ConstantStringExpression( getContext(), token.content() );
+				} else if ( token.is( Scanner.TokenType.STRING ) ) {
+					protocolId = new ConstantStringExpression( getContext(), token.content() );
+				} else {
+					throwException( "expected String or protocol Symbol" );
+				}
+				getToken();
+
 				if ( token.is( Scanner.TokenType.LCURLY ) ) {
 					addTokens( Arrays.asList(
 						new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
@@ -1366,10 +1376,17 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
-				OLSyntaxNode expr = parseBasicExpression();
-
-				p.setProtocolId( expr );
-
+				ConstantStringExpression protocolString = null;
+				// backward compatability for protocol symbol
+				if ( token.isIdentifier() ) {
+					protocolString = new ConstantStringExpression( getContext(), token.content() );
+				} else if ( token.is( Scanner.TokenType.STRING ) ) {
+					protocolString = new ConstantStringExpression( getContext(), token.content() );
+				} else {
+					throwException( "expected String or protocol Symbol" );
+				}
+				p.setProtocolId( protocolString );
+				getToken();
 				if ( token.is( Scanner.TokenType.LCURLY ) ) {
 					addTokens( Arrays.asList(
 						new Scanner.Token( Scanner.TokenType.ID, p.id() ),

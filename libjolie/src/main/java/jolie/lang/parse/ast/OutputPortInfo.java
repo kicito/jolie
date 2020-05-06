@@ -21,8 +21,6 @@
 
 package jolie.lang.parse.ast;
 
-import java.net.URI;
-
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.context.ParsingContext;
 

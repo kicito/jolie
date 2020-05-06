@@ -443,13 +443,11 @@ public class OOITBuilder implements OLVisitor
 		Expression locationExpr = buildExpression( n.location() );
 		Expression protocolExpr = buildExpression( n.protocolId() );
 
+		
 		if ( protocolExpr instanceof VariablePath ) {
-			// backward compatibility for symbols
 			VariablePath protocolExprPath = (VariablePath) protocolExpr;
-			if (protocolExprPath.path().length == 1){
-				// backward compatibility for symbols
-				protocolExpr =  protocolExprPath.path()[0].key().evaluate();
-			}
+			// initiate protocol related field from parameter fields
+
 			// error( n.context(), "Variable path protocol is not support to create inputPort" );
 		}
 
@@ -524,8 +522,10 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( InputPortInfo n )
 	{
-		currentPortInterface = new Interface( new HashMap< String, OneWayTypeDescription >(),
-				new HashMap< String, RequestResponseTypeDescription >() );
+		currentPortInterface = new Interface( 
+			new HashMap< String, OneWayTypeDescription >(),
+			new HashMap< String, RequestResponseTypeDescription >() 
+		);
 		for (OperationDeclaration op : n.operations()) {
 			op.accept( this );
 		}
@@ -610,17 +610,13 @@ public class OOITBuilder implements OLVisitor
 			Value protocolVal = protocolExpr.evaluate();
 			protocol = protocolVal.strValue();
 		} else if ( protocolExpr instanceof VariablePath ) {
-			// backward compatibility for symbols
 			VariablePath protocolExprPath = (VariablePath) protocolExpr;
-			if (protocolExprPath.path().length == 1){
-				// backward compatibility for symbols
-				protocol = protocolExprPath.path()[0].key().evaluate().strValue();
-			}
+			// initiate protocol related field from parameter fields
 			// error( n.context(), "Variable path protocol is not support to create inputPort" );
 		}
 
 		Process[] confChildren =
-				new Process[] {buildProcess( n.protocolConfiguration() )};
+				new Process[] { buildProcess( n.protocolConfiguration() )};
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
 
 		CommProtocolFactory protocolFactory = null;
@@ -648,7 +644,7 @@ public class OOITBuilder implements OLVisitor
 				error( n.context(), e );
 			}
 		} else if ( protocolFactory != null
-				|| location.equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+				|| location.startsWith( Constants.LOCAL_LOCATION_KEYWORD ) ) {
 			try {
 				interpreter.commCore().addInputPort( inputPort, protocolFactory,
 						protocolConfigurationSequence );

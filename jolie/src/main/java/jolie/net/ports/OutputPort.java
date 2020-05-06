@@ -60,9 +60,14 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 	private final boolean isConstant;
 	private final Interface iface;
 
-	public OutputPort( Interpreter interpreter, String id, Expression locationExpr,
-			Expression protocolExpr, Process protocolConfigurationProcess, Interface iface,
-			boolean isConstant )
+	public OutputPort(
+		Interpreter interpreter,
+		String id,
+		Expression locationExpr,
+		Expression protocolExpr,
+		Process protocolConfigurationProcess,
+		Interface iface,
+		boolean isConstant )
 	{
 		super( id );
 		this.interpreter = interpreter;
@@ -80,12 +85,19 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 		if ( locationExpr != null ) {
 			children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
 		}
+		
+		if ( protocolConfigurationProcess != null ) {
+			children.add( protocolConfigurationProcess );
+		}
+
 		if ( protocolExpr != null ) {
 			children.add( new AssignmentProcess( this.protocolVariablePath, protocolExpr, null ) );
 		}
+
 		if ( children.size() == 0 ) {
 			children.add( NullProcess.getInstance() );
 		}
+		
 		this.configurationProcess =
 				new SequentialProcess( children.toArray( new Process[children.size()] ) );
 
