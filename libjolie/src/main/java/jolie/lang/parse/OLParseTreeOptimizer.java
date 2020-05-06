@@ -169,33 +169,45 @@ public class OLParseTreeOptimizer
 				p.protocolConfiguration().accept( this );
 				p.setProtocolConfiguration( currNode );
 			}
+			if ( p.location() != null ) {
+				p.location().accept( this );
+				p.setLocation( currNode );
+			}
+			if ( p.protocolId() != null ) {
+				p.protocolId().accept( this );
+				p.setProtocolId( currNode );
+			}
 			programChildren.add( p );
 		}
 
 		@Override
 		public void visit( InputPortInfo p )
 		{
-			if ( p.protocolConfiguration() != null ) {
-				p.protocolConfiguration().accept( this );
-				InputPortInfo iport =
-						new InputPortInfo(
-								p.context(),
-								p.id(),
-								p.location(),
-								p.protocolId(),
-								currNode,
-								p.aggregationList(),
-								p.redirectionMap()
-						);
-				if( p.getDocumentation() != null && p.getDocumentation().length() > 0 ){
-					iport.setDocumentation( p.getDocumentation() );
-				}
-				iport.operationsMap().putAll( p.operationsMap() );
-				iport.getInterfaceList().addAll( p.getInterfaceList() );
-				programChildren.add( iport );
-			} else {
-				programChildren.add( p );
+			OLSyntaxNode location = optimize(p.location());
+			OLSyntaxNode protocol = p.protocolId();
+			if ( p.protocolId() != null ){
+				protocol = optimize(p.protocolId());
 			}
+			OLSyntaxNode protocolConfig = null;
+			if ( p.protocolConfiguration() != null ) {
+				protocolConfig = optimize(p.protocolConfiguration());
+			}
+			InputPortInfo iport =
+				new InputPortInfo(
+						p.context(),
+						p.id(),
+						location,
+						protocol,
+						protocolConfig,
+						p.aggregationList(),
+						p.redirectionMap()
+				);
+			if( p.getDocumentation() != null && p.getDocumentation().length() > 0 ){
+				iport.setDocumentation( p.getDocumentation() );
+			}
+			iport.operationsMap().putAll( p.operationsMap() );
+			iport.getInterfaceList().addAll( p.getInterfaceList() );
+			programChildren.add( iport );
 		}
 
 		@Override

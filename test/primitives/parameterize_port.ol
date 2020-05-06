@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) by Fabrizio Montesi                                     *
+ *   Copyright (C) 2020 by Narongrit Unwerawattana                         *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU Library General Public License as       *
@@ -19,55 +19,27 @@
  *   For details about the authors of this software, see the AUTHORS file. *
  ***************************************************************************/
 
-package jolie.lang.parse.ast;
+include "../AbstractTestUnit.iol"
+interface iface{
+    RequestResponse: twice(int)(int)
+}
 
-import jolie.lang.parse.OLVisitor;
-import jolie.lang.parse.context.ParsingContext;
+outputPort out {
+    location: "local://out"
+    protocol: "sodep"
+    interfaces: iface
+}
 
-public class OutputPortInfo extends PortInfo
-{	
-	private OLSyntaxNode protocolId = null;
-	private OLSyntaxNode protocolConfiguration = null;
-	private OLSyntaxNode location = null;
-	
-	public OutputPortInfo( ParsingContext context, String id )
-	{
-		super( context, id );
-	}
-	
-	public void setProtocolId( OLSyntaxNode protocolId )
-	{
-		this.protocolId = protocolId;
-	}
-	
-	public void setProtocolConfiguration( OLSyntaxNode protocolConfiguration )
-	{
-		this.protocolConfiguration = protocolConfiguration;
-	}
-	
-	public void setLocation( OLSyntaxNode location )
-	{
-		this.location = location;
-	}
-	
-	@Override
-	public void accept( OLVisitor visitor )
-	{
-		visitor.visit( this );
-	}
-	
-	public OLSyntaxNode protocolId()
-	{
-		return protocolId;
-	}
-	
-	public OLSyntaxNode protocolConfiguration()
-	{
-		return protocolConfiguration;
-	}
-	
-	public OLSyntaxNode location()
-	{
-		return location;
-	}
+inputPort in {
+    location: "local://out"
+    protocol: "sodep"
+    interfaces: iface
+}
+
+define doTest {
+    [twice(req)(res){
+        res = req*s
+    }]
+    |
+    twice@out(2)(res)
 }

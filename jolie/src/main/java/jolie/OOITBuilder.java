@@ -449,12 +449,40 @@ public class OOITBuilder implements OLVisitor
 		}
 		currentOutputPort = null;
 
+		Expression locationExpr = buildExpression( n.location() );
+
+		OLSyntaxNode protocolNode = n.protocolId();
+		// backward compatability for protocol symbols
+		if ( protocolNode instanceof InlineTreeExpressionNode
+				&& ((InlineTreeExpressionNode) protocolNode)
+						.rootExpression() instanceof VariableExpressionNode ) {
+			InlineTreeExpressionNode inlineTreeNodeProtocol =
+					(InlineTreeExpressionNode) protocolNode;
+			if ( inlineTreeNodeProtocol.rootExpression() instanceof VariableExpressionNode ) {
+				String protocolSymbolStr =
+						((VariableExpressionNode) inlineTreeNodeProtocol.rootExpression())
+								.variablePath().toString();
+				protocolNode = new InlineTreeExpressionNode( n.protocol().context(),
+						new ConstantStringExpression( n.protocol().context(), protocolSymbolStr ),
+						inlineTreeNodeProtocol.operations() );
+			}
+		}
+		Expression protocolExpr = buildExpression( protocolNode );
+
+		
+		if ( protocolExpr instanceof VariablePath ) {
+			VariablePath protocolExprPath = (VariablePath) protocolExpr;
+			// initiate protocol related field from parameter fields
+
+			// error( n.context(), "Variable path protocol is not support to create inputPort" );
+		}
+
 		interpreter.register( n.id(), new OutputPort(
 				interpreter,
 				n.id(),
-				n.protocolId(),
+				locationExpr,
+				protocolExpr,
 				protocolConfigurationProcess,
-				n.location(),
 				getOutputPortInterface( n.id() ),
 				false
 			)
@@ -520,22 +548,22 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( InputPortInfo n )
 	{
-		currentPortInterface = new Interface(
+		currentPortInterface = new Interface( 
 			new HashMap< String, OneWayTypeDescription >(),
-			new HashMap< String, RequestResponseTypeDescription >()
+			new HashMap< String, RequestResponseTypeDescription >() 
 		);
-		for( OperationDeclaration op : n.operations() ) {
+		for (OperationDeclaration op : n.operations()) {
 			op.accept( this );
 		}
-		
-		Map< String, OutputPort > redirectionMap =
-			new HashMap< String, OutputPort > ();
+
+		Map< String, OutputPort > redirectionMap = new HashMap< String, OutputPort >();
 		OutputPort oPort = null;
-		for( Entry< String, String > entry : n.redirectionMap().entrySet() ) {
+		for (Entry< String, String > entry : n.redirectionMap().entrySet()) {
 			try {
 				oPort = interpreter.getOutputPort( entry.getValue() );
-			} catch( InvalidIdException e ) {
-				error( n.context(), "Unknown output port (" + entry.getValue() + ") in redirection for input port " + n.id() );
+			} catch (InvalidIdException e) {
+				error( n.context(), "Unknown output port (" + entry.getValue()
+						+ ") in redirection for input port " + n.id() );
 			}
 			redirectionMap.put( entry.getKey(), oPort );
 		}
@@ -543,9 +571,10 @@ public class OOITBuilder implements OLVisitor
 		OutputPort outputPort;
 		Map< String, OneWayTypeDescription > outputPortNotificationTypes;
 		Map< String, RequestResponseTypeDescription > outputPortSolicitResponseTypes;
-		Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
+		Map< String, AggregatedOperation > aggregationMap =
+				new HashMap< String, AggregatedOperation >();
 		InterfaceExtender extender;
-		for( InputPortInfo.AggregationItemInfo item : n.aggregationList() ) {
+		for (InputPortInfo.AggregationItemInfo item : n.aggregationList()) {
 			String outputPortName = item.outputPortList()[0];
 			if ( item.interfaceExtender() == null ) {
 				extender = null;
@@ -556,55 +585,73 @@ public class OOITBuilder implements OLVisitor
 				outputPort = interpreter.getOutputPort( outputPortName );
 				outputPortNotificationTypes = notificationTypes.get( outputPortName );
 				outputPortSolicitResponseTypes = solicitResponseTypes.get( outputPortName );
-				for( String operationName : outputPortNotificationTypes.keySet() ) {
-					aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.ONE_WAY, outputPort ) );
+				for (String operationName : outputPortNotificationTypes.keySet()) {
+					aggregationMap.put( operationName, AggregatedOperation.createDirect(
+							operationName, Constants.OperationType.ONE_WAY, outputPort ) );
 					putAggregationConfiguration( n.id(), operationName,
-						new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
+							new AggregationConfiguration( outputPort, outputPort.getInterface(),
+									extender ) );
 				}
-				for( String operationName : outputPortSolicitResponseTypes.keySet() ) {
-					aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.REQUEST_RESPONSE, outputPort ) );
+				for (String operationName : outputPortSolicitResponseTypes.keySet()) {
+					aggregationMap.put( operationName, AggregatedOperation.createDirect(
+							operationName, Constants.OperationType.REQUEST_RESPONSE, outputPort ) );
 					putAggregationConfiguration( n.id(), operationName,
-						new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
+							new AggregationConfiguration( outputPort, outputPort.getInterface(),
+									extender ) );
 				}
-			} catch( InvalidIdException e ) {
+			} catch (InvalidIdException e) {
 				error( n.context(), e );
 			}
 		}
-		
-		String pId = n.protocolId();
-		CommProtocolFactory protocolFactory = null;
 
 		VariablePath protocolConfigurationPath =
-			new VariablePathBuilder( true )
-			.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
-			.add( n.id(), 0 )
-			.add( Constants.PROTOCOL_NODE_NAME, 0 )
-			.toVariablePath();
-		try {
-			protocolFactory = interpreter.commCore().getCommProtocolFactory( pId );
-		} catch( IOException e ) {
-			error( n.context(), e );
-		}
+				new VariablePathBuilder( true ).add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+						.add( n.id(), 0 ).add( Constants.PROTOCOL_NODE_NAME, 0 ).toVariablePath();
 
 		VariablePath locationPath =
-			new VariablePathBuilder( true )
-			.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
-			.add( n.id(), 0 )
-			.add( Constants.LOCATION_NODE_NAME, 0 )
-			.toVariablePath();
-		locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
-		// Process assignLocation = new AssignmentProcess( locationPath, Value.create( n.location().toString() ) );
-		locationPath.getValue().setValue( n.location().toString() );
+				new VariablePathBuilder( true ).add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+						.add( n.id(), 0 ).add( Constants.LOCATION_NODE_NAME, 0 ).toVariablePath();
 
 		VariablePath protocolPath =
-			new VariablePathBuilder( true )
-			.add( Constants.INPUT_PORTS_NODE_NAME, 0 )
-			.add( n.id(), 0 )
-			.add( Constants.PROTOCOL_NODE_NAME, 0 )
-			.toVariablePath();
-		Process assignProtocol = new AssignmentProcess( protocolPath, Value.create( n.protocolId() ), n.context() );
-		Process[] confChildren = new Process[] { buildProcess( n.protocolConfiguration() ), assignProtocol };
+				new VariablePathBuilder( true ).add( Constants.INPUT_PORTS_NODE_NAME, 0 )
+						.add( n.id(), 0 ).add( Constants.PROTOCOL_NODE_NAME, 0 ).toVariablePath();
+
+		locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
+
+		Expression locationExpr = buildExpression( n.location() );
+		String location = null;
+		if ( locationExpr instanceof Value ) {
+			Value locationVal = locationExpr.evaluate();
+			location = locationVal.strValue();
+		} else if ( locationExpr instanceof VariablePath ) {
+			error( n.context(), "Variable path location is not support to create inputPort" );
+		} else {
+			error( n.context(), "location expression is not valid" );
+		}
+		locationPath.getValue().setValue( location );
+
+		Expression protocolExpr = buildExpression( n.protocolId() );
+		String protocol = null;
+		if ( protocolExpr instanceof Value ) {
+			Value protocolVal = protocolExpr.evaluate();
+			protocol = protocolVal.strValue();
+		} else if ( protocolExpr instanceof VariablePath ) {
+			VariablePath protocolExprPath = (VariablePath) protocolExpr;
+			// initiate protocol related field from parameter fields
+			// error( n.context(), "Variable path protocol is not support to create inputPort" );
+		}
+
+		Process[] confChildren =
+				new Process[] { buildProcess( n.protocolConfiguration() )};
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
+
+		CommProtocolFactory protocolFactory = null;
+
+		try {
+			protocolFactory = interpreter.commCore().getCommProtocolFactory( protocol );
+		} catch (IOException e) {
+			error( n.context(), e );
+		}
 
 		InputPort inputPort = new InputPort(
 			n.id(),
@@ -614,27 +661,26 @@ public class OOITBuilder implements OLVisitor
 			aggregationMap,
 			redirectionMap
 		);
-		
-		if ( n.location().toString().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+
+		if ( location.equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
 			try {
 				interpreter.commCore().addLocalInputPort( inputPort );
 				inputPorts.put( inputPort.name(), inputPort );
-			} catch( IOException e ) {
+			} catch (IOException e) {
 				error( n.context(), e );
 			}
-		} else if ( protocolFactory != null || n.location().getScheme().equals( Constants.LOCAL_LOCATION_KEYWORD ) ) {
+		} else if ( protocolFactory != null
+				|| location.startsWith( Constants.LOCAL_LOCATION_KEYWORD ) ) {
 			try {
-				interpreter.commCore().addInputPort(
-					inputPort,
-					protocolFactory,
-					protocolConfigurationSequence
-				);
+				interpreter.commCore().addInputPort( inputPort, protocolFactory,
+						protocolConfigurationSequence );
 				inputPorts.put( inputPort.name(), inputPort );
-			} catch( IOException ioe ) {
+			} catch (IOException ioe) {
 				error( n.context(), ioe );
 			}
 		} else {
-			error( n.context(), "Communication protocol extension for protocol " + pId + " not found." );
+			error( n.context(),
+					"Communication protocol extension for protocol " + protocol + " not found." );
 		}
 		currentPortInterface = null;
 	}
