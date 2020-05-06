@@ -441,7 +441,24 @@ public class OOITBuilder implements OLVisitor
 		currentOutputPort = null;
 
 		Expression locationExpr = buildExpression( n.location() );
-		Expression protocolExpr = buildExpression( n.protocolId() );
+
+		OLSyntaxNode protocolNode = n.protocolId();
+		// backward compatability for protocol symbols
+		if ( protocolNode instanceof InlineTreeExpressionNode
+				&& ((InlineTreeExpressionNode) protocolNode)
+						.rootExpression() instanceof VariableExpressionNode ) {
+			InlineTreeExpressionNode inlineTreeNodeProtocol =
+					(InlineTreeExpressionNode) protocolNode;
+			if ( inlineTreeNodeProtocol.rootExpression() instanceof VariableExpressionNode ) {
+				String protocolSymbolStr =
+						((VariableExpressionNode) inlineTreeNodeProtocol.rootExpression())
+								.variablePath().toString();
+				protocolNode = new InlineTreeExpressionNode( n.protocol().context(),
+						new ConstantStringExpression( n.protocol().context(), protocolSymbolStr ),
+						inlineTreeNodeProtocol.operations() );
+			}
+		}
+		Expression protocolExpr = buildExpression( protocolNode );
 
 		
 		if ( protocolExpr instanceof VariablePath ) {
