@@ -383,7 +383,7 @@ public class SemanticVerifier implements OLVisitor
 		checkCorrelationSets();
 		
 		if ( configuration.checkForMain && mainDefined == false ) {
-			error( null, "Main procedure not defined" );
+			error( null, "Main Service not defined" );
 		}
 
 		if ( !valid ) {
