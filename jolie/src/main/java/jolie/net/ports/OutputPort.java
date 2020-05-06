@@ -66,7 +66,6 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 		String id,
 		Expression locationExpr,
 		Expression protocolExpr,
-		Process protocolConfigurationProcess,
 		Interface iface,
 		boolean isConstant )
 	{
@@ -87,10 +86,6 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 			children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
 		}
 		
-		if ( protocolConfigurationProcess != null ) {
-			children.add( protocolConfigurationProcess );
-		}
-
 		if ( protocolExpr != null ) {
 			children.add( new DeepCopyProcess( this.protocolVariablePath, protocolExpr, true, null ) );
 		}

@@ -1263,33 +1263,6 @@ public class OLParser extends AbstractParser
 				checkConstant();
 
 				protocolId = parseBasicExpression();
-
-				// // backward compatability for protocol symbol
-				// if ( token.isIdentifier() ) {
-				// 	protocolId = new ConstantStringExpression( getContext(), token.content() );
-				// } else if ( token.is( Scanner.TokenType.STRING ) ) {
-				// 	protocolId = new ConstantStringExpression( getContext(), token.content() );
-				// } else {
-				// 	throwException( "expected String or protocol Symbol" );
-				// }
-				// getToken();
-
-				// if ( token.is( Scanner.TokenType.LCURLY ) ) {
-				// 	addTokens( Arrays.asList(
-				// 		new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
-				// 		new Scanner.Token( Scanner.TokenType.DOT ),
-				// 		new Scanner.Token( Scanner.TokenType.ID, Constants.INPUT_PORTS_NODE_NAME ),
-				// 		new Scanner.Token( Scanner.TokenType.DOT ),
-				// 		new Scanner.Token( Scanner.TokenType.ID, inputPortName ),
-				// 		new Scanner.Token( Scanner.TokenType.DOT ),
-				// 		new Scanner.Token( Scanner.TokenType.ID, Constants.PROTOCOL_NODE_NAME ),
-				// 		new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
-				// 		token ) );
-				// 	// Protocol configuration
-				// 	getToken();
-				// 	//protocolConfiguration = parseInVariablePathProcess( false );
-				// 	protocolConfiguration = parseBasicStatement();
-				// }
 			} else if ( token.isKeyword( "redirects" ) || token.isKeyword( "Redirects" ) ) {
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
@@ -1480,7 +1453,7 @@ public class OLParser extends AbstractParser
 				OLSyntaxNode expr = parseBasicExpression();
 				p.setLocation( expr );
 			} else if ( token.isKeyword( "protocol" ) || token.isKeyword( "Protocol" ) ) {
-				if ( p.protocolId() != null ) {
+				if ( p.protocol() != null ) {
 					throwException( "Protocol already defined for output port " + p.id() );
 				}
 
@@ -1488,28 +1461,7 @@ public class OLParser extends AbstractParser
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
 				OLSyntaxNode protocol = parseBasicExpression();
-
-				// ConstantStringExpression protocolString = null;
-				// // backward compatability for protocol symbol
-				// if ( token.isIdentifier() ) {
-				// 	protocolString = new ConstantStringExpression( getContext(), token.content() );
-				// } else if ( token.is( Scanner.TokenType.STRING ) ) {
-				// 	protocolString = new ConstantStringExpression( getContext(), token.content() );
-				// } else {
-				// 	throwException( "expected String or protocol Symbol" );
-				// }
-				p.setProtocolId( protocol );
-				// if ( token.is( Scanner.TokenType.LCURLY ) ) {
-				// 	addTokens( Arrays.asList(
-				// 		new Scanner.Token( Scanner.TokenType.ID, p.id() ),
-				// 		new Scanner.Token( Scanner.TokenType.DOT ),
-				// 		new Scanner.Token( Scanner.TokenType.ID, "protocol" ),
-				// 		new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
-				// 		token ) );
-				// 	// Protocol configuration
-				// 	getToken();
-				// 	p.setProtocolConfiguration( parseBasicStatement() );
-				// }
+				p.setProtocol( protocol );
 			} else {
 				keepRun = false;
 			}

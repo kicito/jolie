@@ -165,17 +165,13 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( OutputPortInfo p )
 		{
-			if ( p.protocolConfiguration() != null ) {
-				p.protocolConfiguration().accept( this );
-				p.setProtocolConfiguration( currNode );
-			}
 			if ( p.location() != null ) {
 				p.location().accept( this );
 				p.setLocation( currNode );
 			}
-			if ( p.protocolId() != null ) {
-				p.protocolId().accept( this );
-				p.setProtocolId( currNode );
+			if ( p.protocol() != null ) {
+				p.protocol().accept( this );
+				p.setProtocol( currNode );
 			}
 			programChildren.add( p );
 		}

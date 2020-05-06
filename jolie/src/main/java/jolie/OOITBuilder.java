@@ -436,10 +436,6 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( OutputPortInfo n )
 	{
-		final Process protocolConfigurationProcess =
-			( n.protocolConfiguration() != null ) ? buildProcess( n.protocolConfiguration() )
-			: NullProcess.getInstance();
-		
 		// final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
 
 		currentOutputPort = n.id();
@@ -452,7 +448,7 @@ public class OOITBuilder implements OLVisitor
 
 		Expression locationExpr = buildExpression( n.location() );
 
-		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocolId());
+		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocol());
 		Expression protocolExpr = buildExpression( protocolNode );
 		// backward compatability for protocol symbols
 		// if ( protocolNode instanceof InlineTreeExpressionNode
@@ -483,7 +479,6 @@ public class OOITBuilder implements OLVisitor
 				n.id(),
 				locationExpr,
 				protocolExpr,
-				protocolConfigurationProcess,
 				getOutputPortInterface( n.id() ),
 				false
 			)
