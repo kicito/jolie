@@ -56,6 +56,7 @@ import jolie.lang.parse.ast.DefinitionCallStatement;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode2;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -133,6 +134,7 @@ import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.SymbolInfo;
+import jolie.lang.parse.module.SymbolInfo.Privacy;
 import jolie.lang.parse.util.Jolie2Utility;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
@@ -254,7 +256,10 @@ public class OLParser extends AbstractParser
 			this::parseConstants,
 			this::parseExecution,
 			this::parseCorrelationSets,
-			this::parseSymbols,
+			this::parsePrivacy,
+			this::parseTypes,
+			this::parseDefinitions,
+			this::parseInterfaces,
 			this::parsePorts,
 			this::parseEmbedded,
 			this::parseService,
@@ -262,66 +267,102 @@ public class OLParser extends AbstractParser
 		);
 	}
 
-	private void parseSymbols() throws IOException, ParserException
+	private SymbolInfo.Privacy currPrivacy = SymbolInfo.Privacy.PUBLIC;
+
+	private void parsePrivacy()
+		throws IOException, ParserException
+	{
+		// parse symbol privacy
+		if ( token.isKeyword( "private" ) ) {
+			currPrivacy = SymbolInfo.Privacy.PRIVATE;
+			getToken();
+		}
+	}
+
+	private void parseTypes()
+		throws IOException, ParserException
+	{
+		Scanner.Token commentToken = null;
+		boolean keepRun = true;
+		boolean haveComment = false;
+		while( keepRun ) {
+			if ( token.is( Scanner.TokenType.DOCUMENTATION_FORWARD ) ) {
+				haveComment = true;
+				commentToken = token;
+				getToken();
+			} else if ( token.isKeyword( "type" ) ) {
+				String typeName;
+				TypeDefinition currentType;
+
+				getToken();
+				typeName = token.content();
+				eat( Scanner.TokenType.ID, "expected type name" );
+				if ( token.is( Scanner.TokenType.COLON ) ) {
+					getToken();
+				} else {
+					prependToken( new Scanner.Token( Scanner.TokenType.ID, NativeType.VOID.id() ) );
+					getToken();
+				}
+
+				currentType = parseType( typeName );
+
+				currentType.setPrivacy( currPrivacy );
+				currPrivacy = SymbolInfo.Privacy.PUBLIC;
+
+				if( haveComment ){ haveComment = false; }
+				parseBackwardAndSetDocumentation( currentType, Optional.ofNullable( commentToken ) );
+				commentToken = null;
+				
+				typeName = currentType.id();
+
+				definedTypes.put( typeName, currentType );
+				programBuilder.addChild( currentType );
+			} else {
+				keepRun = false;
+				if ( haveComment ) { //  we return the comment and the subsequent token since we did not use them
+					addToken( commentToken );
+					addToken( token );
+					getToken();
+				}
+			}
+		}
+	}
+
+	private void parseDefinitions()
+		throws IOException, ParserException
+	{
+		if ( token.is( Scanner.TokenType.DEFINE ) ) {
+			DefinitionNode defNode = parseDefinition();
+			defNode.setPrivacy( currPrivacy );
+			currPrivacy = SymbolInfo.Privacy.PUBLIC;
+			programBuilder.addChild( defNode );
+		}
+	}
+
+	private void parseInterfaces() 
+		throws IOException, ParserException
 	{
 		Optional< Scanner.Token > forwardDocToken = parseForwardDocumentation();
 
-		DocumentedNode docNode = null;
-		OLSyntaxNode node = null;
-		SymbolInfo.Privacy privacy = SymbolInfo.Privacy.PUBLIC;
-		
-		// parse symbol privacy
-		if ( token.isKeyword( "private" ) ) {
-			privacy = SymbolInfo.Privacy.PRIVATE;
+		if ( token.isKeyword( "interface" ) ) {
 			getToken();
-		}
-
-		if ( token.is( Scanner.TokenType.DEFINE ) ) {
-			DefinitionNode defNode = parseDefinition();
-			defNode.setPrivacy( privacy );
-			node = defNode;
-		} else if ( token.isKeyword( "type" ) ) {
-			String typeName;
-			TypeDefinition currentType;
-			getToken();
-			typeName = token.content();
-			eat( Scanner.TokenType.ID, "expected type name" );
-			if ( token.is( Scanner.TokenType.COLON ) ) {
-				getToken();
-			} else {
-				prependToken( new Scanner.Token( Scanner.TokenType.ID, NativeType.VOID.id() ) );
-				getToken();
-			}
-
-			currentType = parseType( typeName );
-			currentType.setPrivacy(privacy);
-			node = currentType;
-			docNode = currentType;
-			definedTypes.put( typeName, currentType );
-		} else if ( token.isKeyword( "interface" ) ) {
-			getToken();
+			DocumentedNode docNode = null;
 			final InterfaceDefinition iface;
 			if ( token.isKeyword( "extender" ) ) {
 				getToken();
 				iface = parseInterfaceExtender();
-				node = iface;
 				docNode = iface;
 			} else {
 				iface = parseInterface();
-				node = iface;
 				docNode = iface;
 			}
-			iface.setPrivacy(privacy);
-		} else {
-			return;
+			if ( docNode != null ) {
+				parseBackwardAndSetDocumentation( docNode, forwardDocToken );
+			}
+			iface.setPrivacy( currPrivacy );
+			currPrivacy = SymbolInfo.Privacy.PUBLIC;
+			programBuilder.addChild( iface );
 		}
-		if (docNode != null){
-			parseBackwardAndSetDocumentation( docNode, forwardDocToken );
-		}
-		if (node != null) {
-			programBuilder.addChild( node );
-		}
-
 	}
 	
 	private TypeDefinition parseType( String typeName )
@@ -543,6 +584,8 @@ public class OLParser extends AbstractParser
 					type = Constants.EmbeddedServiceType.JOLIE;
 				} else if ( token.isKeyword( "JavaScript" ) ) {
 					type = Constants.EmbeddedServiceType.JAVASCRIPT;
+				} else if ( token.isKeyword( "Service" ) ) {
+					type = Constants.EmbeddedServiceType.SERVICE;
 				}
 				if ( type == null ) {
 					keepRun = false;
@@ -561,12 +604,22 @@ public class OLParser extends AbstractParser
 						} else {
 							portId = null;
 						}
-						programBuilder.addChild(
-							new EmbeddedServiceNode(
-							getContext(),
-							type,
-							servicePath,
-							portId ) );
+						if ( type == Constants.EmbeddedServiceType.SERVICE ) {
+							programBuilder.addChild(
+								new EmbeddedServiceNode2(
+									getContext(),
+									servicePath,
+									portId ) 
+								);
+						} else {
+							programBuilder.addChild( 
+								new EmbeddedServiceNode(
+									getContext(),
+									type,
+									servicePath,
+									portId )
+								);
+						}
 						if ( token.is( Scanner.TokenType.COMMA ) ) {
 							getToken();
 						} else {

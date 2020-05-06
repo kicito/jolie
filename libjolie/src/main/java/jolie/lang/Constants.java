@@ -145,7 +145,13 @@ public final class Constants
 
 	public enum EmbeddedServiceType
 	{
-		JOLIE("Jolie"), JAVA("Java"), JAVASCRIPT("JavaScript"), INTERNAL("JolieInternal"), UNSUPPORTED("Unsupported");
+		
+		JOLIE("Jolie"),
+		JAVA("Java"),
+		JAVASCRIPT("JavaScript"),
+		INTERNAL("JolieInternal"),
+		SERVICE("Service"),
+		UNSUPPORTED("Unsupported");
 		
 		private final String str;
 		
@@ -170,6 +176,8 @@ public final class Constants
 				return EmbeddedServiceType.JAVA;
 			case "javascript":
 				return EmbeddedServiceType.JAVASCRIPT;
+			case "service":
+				return EmbeddedServiceType.SERVICE;
 			default:
 				return EmbeddedServiceType.UNSUPPORTED;
 		}
