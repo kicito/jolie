@@ -6,6 +6,10 @@ import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SymbolNode;
+import jolie.lang.parse.ast.VariablePathNode;
+import jolie.lang.parse.ast.expression.ConstantStringExpression;
+import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
+import jolie.lang.parse.ast.expression.VariableExpressionNode;
 
 /**
  * A Utility class to handle backward compatibility of Jolie 1
@@ -48,9 +52,47 @@ public class Jolie2Utility
             } else {
                 if ( node instanceof ImportStatement ) {
                     moduleProgramBuilder.addChild( node );
-                }else{
+                } else {
                     mainServiceProgramBuilder.addChild( node );
                 }
             }
-        }mainService.setProgram(mainServiceProgramBuilder.toProgram());moduleProgramBuilder.addChild(mainService);return moduleProgramBuilder.toProgram();
-}}
+        }
+        mainService.setProgram( mainServiceProgramBuilder.toProgram() );
+        moduleProgramBuilder.addChild( mainService );
+        return moduleProgramBuilder.toProgram();
+    }
+
+
+    public static OLSyntaxNode transformProtocolExpression( OLSyntaxNode node )
+    {
+        // case http -> "http" return ConstantString
+        // case http { .... } -> "http" {} return InlineTreeExpression
+        // case some.proc -> do noting. return VariablePathNode
+        // case "http" {} -> do noting. return InlineTreeExpression
+
+        // case 1
+
+        if ( node instanceof VariableExpressionNode ){
+            VariableExpressionNode varExprNode = (VariableExpressionNode)node;
+            VariablePathNode varPathNode = varExprNode.variablePath();
+            if (varPathNode.path().size() == 1){
+                return varPathNode.path().get(0).key();
+            }
+        }
+
+        if ( node instanceof InlineTreeExpressionNode && ((InlineTreeExpressionNode) node)
+                .rootExpression() instanceof VariableExpressionNode ) {
+            InlineTreeExpressionNode inlineTreeNodeProtocol = (InlineTreeExpressionNode) node;
+            if ( inlineTreeNodeProtocol.rootExpression() instanceof VariableExpressionNode ) {
+                String protocolSymbolStr =
+                        ((VariableExpressionNode) inlineTreeNodeProtocol.rootExpression())
+                                .variablePath().toString();
+                node = new InlineTreeExpressionNode( inlineTreeNodeProtocol.context(),
+                        new ConstantStringExpression( inlineTreeNodeProtocol.context(),
+                                protocolSymbolStr ),
+                        inlineTreeNodeProtocol.operations() );
+            }
+        }
+        return node;
+    }
+}

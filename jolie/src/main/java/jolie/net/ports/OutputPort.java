@@ -34,6 +34,7 @@ import jolie.net.CommChannel;
 import jolie.net.CommMessage;
 import jolie.net.protocols.CommProtocol;
 import jolie.process.AssignmentProcess;
+import jolie.process.DeepCopyProcess;
 import jolie.process.NullProcess;
 import jolie.process.Process;
 import jolie.process.SequentialProcess;
@@ -91,7 +92,7 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 		}
 
 		if ( protocolExpr != null ) {
-			children.add( new AssignmentProcess( this.protocolVariablePath, protocolExpr, null ) );
+			children.add( new DeepCopyProcess( this.protocolVariablePath, protocolExpr, true, null ) );
 		}
 
 		if ( children.size() == 0 ) {

@@ -128,6 +128,7 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.util.Jolie2Utility;
 import jolie.net.AggregatedOperation;
 import jolie.net.ext.CommProtocolFactory;
 import jolie.net.ports.InputPort;
@@ -451,25 +452,25 @@ public class OOITBuilder implements OLVisitor
 
 		Expression locationExpr = buildExpression( n.location() );
 
-		OLSyntaxNode protocolNode = n.protocolId();
-		// backward compatability for protocol symbols
-		if ( protocolNode instanceof InlineTreeExpressionNode
-				&& ((InlineTreeExpressionNode) protocolNode)
-						.rootExpression() instanceof VariableExpressionNode ) {
-			InlineTreeExpressionNode inlineTreeNodeProtocol =
-					(InlineTreeExpressionNode) protocolNode;
-			if ( inlineTreeNodeProtocol.rootExpression() instanceof VariableExpressionNode ) {
-				String protocolSymbolStr =
-						((VariableExpressionNode) inlineTreeNodeProtocol.rootExpression())
-								.variablePath().toString();
-				protocolNode = new InlineTreeExpressionNode( n.protocol().context(),
-						new ConstantStringExpression( n.protocol().context(), protocolSymbolStr ),
-						inlineTreeNodeProtocol.operations() );
-			}
-		}
+		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocolId());
 		Expression protocolExpr = buildExpression( protocolNode );
+		// backward compatability for protocol symbols
+		// if ( protocolNode instanceof InlineTreeExpressionNode
+		// 		&& ((InlineTreeExpressionNode) protocolNode)
+		// 				.rootExpression() instanceof VariableExpressionNode ) {
+		// 	InlineTreeExpressionNode inlineTreeNodeProtocol =
+		// 			(InlineTreeExpressionNode) protocolNode;
+		// 	if ( inlineTreeNodeProtocol.rootExpression() instanceof VariableExpressionNode ) {
+		// 		String protocolSymbolStr =
+		// 				((VariableExpressionNode) inlineTreeNodeProtocol.rootExpression())
+		// 						.variablePath().toString();
+		// 		protocolNode = new InlineTreeExpressionNode( n.protocolId().context(),
+		// 				new ConstantStringExpression( n.protocolId().context(), protocolSymbolStr ),
+		// 				inlineTreeNodeProtocol.operations() );
+		// 	}
+		// }
+		// Expression protocolExpr = buildExpression( protocolNode );
 
-		
 		if ( protocolExpr instanceof VariablePath ) {
 			VariablePath protocolExprPath = (VariablePath) protocolExpr;
 			// initiate protocol related field from parameter fields
@@ -629,20 +630,21 @@ public class OOITBuilder implements OLVisitor
 			error( n.context(), "location expression is not valid" );
 		}
 		locationPath.getValue().setValue( location );
-
-		Expression protocolExpr = buildExpression( n.protocolId() );
+		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocolId());
+		Expression protocolExpr = buildExpression( protocolNode );
 		String protocol = null;
-		if ( protocolExpr instanceof Value ) {
+		if ( protocolExpr instanceof Value ||  protocolExpr instanceof InlineTreeExpression) {
 			Value protocolVal = protocolExpr.evaluate();
 			protocol = protocolVal.strValue();
 		} else if ( protocolExpr instanceof VariablePath ) {
 			VariablePath protocolExprPath = (VariablePath) protocolExpr;
 			// initiate protocol related field from parameter fields
-			// error( n.context(), "Variable path protocol is not support to create inputPort" );
+			error( n.context(), "Variable path protocol is not support to create inputPort" );
 		}
 
-		Process[] confChildren =
-				new Process[] { buildProcess( n.protocolConfiguration() )};
+		Process protocolProc = protocolExpr == null ? NullProcess.getInstance()
+				: new DeepCopyProcess( protocolPath, protocolExpr, true, n.context() );
+		Process[] confChildren = new Process[] {protocolProc};
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
 
 		CommProtocolFactory protocolFactory = null;
@@ -680,7 +682,7 @@ public class OOITBuilder implements OLVisitor
 			}
 		} else {
 			error( n.context(),
-					"Communication protocol extension for protocol " + protocol + " not found." );
+					"Communication protocol extension for protocol " + protocol + " of port " + n.id() + " not found." );
 		}
 		currentPortInterface = null;
 	}

@@ -972,25 +972,23 @@ public class OLParser extends AbstractParser
 		return p;
 	}
     
-	private InputPortInfo createInternalServiceInputPort( String serviceName, InterfaceDefinition[] interfaces )
-		throws ParserException
+	private InputPortInfo createInternalServiceInputPort( String serviceName,
+			InterfaceDefinition[] interfaces ) throws ParserException
 	{
 		OLSyntaxNode protocolConfiguration = new NullProcessStatement( getContext() );
 		InputPortInfo iport = null;
-		iport = new InputPortInfo(
-			getContext(),
-			serviceName + "InputPort", //input port name
-			new ConstantStringExpression(getContext(), Constants.LOCAL_LOCATION_KEYWORD),
+		iport = new InputPortInfo( 
+			getContext(), 
+			serviceName + "InputPort", // input port name
+			new ConstantStringExpression( getContext(), Constants.LOCAL_LOCATION_KEYWORD ),
 			null,
 			protocolConfiguration,
-			new InputPortInfo.AggregationItemInfo[]{},
-			Collections.<String, String>emptyMap() );
+			new InputPortInfo.AggregationItemInfo[] {},
+			Collections.< String, String >emptyMap() 
+		);
 
-			for( InterfaceDefinition i : interfaces ) {
-				iport.addInterface(i);
-			}
-		} catch( URISyntaxException e ) {
-			throwException( e );
+		for (InterfaceDefinition i : interfaces) {
+			iport.addInterface( i );
 		}
 		return iport;
 	}
@@ -1051,6 +1049,8 @@ public class OLParser extends AbstractParser
 			switch (token.content()) {
 				case "Interfaces":
 					internalIfaces = parseInternalServiceInterface();
+				case "include":
+					parseInclude();
 				case "cset":
 					for (CorrelationSetInfo csetInfo : _parseCorrelationSets()) {
 						serviceNodeBuilder.addChild( csetInfo );
@@ -1199,123 +1199,6 @@ public class OLParser extends AbstractParser
 		return currInternalServiceIfaceList.toArray( new InterfaceDefinition[0] );
 	}
     
-	// /**
-	//  * Parses an internal service, i.e. service service_name {}
-	//  *
-	//  * @throws IOException
-	//  * @throws ParserException
-	//  */
-	// private void parseInternalService()
-	// 	throws IOException, ParserException
-	// {
-	// 	//only proceed if a service declaration
-	// 	if ( !token.isKeyword( "service" ) ) {
-	// 		return;
-	// 	}
-
-	// 	//get service name
-	// 	getToken();
-	// 	assertToken( Scanner.TokenType.ID, "expected service name" );
-	// 	String internalServiceName = token.content();
-
-	// 	//validate token
-	// 	getToken();
-	// 	eat( Scanner.TokenType.LCURLY, "{ expected" );
-
-	// 	//initialize internal interface and interface list
-	// 	List< InterfaceDefinition> interfaceList = new ArrayList<>();
-
-	// 	OLSyntaxNode internalMain = null;
-	// 	SequenceStatement internalInit = null;
-
-	// 	boolean keepRunning = true;
-	// 	while( keepRunning ) {
-	// 		if ( token.isKeyword( "Interfaces" ) ) {
-	// 			getToken();
-	// 			eat( Scanner.TokenType.COLON, "expected : after Interfaces" );
-	// 			boolean keepRun = true;
-	// 			while( keepRun ) {
-	// 				assertToken( Scanner.TokenType.ID, "expected interface name" );
-	// 				InterfaceDefinition i = interfaces.get( token.content() );
-	// 				if ( i == null ) {
-	// 					throwException( "Invalid interface name: " + token.content() );
-	// 				}
-	// 				interfaceList.add( i );
-	// 				getToken();
-
-	// 				if ( token.is( Scanner.TokenType.COMMA ) ) {
-	// 					getToken();
-	// 				} else {
-	// 					keepRun = false;
-	// 				}
-	// 			}
-	// 		} else if ( token.isKeyword( "main" ) ) {
-	// 			if ( internalMain != null ) {
-	// 				throwException( "you must specify only one main definition" );
-	// 			}
-
-	// 			internalMain = parseMain();
-	// 		} else if ( token.is( Scanner.TokenType.INIT ) ) {
-	// 			if ( internalInit == null ) {
-	// 				internalInit = new SequenceStatement( getContext() );
-	// 			}
-
-	// 			internalInit.addChild( parseInit() );
-	// 		} else if ( token.is( Scanner.TokenType.RCURLY ) ) {
-	// 			keepRunning = false;
-	// 		} else {
-	// 			throwException( "Unrecognized token in inline service." );
-	// 		}
-	// 	}
-
-	// 	//validate ending
-	// 	eat( Scanner.TokenType.RCURLY, "} expected" );
-
-	// 	//main in service needs to be defined
-	// 	if ( internalMain == null ) {
-	// 		throwException( "You must specify a main for internal service " + internalServiceName );
-	// 	}
-
-	// 	//add output port to main program
-	// 	programBuilder.addChild( createInternalServicePort( internalServiceName, interfaceList ) );
-		
-	// 	//create Program representing the internal service
-	// 	ProgramBuilder internalServiceProgramBuilder = new ProgramBuilder( getContext() );
-
-	// 	// copy children of parent to embedded service
-	// 	for( OLSyntaxNode child : programBuilder.children() ) {
-	// 		if ( child instanceof InterfaceDefinition
-	// 			|| child instanceof OutputPortInfo
-	// 			|| child instanceof TypeDefinition ) {
-	// 			internalServiceProgramBuilder.addChild( child );
-	// 		}
-	// 	}
-
-	// 	// set execution to always concurrent
-	// 	internalServiceProgramBuilder.addChild( new ExecutionInfo( getContext(), Constants.ExecutionMode.CONCURRENT ) );
-
-	// 	//add input port to internal service
-	// 	internalServiceProgramBuilder.addChild( createInternalServiceInputPort( internalServiceName, interfaceList ) );
-
-	// 	//add init if defined in internal service
-	// 	if ( internalInit != null ) {
-	// 		internalServiceProgramBuilder.addChild( new DefinitionNode( getContext(), "init", internalInit ) );
-	// 	}
-
-	// 	//add main defined in internal service
-	// 	internalServiceProgramBuilder.addChild( internalMain );
-
-	// 	//create internal embedded service node
-	// 	EmbeddedServiceNode internalServiceNode
-	// 		= new EmbeddedServiceNode( getContext(), Constants.EmbeddedServiceType.INTERNAL, internalServiceName, internalServiceName );
-
-	// 	//add internal service program to embedded service node
-	// 	internalServiceNode.setProgram( internalServiceProgramBuilder.toProgram() );
-
-	// 	//add embedded service node to program that is embedding it
-	// 	programBuilder.addChild( internalServiceNode );
-	// }
-    
 	private InputPortInfo parseInputPortInfo()
 		throws IOException, ParserException
 	{
@@ -1362,11 +1245,6 @@ public class OLParser extends AbstractParser
 					assertToken( Scanner.TokenType.ID, "expected interface name" );
 					InterfaceDefinition i =
 							new InterfaceDefinition( getContext(), token.content() );
-					// InterfaceDefinition i = interfaces.get( token.content() );
-					// if ( i == null ) {
-					// // throwException( "Invalid interface name: " + token.content() );
-					// }
-					// i.copyTo( iface );
 					interfaceList.add( i );
 					getToken();
 
@@ -1384,32 +1262,34 @@ public class OLParser extends AbstractParser
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
 
-				// backward compatability for protocol symbol
-				if ( token.isIdentifier() ) {
-					protocolId = new ConstantStringExpression( getContext(), token.content() );
-				} else if ( token.is( Scanner.TokenType.STRING ) ) {
-					protocolId = new ConstantStringExpression( getContext(), token.content() );
-				} else {
-					throwException( "expected String or protocol Symbol" );
-				}
-				getToken();
+				protocolId = parseBasicExpression();
 
-				if ( token.is( Scanner.TokenType.LCURLY ) ) {
-					addTokens( Arrays.asList(
-						new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
-						new Scanner.Token( Scanner.TokenType.DOT ),
-						new Scanner.Token( Scanner.TokenType.ID, Constants.INPUT_PORTS_NODE_NAME ),
-						new Scanner.Token( Scanner.TokenType.DOT ),
-						new Scanner.Token( Scanner.TokenType.ID, inputPortName ),
-						new Scanner.Token( Scanner.TokenType.DOT ),
-						new Scanner.Token( Scanner.TokenType.ID, Constants.PROTOCOL_NODE_NAME ),
-						new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
-						token ) );
-					// Protocol configuration
-					getToken();
-					//protocolConfiguration = parseInVariablePathProcess( false );
-					protocolConfiguration = parseBasicStatement();
-				}
+				// // backward compatability for protocol symbol
+				// if ( token.isIdentifier() ) {
+				// 	protocolId = new ConstantStringExpression( getContext(), token.content() );
+				// } else if ( token.is( Scanner.TokenType.STRING ) ) {
+				// 	protocolId = new ConstantStringExpression( getContext(), token.content() );
+				// } else {
+				// 	throwException( "expected String or protocol Symbol" );
+				// }
+				// getToken();
+
+				// if ( token.is( Scanner.TokenType.LCURLY ) ) {
+				// 	addTokens( Arrays.asList(
+				// 		new Scanner.Token( Scanner.TokenType.ID, Constants.GLOBAL ),
+				// 		new Scanner.Token( Scanner.TokenType.DOT ),
+				// 		new Scanner.Token( Scanner.TokenType.ID, Constants.INPUT_PORTS_NODE_NAME ),
+				// 		new Scanner.Token( Scanner.TokenType.DOT ),
+				// 		new Scanner.Token( Scanner.TokenType.ID, inputPortName ),
+				// 		new Scanner.Token( Scanner.TokenType.DOT ),
+				// 		new Scanner.Token( Scanner.TokenType.ID, Constants.PROTOCOL_NODE_NAME ),
+				// 		new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
+				// 		token ) );
+				// 	// Protocol configuration
+				// 	getToken();
+				// 	//protocolConfiguration = parseInVariablePathProcess( false );
+				// 	protocolConfiguration = parseBasicStatement();
+				// }
 			} else if ( token.isKeyword( "redirects" ) || token.isKeyword( "Redirects" ) ) {
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
@@ -1607,28 +1487,29 @@ public class OLParser extends AbstractParser
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected :" );
 				checkConstant();
-				ConstantStringExpression protocolString = null;
-				// backward compatability for protocol symbol
-				if ( token.isIdentifier() ) {
-					protocolString = new ConstantStringExpression( getContext(), token.content() );
-				} else if ( token.is( Scanner.TokenType.STRING ) ) {
-					protocolString = new ConstantStringExpression( getContext(), token.content() );
-				} else {
-					throwException( "expected String or protocol Symbol" );
-				}
-				p.setProtocolId( protocolString );
-				getToken();
-				if ( token.is( Scanner.TokenType.LCURLY ) ) {
-					addTokens( Arrays.asList(
-						new Scanner.Token( Scanner.TokenType.ID, p.id() ),
-						new Scanner.Token( Scanner.TokenType.DOT ),
-						new Scanner.Token( Scanner.TokenType.ID, "protocol" ),
-						new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
-						token ) );
-					// Protocol configuration
-					getToken();
-					p.setProtocolConfiguration( parseBasicStatement() );
-				}
+				OLSyntaxNode protocol = parseBasicExpression();
+
+				// ConstantStringExpression protocolString = null;
+				// // backward compatability for protocol symbol
+				// if ( token.isIdentifier() ) {
+				// 	protocolString = new ConstantStringExpression( getContext(), token.content() );
+				// } else if ( token.is( Scanner.TokenType.STRING ) ) {
+				// 	protocolString = new ConstantStringExpression( getContext(), token.content() );
+				// } else {
+				// 	throwException( "expected String or protocol Symbol" );
+				// }
+				p.setProtocolId( protocol );
+				// if ( token.is( Scanner.TokenType.LCURLY ) ) {
+				// 	addTokens( Arrays.asList(
+				// 		new Scanner.Token( Scanner.TokenType.ID, p.id() ),
+				// 		new Scanner.Token( Scanner.TokenType.DOT ),
+				// 		new Scanner.Token( Scanner.TokenType.ID, "protocol" ),
+				// 		new Scanner.Token( Scanner.TokenType.DEEP_COPY_WITH_LINKS_LEFT ),
+				// 		token ) );
+				// 	// Protocol configuration
+				// 	getToken();
+				// 	p.setProtocolConfiguration( parseBasicStatement() );
+				// }
 			} else {
 				keepRun = false;
 			}
