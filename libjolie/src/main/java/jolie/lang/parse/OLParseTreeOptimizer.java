@@ -180,13 +180,9 @@ public class OLParseTreeOptimizer
 		public void visit( InputPortInfo p )
 		{
 			OLSyntaxNode location = optimize(p.location());
-			OLSyntaxNode protocol = p.protocolId();
-			if ( p.protocolId() != null ){
-				protocol = optimize(p.protocolId());
-			}
-			OLSyntaxNode protocolConfig = null;
-			if ( p.protocolConfiguration() != null ) {
-				protocolConfig = optimize(p.protocolConfiguration());
+			OLSyntaxNode protocol = p.protocol();
+			if ( p.protocol() != null ){
+				protocol = optimize(p.protocol());
 			}
 			InputPortInfo iport =
 				new InputPortInfo(
@@ -194,7 +190,6 @@ public class OLParseTreeOptimizer
 						p.id(),
 						location,
 						protocol,
-						protocolConfig,
 						p.aggregationList(),
 						p.redirectionMap()
 				);

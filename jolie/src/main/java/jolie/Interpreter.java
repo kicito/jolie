@@ -30,12 +30,10 @@ import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -62,8 +60,6 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import jolie.lang.Constants;
 import jolie.lang.parse.OLParseTreeOptimizer;
-import jolie.lang.parse.OLParser;
-import jolie.lang.parse.ParserException;
 import jolie.lang.parse.Scanner;
 import jolie.lang.parse.SemanticException;
 import jolie.lang.parse.SemanticVerifier;
@@ -74,7 +70,6 @@ import jolie.lang.parse.module.ModuleCrawler;
 import jolie.lang.parse.module.ModuleParser;
 import jolie.lang.parse.module.ModuleRecord;
 import jolie.lang.parse.module.SymbolTable;
-import jolie.lang.parse.module.SymbolTableGenerator;
 import jolie.lang.parse.util.Jolie2Utility;
 import jolie.monitoring.MonitoringEvent;
 import jolie.monitoring.events.MonitorAttachedEvent;
@@ -1085,7 +1080,7 @@ public class Interpreter
              * 1 - CommCore needs the OOIT to be initialized.
              * 2 - initExec must be instantiated before we can receive communications.
              */
-            if ( buildOOIT2() == false && !check ) {
+            if ( buildOOIT() == false && !check ) {
                 throw new InterpreterException( "Error: service initialisation failed" );
             }
             if ( check ){
@@ -1262,7 +1257,7 @@ public class Interpreter
 		return commCore;
 	}
 
-	private boolean buildOOIT2()
+	private boolean buildOOIT()
 		throws InterpreterException
 	{ 
 		try {
@@ -1352,82 +1347,6 @@ public class Interpreter
 			cmdParser = null; // Free memory
 		}
 
-	}
-	
-	private boolean buildOOIT()
-		throws InterpreterException
-	{        
-		try {
-			Program program;
-			if ( cmdParser.isProgramCompiled() ) {
-				try ( final ObjectInputStream istream = new ObjectInputStream( cmdParser.programStream() ) ) {
-					final Object o = istream.readObject();
-					if ( o instanceof Program ) {
-						program = (Program)o;
-					} else {
-						throw new InterpreterException( "Input compiled program is not a JOLIE program" );
-					}
-				}
-			} else {
-				if ( this.internalServiceProgram != null ) {
-					program = this.internalServiceProgram;
-				} else {
-					final OLParser olParser = new OLParser( new Scanner( cmdParser.programStream(), cmdParser.programFilepath().toURI(), cmdParser.charset() ), includePaths, classLoader );
-
-					olParser.putConstants( cmdParser.definedConstants() );
-					program = olParser.parse();
-				}
-				program = OLParseTreeOptimizer.optimize( program );
-			}
-			
-			cmdParser.close();
-
-			check = cmdParser.check();
-
-			final SemanticVerifier semanticVerifier;
-
-			if ( check ) {
-				SemanticVerifier.Configuration conf = new SemanticVerifier.Configuration();
-				conf.setCheckForMain( false );
-				semanticVerifier = new SemanticVerifier( program, conf );
-			} else {
-				semanticVerifier = new SemanticVerifier( program );
-			}
-
-			try {
-				semanticVerifier.validate();
-			} catch( SemanticException e ) {
-				logger.severe( e.getErrorMessages() );
-				throw new InterpreterException( "Exiting" );
-			}
-
-			if ( cmdParser.typeCheck() ) {
-				TypeChecker typeChecker = new TypeChecker(
-					program,
-					semanticVerifier.executionMode(),
-					semanticVerifier.correlationFunctionInfo()
-				);
-				if ( !typeChecker.check() ) {
-					throw new InterpreterException( "Exiting" );
-				}
-			}
-
-			if ( check ) {
-				return false;
-			} else {
-				return (new OOITBuilder(
-					this,
-					program,
-					semanticVerifier.isConstantMap(),
-					semanticVerifier.correlationFunctionInfo() ))
-					.build();
-			}
-
-		} catch( IOException | ParserException | ClassNotFoundException e ) {
-			throw new InterpreterException( e );
-		} finally {
-			cmdParser = null; // Free memory
-		}
 	}
 	
 	/**

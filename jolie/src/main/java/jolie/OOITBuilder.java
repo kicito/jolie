@@ -450,22 +450,6 @@ public class OOITBuilder implements OLVisitor
 
 		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocol());
 		Expression protocolExpr = buildExpression( protocolNode );
-		// backward compatability for protocol symbols
-		// if ( protocolNode instanceof InlineTreeExpressionNode
-		// 		&& ((InlineTreeExpressionNode) protocolNode)
-		// 				.rootExpression() instanceof VariableExpressionNode ) {
-		// 	InlineTreeExpressionNode inlineTreeNodeProtocol =
-		// 			(InlineTreeExpressionNode) protocolNode;
-		// 	if ( inlineTreeNodeProtocol.rootExpression() instanceof VariableExpressionNode ) {
-		// 		String protocolSymbolStr =
-		// 				((VariableExpressionNode) inlineTreeNodeProtocol.rootExpression())
-		// 						.variablePath().toString();
-		// 		protocolNode = new InlineTreeExpressionNode( n.protocolId().context(),
-		// 				new ConstantStringExpression( n.protocolId().context(), protocolSymbolStr ),
-		// 				inlineTreeNodeProtocol.operations() );
-		// 	}
-		// }
-		// Expression protocolExpr = buildExpression( protocolNode );
 
 		if ( protocolExpr instanceof VariablePath ) {
 			VariablePath protocolExprPath = (VariablePath) protocolExpr;
@@ -625,7 +609,7 @@ public class OOITBuilder implements OLVisitor
 			error( n.context(), "location expression is not valid" );
 		}
 		locationPath.getValue().setValue( location );
-		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocolId());
+		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocol());
 		Expression protocolExpr = buildExpression( protocolNode );
 		String protocol = null;
 		if ( protocolExpr instanceof Value ||  protocolExpr instanceof InlineTreeExpression) {

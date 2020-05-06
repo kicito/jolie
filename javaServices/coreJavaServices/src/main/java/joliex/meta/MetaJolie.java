@@ -400,8 +400,8 @@ public class MetaJolie extends JavaService {
 
         InputPortInfo port = (InputPortInfo) portInfo;
         response.getFirstChild("location").setValue(port.location().toString());
-        if (port.protocolId() != null) {
-            String protocol = port.protocolId().toString();
+        if (port.protocol() != null) {
+            String protocol = port.protocol().toString();
             response.getFirstChild("protocol").setValue(protocol);
         } else {
             response.getFirstChild("protocol").setValue("");
@@ -461,8 +461,8 @@ public class MetaJolie extends JavaService {
 
         InputPortInfo port = (InputPortInfo) portInfo;
         response.getFirstChild("location").setValue(port.location().toString());
-        if (port.protocolId() != null) {
-            String protocol = port.protocolId().toString();
+        if (port.protocol() != null) {
+            String protocol = port.protocol().toString();
             response.getFirstChild("protocol").setValue(protocol);
         } else {
             response.getFirstChild("protocol").setValue("");
@@ -543,8 +543,8 @@ public class MetaJolie extends JavaService {
             } else {
                 response.getFirstChild("location").setValue("local");
             }
-            if (port.protocolId() != null) {
-                String protocol = port.protocolId().toString();
+            if (port.protocol() != null) {
+                String protocol = port.protocol().toString();
                 response.getFirstChild("protocol").setValue(protocol);
             } else {
                 response.getFirstChild("protocol").setValue("");

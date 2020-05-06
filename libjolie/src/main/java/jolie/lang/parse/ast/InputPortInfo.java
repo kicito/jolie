@@ -50,8 +50,7 @@ public class InputPortInfo extends PortInfo
 	}
 	
 	private final OLSyntaxNode location;
-	private final OLSyntaxNode protocolId;
-	private final OLSyntaxNode protocolConfiguration;
+	private final OLSyntaxNode protocol;
 	private final AggregationItemInfo[] aggregationList;
 	private final Map< String, String > redirectionMap;
 
@@ -59,15 +58,13 @@ public class InputPortInfo extends PortInfo
 		ParsingContext context,
 		String id,
 		OLSyntaxNode location,
-		OLSyntaxNode protocolId,
-		OLSyntaxNode protocolConfiguration,
+		OLSyntaxNode protocol,
 		AggregationItemInfo[] aggregationList,
 		Map< String, String > redirectionMap
 	) {
 		super( context, id );
 		this.location = location;
-		this.protocolId = protocolId;
-		this.protocolConfiguration = protocolConfiguration;
+		this.protocol = protocol;
 		this.aggregationList = aggregationList;
 		this.redirectionMap = redirectionMap;
 	}
@@ -82,14 +79,9 @@ public class InputPortInfo extends PortInfo
 		return redirectionMap;
 	}
 
-	public OLSyntaxNode protocolConfiguration()
+	public OLSyntaxNode protocol()
 	{
-		return protocolConfiguration;
-	}
-
-	public OLSyntaxNode protocolId()
-	{
-		return protocolId;
+		return protocol;
 	}
 
 	public OLSyntaxNode location()
