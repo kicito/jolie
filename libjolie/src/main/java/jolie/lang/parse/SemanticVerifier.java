@@ -487,11 +487,7 @@ public class SemanticVerifier implements OLVisitor
 	public void visit( Program n )
 	{
 		for( OLSyntaxNode node : n.children() ) {
-			if (node instanceof DefinitionNode){
-				
-			}else{
-				node.accept( this );
-			}
+			node.accept( this );
 		}
 	}
 
@@ -724,12 +720,13 @@ public class SemanticVerifier implements OLVisitor
 					}
 				}
 			}
+			n.body().accept( this );
 		}
 		if ( n.id().equals( "init" ) ) {
 			insideInit = true;
+			n.body().accept( this );
+			insideInit = false;
 		}
-		n.body().accept( this );
-		insideInit = false;
 	}
 		
 	@Override
@@ -967,7 +964,7 @@ public class SemanticVerifier implements OLVisitor
 		if ( !subroutineNames.contains( n.id() ) && n.definition() == null ) {
 			error( n, "Call to undefined definition: " + n.id() );
 		}
-		n.definition().accept(this);
+		n.definition().body().accept(this);
 	}
 
 	@Override
