@@ -129,4 +129,15 @@ public interface ProgramInspector
 	 * defined in the specific source
 	 */
 	public DefinitionNode[] getProcedureDefinitions( URI source );
+
+	/**
+	 * Returns an array of all the Service nodes defined in the program
+	 */
+	public ServiceNode[] getServiceNodes();
+
+	/**
+	 * Returns a map Service nodes defined in the program
+	 * defined in the specific source
+	 */
+	public ServiceNode[] getServiceNodes( URI source );
 }

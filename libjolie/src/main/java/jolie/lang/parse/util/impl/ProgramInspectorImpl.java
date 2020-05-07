@@ -45,6 +45,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 	private final Map< URI, List< EmbeddedServiceNode > > embeddedServices;
 	private final Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode>>> behaviouralDependencies;
 	private final Map< URI, List< DefinitionNode > > definitionNodes;
+	private final Map< URI, List< ServiceNode > > serviceNodes;
 
 	public ProgramInspectorImpl(
 		URI[] sources,
@@ -54,7 +55,8 @@ public class ProgramInspectorImpl implements ProgramInspector
 		Map< URI, List< OutputPortInfo > > outputPorts,
 		Map< URI, List< EmbeddedServiceNode > > embeddedServices,
 		Map< URI, Map<OLSyntaxNode, List<OLSyntaxNode> > > behaviouralDependencies,
-		Map< URI, List< DefinitionNode > > definitionNodes
+		Map< URI, List< DefinitionNode > > definitionNodes,
+		Map< URI, List< ServiceNode > > serviceNodes
 	) {
 		this.sources = sources;
 		this.interfaces = interfaces;
@@ -64,6 +66,7 @@ public class ProgramInspectorImpl implements ProgramInspector
 		this.embeddedServices = embeddedServices;
 		this.behaviouralDependencies = behaviouralDependencies;
 		this.definitionNodes = definitionNodes;
+		this.serviceNodes = serviceNodes;
 	}
 
 	@Override
@@ -214,7 +217,6 @@ public class ProgramInspectorImpl implements ProgramInspector
 		return list.toArray( new EmbeddedServiceNode[ 0 ] );
 	}
 
-
 	@Override
 	public DefinitionNode[] getProcedureDefinitions()
 	{
@@ -237,5 +239,29 @@ public class ProgramInspectorImpl implements ProgramInspector
 			return new DefinitionNode[ 0 ];
 		}
 		return list.toArray( new DefinitionNode[ 0 ] );
+	}
+
+	@Override
+	public ServiceNode[] getServiceNodes()
+	{
+		List< ServiceNode > result = new ArrayList<>();
+		List< ServiceNode > list;
+		for( URI source : sources ) {
+			list = serviceNodes.get( source );
+			if ( list != null ) {
+				result.addAll( list );
+			}
+		}
+		return result.toArray( new ServiceNode[ 0 ] );
+	}
+
+	@Override
+	public ServiceNode[] getServiceNodes(URI source )
+	{
+		List< ServiceNode > list = serviceNodes.get( source );
+		if ( list == null ) {
+			return new ServiceNode[ 0 ];
+		}
+		return list.toArray( new ServiceNode[ 0 ] );
 	}
 }
