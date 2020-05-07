@@ -93,9 +93,9 @@ public class InterfaceDefinition extends OLSyntaxNode
 	}
 
 	@Override
-	public void setPrivacy( Privacy privacy )
+	public void setPrivacy( boolean isPrivate )
 	{
-		this.privacy = privacy;
+		this.privacy = isPrivate ? Privacy.PRIVATE : Privacy.PUBLIC;
 	}
 
 	@Override

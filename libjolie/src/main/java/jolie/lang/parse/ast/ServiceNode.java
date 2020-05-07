@@ -68,10 +68,10 @@ public class ServiceNode extends OLSyntaxNode implements SymbolNode
     }
 
     @Override
-    public void setPrivacy( Privacy privacy )
-    {
-        this.privacy = privacy;
-    }
+    public void setPrivacy( boolean isPrivate )
+	{
+		this.privacy = isPrivate ? Privacy.PRIVATE : Privacy.PUBLIC;
+	}
 
     @Override
     public String name()

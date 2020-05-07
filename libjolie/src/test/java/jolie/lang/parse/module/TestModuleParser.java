@@ -259,6 +259,39 @@ public class TestModuleParser
 
 
     @Test
+    void testImportServiceNode() throws URISyntaxException, FileNotFoundException
+    {
+        URI target = Paths.get( baseDir.toURI() ).resolve( "test_service.ol" ).toUri();
+        ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
+                this.getClass().getClassLoader() );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+
+        assertDoesNotThrow( () -> {
+
+            // parse a program
+            ModuleRecord mainRecord = parser.parse( target, includePaths );
+
+            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            GlobalSymbolReferenceResolver symbolResolver =
+                    new GlobalSymbolReferenceResolver( crawlResult );
+            symbolResolver.resolveExternalSymbols();
+
+            symbolResolver.resolveLinkedType();
+
+            System.out.println("aa");
+
+        //     // check interface in outputPort
+        //     CheckUtility.checkOutputPorts( mainRecord.program(), expectedOutputPorts );
+
+        //     // check semantic, all linked type should be set
+        //     CheckUtility.checkSemantic( mainRecord.program(), symbolResolver.symbolTables(),
+        //             false );
+
+        } );
+    }
+
+
+    @Test
     void testImportJap() throws URISyntaxException, FileNotFoundException
     {
         URI target = Paths.get( baseDir.toURI() ).resolve( "test_jap.ol" ).toUri();

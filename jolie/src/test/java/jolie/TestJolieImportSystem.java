@@ -39,6 +39,18 @@ public class TestJolieImportSystem
     }
 
     @Test
+    void testImportService()
+    {
+        String filePath = "src/test/resources/imports/test_service.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
+    }
+
+    @Test
     void testImport()
     {
         String filePath = "src/test/resources/imports/A.ol";

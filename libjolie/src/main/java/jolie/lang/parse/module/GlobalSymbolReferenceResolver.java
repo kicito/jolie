@@ -37,6 +37,7 @@ import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode2;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -509,7 +510,7 @@ public class GlobalSymbolReferenceResolver
                 if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined as an interface defition" );
+                            n.id() + " is not defined as an interface definition" );
                     return;
                 }
                 InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
@@ -626,6 +627,25 @@ public class GlobalSymbolReferenceResolver
         {
             if (n.program() != null){
                 n.program().accept(this);
+            }
+            if ( n instanceof EmbeddedServiceNode2 ) {
+                Optional< SymbolInfo > symbol =
+                        this.moduleMap.get( currentURI ).symbol( n.servicePath() );
+                if ( !symbol.isPresent() ) {
+                    this.valid = false;
+                    this.error = new ModuleException( n.context(),
+                            n.servicePath() + " is not defined in symbolTable" );
+                    return;
+                }
+                if ( !(symbol.get().node() instanceof ServiceNode) ) {
+                    this.valid = false;
+                    this.error = new ModuleException( n.context(),
+                            n.servicePath() + " is not defined as a Service node" );
+                    return;
+                }
+                EmbeddedServiceNode2 embeddedServiceNode2 = (EmbeddedServiceNode2) n;
+                ServiceNode node = (ServiceNode) symbol.get().node();
+                embeddedServiceNode2.setService( node );
             }
         }
 

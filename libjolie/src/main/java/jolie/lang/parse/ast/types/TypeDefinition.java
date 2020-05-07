@@ -294,8 +294,9 @@ public abstract class TypeDefinition extends OLSyntaxNode implements DocumentedN
 	}
 
 	@Override
-    public void setPrivacy(Privacy privacy){
-		this.privacy = privacy;
+	public void setPrivacy( boolean isPrivate )
+	{
+		this.privacy = isPrivate ? Privacy.PRIVATE : Privacy.PUBLIC;
 	}
 
 	@Override

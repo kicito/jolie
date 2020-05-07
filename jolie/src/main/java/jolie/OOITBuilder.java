@@ -55,6 +55,7 @@ import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode2;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -484,6 +485,10 @@ public class OOITBuilder implements OLVisitor
 	
 	public void visit( EmbeddedServiceNode n )
 	{
+		if (n instanceof EmbeddedServiceNode2 ){
+			visit((EmbeddedServiceNode2)n);
+			return;
+		}
 		try {
 			final VariablePath path =
 				n.portId() == null ? null
@@ -493,6 +498,29 @@ public class OOITBuilder implements OLVisitor
 				n.type().equals( Constants.EmbeddedServiceType.INTERNAL )
 				? new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration( n.servicePath(), (Program) n.program() )
 				: new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration( n.type(), n.servicePath() );
+
+			interpreter.addEmbeddedServiceLoader(
+				EmbeddedServiceLoader.create(
+					interpreter,
+					embeddedServiceConfiguration,
+					path
+				) );
+		} catch( EmbeddedServiceLoaderCreationException e ) {
+			error( n.context(), e );
+		} catch( InvalidIdException e ) {
+			error( n.context(), "could not find port " + n.portId() );
+		}
+	}
+	
+	public void visit( EmbeddedServiceNode2 n )
+	{
+		try {
+			final VariablePath path =
+				n.portId() == null ? null
+				: interpreter.getOutputPort( n.portId() ).locationVariablePath();
+
+			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
+			new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration( n.servicePath(), (Program) n.service().program() );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(

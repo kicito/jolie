@@ -267,14 +267,14 @@ public class OLParser extends AbstractParser
 		);
 	}
 
-	private SymbolInfo.Privacy currPrivacy = SymbolInfo.Privacy.PUBLIC;
+	private boolean isCurrSymbolPrivate = false;
 
 	private void parsePrivacy()
 		throws IOException, ParserException
 	{
 		// parse symbol privacy
 		if ( token.isKeyword( "private" ) ) {
-			currPrivacy = SymbolInfo.Privacy.PRIVATE;
+			isCurrSymbolPrivate = true;
 			getToken();
 		}
 	}
@@ -306,8 +306,8 @@ public class OLParser extends AbstractParser
 
 				currentType = parseType( typeName );
 
-				currentType.setPrivacy( currPrivacy );
-				currPrivacy = SymbolInfo.Privacy.PUBLIC;
+				currentType.setPrivacy( isCurrSymbolPrivate );
+				isCurrSymbolPrivate = false;
 
 				if( haveComment ){ haveComment = false; }
 				parseBackwardAndSetDocumentation( currentType, Optional.ofNullable( commentToken ) );
@@ -333,8 +333,8 @@ public class OLParser extends AbstractParser
 	{
 		if ( token.is( Scanner.TokenType.DEFINE ) ) {
 			DefinitionNode defNode = parseDefinition();
-			defNode.setPrivacy( currPrivacy );
-			currPrivacy = SymbolInfo.Privacy.PUBLIC;
+			defNode.setPrivacy( isCurrSymbolPrivate );
+			isCurrSymbolPrivate = false;
 			programBuilder.addChild( defNode );
 		}
 	}
@@ -359,8 +359,8 @@ public class OLParser extends AbstractParser
 			if ( docNode != null ) {
 				parseBackwardAndSetDocumentation( docNode, forwardDocToken );
 			}
-			iface.setPrivacy( currPrivacy );
-			currPrivacy = SymbolInfo.Privacy.PUBLIC;
+			iface.setPrivacy( isCurrSymbolPrivate );
+			isCurrSymbolPrivate = false;
 			programBuilder.addChild( iface );
 		}
 	}
@@ -567,16 +567,35 @@ public class OLParser extends AbstractParser
 	}
 
 
+	private void parseEmbeddedServiceNode()
+		throws IOException, ParserException
+	{
+		String serviceName = token.content();
+		OLSyntaxNode passingParam = null;
+		getToken();
+		if (token.is(Scanner.TokenType.LPAREN)){
+			getToken();
+			passingParam = parseBasicExpression();
+			eat(Scanner.TokenType.RPAREN, "expected )");
+		}
+		programBuilder.addChild(
+			new EmbeddedServiceNode2( getContext(), serviceName, null, passingParam ) );
+	}
+
 	private void parseEmbedded()
 		throws IOException, ParserException
 	{
 		if ( token.isKeyword( "embedded" ) ) {
 			String servicePath, portId;
 			getToken();
+			if ( token.isIdentifier() ) {
+				parseEmbeddedServiceNode();
+				return;
+			}
 			eat( Scanner.TokenType.LCURLY, "expected {" );
 			boolean keepRun = true;
 			Constants.EmbeddedServiceType type;
-			while ( keepRun ) {
+			while (keepRun) {
 				type = null;
 				if ( token.isKeyword( "Java" ) ) {
 					type = Constants.EmbeddedServiceType.JAVA;
@@ -584,8 +603,6 @@ public class OLParser extends AbstractParser
 					type = Constants.EmbeddedServiceType.JOLIE;
 				} else if ( token.isKeyword( "JavaScript" ) ) {
 					type = Constants.EmbeddedServiceType.JAVASCRIPT;
-				} else if ( token.isKeyword( "Service" ) ) {
-					type = Constants.EmbeddedServiceType.SERVICE;
 				}
 				if ( type == null ) {
 					keepRun = false;
@@ -593,7 +610,7 @@ public class OLParser extends AbstractParser
 					getToken();
 					eat( Scanner.TokenType.COLON, "expected : after embedded service type" );
 					checkConstant();
-					while ( token.is( Scanner.TokenType.STRING ) ) {
+					while (token.is( Scanner.TokenType.STRING )) {
 						servicePath = token.content();
 						getToken();
 						if ( token.isKeyword( "in" ) ) {
@@ -604,22 +621,8 @@ public class OLParser extends AbstractParser
 						} else {
 							portId = null;
 						}
-						if ( type == Constants.EmbeddedServiceType.SERVICE ) {
-							programBuilder.addChild(
-								new EmbeddedServiceNode2(
-									getContext(),
-									servicePath,
-									portId ) 
-								);
-						} else {
-							programBuilder.addChild( 
-								new EmbeddedServiceNode(
-									getContext(),
-									type,
-									servicePath,
-									portId )
-								);
-						}
+						programBuilder.addChild( new EmbeddedServiceNode( getContext(), type,
+								servicePath, portId ) );
 						if ( token.is( Scanner.TokenType.COMMA ) ) {
 							getToken();
 						} else {
@@ -1163,10 +1166,11 @@ public class OLParser extends AbstractParser
 		ProgramBuilder serviceProgramBuilder
 	) 
 	{
-		ServiceNode node = new ServiceNode(ctx, serviceName);
-		node.setAcceptParameter(paramPath, paramType);
+		ServiceNode node = new ServiceNode( ctx, serviceName );
+		node.setAcceptParameter( paramPath, paramType );
+		node.setPrivacy( isCurrSymbolPrivate );
 
-		//add init if defined in internal service
+		// add init if defined in internal service
 		if ( initSequence != null ) {
 			serviceProgramBuilder.addChild( new DefinitionNode( getContext(), "init", initSequence ) );
 		}
