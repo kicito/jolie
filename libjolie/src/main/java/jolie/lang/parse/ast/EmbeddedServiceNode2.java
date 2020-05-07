@@ -10,13 +10,15 @@ public class EmbeddedServiceNode2 extends EmbeddedServiceNode
     private static final long serialVersionUID = Constants.serialVersionUID();
 
     private ServiceNode service;
-    private OLSyntaxNode passingParam;
+    private final OLSyntaxNode passingParam;
+    private final boolean createNewPort;
 
-    public EmbeddedServiceNode2( ParsingContext context, String serviceName, String portId,
-            OLSyntaxNode passingParam )
+    public EmbeddedServiceNode2( ParsingContext context, String serviceName, boolean createNewPort,
+            String portId, OLSyntaxNode passingParam )
     {
         super( context, EmbeddedServiceType.SERVICE, serviceName, portId );
         this.passingParam = passingParam;
+        this.createNewPort = createNewPort;
     }
 
     public String serviceName()
@@ -27,6 +29,11 @@ public class EmbeddedServiceNode2 extends EmbeddedServiceNode
     public void setService( ServiceNode node )
     {
         this.service = node;
+    }
+
+    public boolean isCreateNewPort()
+    {
+        return this.createNewPort;
     }
 
     public ServiceNode service()

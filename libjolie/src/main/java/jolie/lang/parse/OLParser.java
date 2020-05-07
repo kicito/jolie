@@ -566,20 +566,34 @@ public class OLParser extends AbstractParser
 		return new Range( min, max );
 	}
 
-
-	private void parseEmbeddedServiceNode()
+	private EmbeddedServiceNode2 parseEmbeddedServiceNode() 
 		throws IOException, ParserException
 	{
+		getToken();
 		String serviceName = token.content();
+		String portId = null;
+		boolean hasNewKeyword = false;
 		OLSyntaxNode passingParam = null;
 		getToken();
-		if (token.is(Scanner.TokenType.LPAREN)){
+		if ( token.is( Scanner.TokenType.LPAREN ) ) {
 			getToken();
-			passingParam = parseBasicExpression();
-			eat(Scanner.TokenType.RPAREN, "expected )");
+			if ( !token.is( Scanner.TokenType.RPAREN ) ) {
+				passingParam = parseBasicExpression();
+			}
+			eat( Scanner.TokenType.RPAREN, "expected )" );
 		}
-		programBuilder.addChild(
-			new EmbeddedServiceNode2( getContext(), serviceName, null, passingParam ) );
+		if ( token.isKeyword( "in" ) ) {
+			eatKeyword( "in", "expected in" );
+			if ( token.isKeyword( "new" ) ) {
+				getToken();
+				hasNewKeyword = true;
+			}
+			assertToken( Scanner.TokenType.ID, "expected output port name" );
+			portId = token.content();
+			getToken();
+		}
+		return new EmbeddedServiceNode2( getContext(), serviceName, hasNewKeyword, portId,
+				passingParam );
 	}
 
 	private void parseEmbedded()
@@ -588,10 +602,6 @@ public class OLParser extends AbstractParser
 		if ( token.isKeyword( "embedded" ) ) {
 			String servicePath, portId;
 			getToken();
-			if ( token.isIdentifier() ) {
-				parseEmbeddedServiceNode();
-				return;
-			}
 			eat( Scanner.TokenType.LCURLY, "expected {" );
 			boolean keepRun = true;
 			Constants.EmbeddedServiceType type;
@@ -1103,8 +1113,10 @@ public class OLParser extends AbstractParser
 			switch (token.content()) {
 				case "Interfaces":
 					internalIfaces = parseInternalServiceInterface();
+					break;
 				case "include":
 					parseInclude();
+					break;
 				case "cset":
 					for (CorrelationSetInfo csetInfo : _parseCorrelationSets()) {
 						serviceNodeBuilder.addChild( csetInfo );
@@ -1128,6 +1140,9 @@ public class OLParser extends AbstractParser
 				case "inputPort":
 				case "outputPort":
 					serviceNodeBuilder.addChild( parsePort() );
+					break;
+				case "embed":
+					serviceNodeBuilder.addChild( parseEmbeddedServiceNode() );
 					break;
 				default:
 					keepRun = false;
@@ -1157,14 +1172,14 @@ public class OLParser extends AbstractParser
 	}
 
 	private void createServiceNode(
-			ParsingContext ctx,
+		ParsingContext ctx,
 		String serviceName,
 		String paramPath,
 		TypeDefinition paramType,
 		SequenceStatement initNode,
 		DefinitionNode main,
 		ProgramBuilder serviceProgramBuilder
-	) 
+	)
 	{
 		ServiceNode node = new ServiceNode( ctx, serviceName );
 		node.setAcceptParameter( paramPath, paramType );
