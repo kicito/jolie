@@ -266,6 +266,9 @@ public class TestModuleParser
                 this.getClass().getClassLoader() );
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
+        Map.Entry< URI, Set< String > > expectedSymbols =
+                TestCasesCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
+                        "someservice" );
         assertDoesNotThrow( () -> {
 
             // parse a program
@@ -278,14 +281,9 @@ public class TestModuleParser
 
             symbolResolver.resolveLinkedType();
 
-            System.out.println("aa");
 
-        //     // check interface in outputPort
-        //     CheckUtility.checkOutputPorts( mainRecord.program(), expectedOutputPorts );
-
-        //     // check semantic, all linked type should be set
-        //     CheckUtility.checkSemantic( mainRecord.program(), symbolResolver.symbolTables(),
-        //             false );
+            // check ServiceNode
+            CheckUtility.checkSymbols( mainRecord.symbolTable(), expectedSymbols.getValue() );
 
         } );
     }

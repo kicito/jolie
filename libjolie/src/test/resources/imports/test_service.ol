@@ -1,7 +1,12 @@
 from .packages.service import someservice
 
-embedded someservice("test")
 
-main{
-    nullProcess
+
+service main (){
+
+    embed someservice("test")
+
+    main{
+        nullProcess
+    }
 }

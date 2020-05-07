@@ -20,7 +20,7 @@ public class TestServiceNode
     @Test
     void testParser() throws IOException, URISyntaxException
     {
-        String code = "service console(loc : string){}";
+        String code = "service console(loc : string){} service console(){} service console{}";
         InputStream is = new ByteArrayInputStream( code.getBytes() );
 
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
