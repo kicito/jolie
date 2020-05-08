@@ -24,7 +24,10 @@ package jolie.runtime.embedding;
 
 import jolie.Interpreter;
 import jolie.lang.Constants;
+import jolie.lang.Constants.EmbeddedServiceType;
+import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.net.CommChannel;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
@@ -49,8 +52,13 @@ public abstract class EmbeddedServiceLoader
 		EmbeddedServiceLoader ret = null;
 		try {
 			if ( configuration.isInternal() ) {
-				InternalEmbeddedServiceConfiguration internalConfiguration = (InternalEmbeddedServiceConfiguration) configuration;
-				ret = new InternalJolieServiceLoader( channelDest, interpreter, internalConfiguration.serviceName(), internalConfiguration.program() );
+				if ( configuration.type == EmbeddedServiceType.SERVICE){
+					EmbeddedServiceNodeConfiguration serviceNodeConfiguration = (EmbeddedServiceNodeConfiguration) configuration;
+					ret = new ServiceNodeLoader( channelDest, interpreter, serviceNodeConfiguration.serviceNode(), serviceNodeConfiguration.argumentExpression() );
+				} else {
+					InternalEmbeddedServiceConfiguration internalConfiguration = (InternalEmbeddedServiceConfiguration) configuration;
+					ret = new InternalJolieServiceLoader( channelDest, interpreter, internalConfiguration.serviceName(), internalConfiguration.program() );
+				}
 			} else {
 				ExternalEmbeddedServiceConfiguration externalConfiguration = (ExternalEmbeddedServiceConfiguration) configuration;
 				switch( configuration.type() ) {
@@ -127,7 +135,7 @@ public abstract class EmbeddedServiceLoader
 
 		public boolean isInternal()
 		{
-			return this.type.equals( Constants.EmbeddedServiceType.INTERNAL );
+			return this.type.equals( Constants.EmbeddedServiceType.INTERNAL ) || this.type.equals( Constants.EmbeddedServiceType.SERVICE );
 		}
 	}
 
@@ -182,5 +190,33 @@ public abstract class EmbeddedServiceLoader
 			return servicePath;
 		}
 
+	}
+
+	public static class EmbeddedServiceNodeConfiguration extends EmbeddedServiceConfiguration
+	{
+		private final ServiceNode serviceNode;
+		private final Expression argumentExpr;
+
+		/**
+		 *
+		 * @param node         ServiceNode to be embeded
+		 * @param argumentExpr passing argument expression
+		 */
+		public EmbeddedServiceNodeConfiguration( ServiceNode node, Expression argumentExpr )
+		{
+			super( Constants.EmbeddedServiceType.SERVICE );
+			this.serviceNode = node;
+			this.argumentExpr = argumentExpr;
+		}
+
+		public ServiceNode serviceNode()
+		{
+			return this.serviceNode;
+		}
+
+		public Expression argumentExpression()
+		{
+			return this.argumentExpr;
+		}
 	}
 }

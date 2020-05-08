@@ -117,6 +117,7 @@ import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.module.SymbolInfo.Privacy;
 import jolie.lang.parse.module.SymbolInfo.Scope;
+import jolie.lang.parse.util.Jolie2Utility;
 import jolie.util.Pair;
 
 public class GlobalSymbolReferenceResolver
@@ -504,13 +505,13 @@ public class GlobalSymbolReferenceResolver
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined in symbolTable" );
+                            iface.name() + " is not defined in symbolTable" );
                     return;
                 }
                 if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined as an interface definition" );
+                            iface.name() + " is not defined as an interface definition" );
                     return;
                 }
                 InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
@@ -644,10 +645,22 @@ public class GlobalSymbolReferenceResolver
                     return;
                 }
                 EmbeddedServiceNode2 embeddedServiceNode2 = (EmbeddedServiceNode2) n;
+
                 ServiceNode node = (ServiceNode) symbol.get().node();
                 embeddedServiceNode2.setService( node );
+
+                if ( embeddedServiceNode2.isCreateNewPort() ){
+                    // creates binds operation from ServiceNode to PortID
+                    OutputPortInfo bindingPorts = embeddedServiceNode2.outputPortInfo();
+                    InterfaceDefinition[] publicIfaces = Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal(node);
+                    for( InterfaceDefinition iface : publicIfaces){
+                        bindingPorts.addInterface(iface);
+                        iface.operationsMap().values().forEach(op->bindingPorts.addOperation(op));
+                    }
+                }
             }
         }
+
 
         @Override
         public void visit( InstallFixedVariableExpressionNode n )
@@ -816,16 +829,16 @@ public class GlobalSymbolReferenceResolver
     {
         ModuleRecord externalSourceRecord =
                 this.moduleMap.get( symbolInfo.moduleSource().get().source() );
-        SymbolInfo externalSourceSymbol =
-                externalSourceRecord.symbol( symbolInfo.moduleSymbol() ).get();
-        if ( externalSourceSymbol == null ) {
+        Optional<SymbolInfo> externalSourceSymbol =
+                externalSourceRecord.symbol( symbolInfo.moduleSymbol() );
+        if ( !externalSourceSymbol.isPresent()) {
             throw new ModuleException(
                     symbolInfo.name() + " is not defined in " + externalSourceRecord.source() );
         }
-        if ( externalSourceSymbol.scope() == Scope.LOCAL ) {
-            return externalSourceSymbol;
+        if ( externalSourceSymbol.get().scope() == Scope.LOCAL ) {
+            return externalSourceSymbol.get();
         } else {
-            return symbolLookup( (SymbolInfoExternal) externalSourceSymbol );
+            return symbolLookup( (SymbolInfoExternal) externalSourceSymbol.get() );
         }
     }
 

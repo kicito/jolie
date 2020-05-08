@@ -14,7 +14,8 @@ public class TestJolieImportSystem
 		JolieURLStreamHandlerFactory.registerInVM();
 	}
     private static final String[] launcherArgs = new String[] {"-l",
-    "../lib/*:../dist/jolie/lib:../dist/jolie/javaServices/*:../dist/jolie/extensions/*"};
+    "../lib/*:../dist/jolie/lib:../dist/jolie/javaServices/*:../dist/jolie/extensions/*",
+    "-i", "../include"};
     
     private PrintStream originalSystemOut;
     private ByteArrayOutputStream systemOutContent;
@@ -37,6 +38,19 @@ public class TestJolieImportSystem
         // print buffer
         System.out.println( systemOutContent.toString() );
     }
+
+    @Test
+    void testEmbededServiceNodeNewPrimitive()
+    {
+        String filePath = "src/test/resources/imports/embed_service_new_primitive.ol";
+        String[] args = new String[launcherArgs.length + 1];
+        System.arraycopy( launcherArgs, 0, args, 0, launcherArgs.length );
+        args[args.length - 1] = filePath;
+
+        assertDoesNotThrow(
+            () -> JolieRunner.run( args, this.getClass().getClassLoader(), null ) );
+    }
+
 
     @Test
     void testImportService()

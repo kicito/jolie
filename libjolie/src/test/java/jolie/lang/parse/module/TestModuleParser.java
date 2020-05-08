@@ -26,7 +26,7 @@ import jolie.lang.parse.ParserException;
 import jolie.lang.parse.Scanner;
 import jolie.util.CheckUtility;
 import jolie.util.PortStub;
-import jolie.util.TestCasesCreator;
+import jolie.util.TestingObjectsCreator;
 import jolie.util.jap.JolieURLStreamHandlerFactory;
 
 public class TestModuleParser
@@ -72,15 +72,15 @@ public class TestModuleParser
 
         URI target = Paths.get( baseDir.toURI() ).resolve( "A.ol" ).toUri();
 
-        Map.Entry< URI, Set< String > > aOLSymbols = TestCasesCreator.createURISymbolsMap(
+        Map.Entry< URI, Set< String > > aOLSymbols = TestingObjectsCreator.createURISymbolsMap(
                 Paths.get( baseDir.toURI() ).resolve( "A.ol" ).toUri(), "A", "from_b" );
 
-        Map.Entry< URI, Set< String > > packageBDotBSymbols = TestCasesCreator.createURISymbolsMap(
+        Map.Entry< URI, Set< String > > packageBDotBSymbols = TestingObjectsCreator.createURISymbolsMap(
                 Paths.get( baseDir.toURI() ).resolve( "A" ).resolve( "B.ol" ).toUri(), "C_type",
                 "b_type", "b_type" );
 
         Map.Entry< URI, Set< String > > packageCSymbols =
-                TestCasesCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).resolve( "A" )
+                TestingObjectsCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).resolve( "A" )
                         .resolve( "packages" ).resolve( "C.ol" ).toUri(), "b_type", "c" );
 
         Map< URI, Set< String > > expectedSourceSymbols =
@@ -134,10 +134,10 @@ public class TestModuleParser
                 this.getClass().getClassLoader() );
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
-        Map.Entry< URI, Set< String > > expectedSymbolsRoot = TestCasesCreator.createURISymbolsMap(
+        Map.Entry< URI, Set< String > > expectedSymbolsRoot = TestingObjectsCreator.createURISymbolsMap(
                 target, "date", "number", "foo", "bar", "baz", "dateFoo", "fooIface" );
         Map.Entry< URI, Set< String > > expectedSymbolsExt =
-                TestCasesCreator.createURISymbolsMap(
+                TestingObjectsCreator.createURISymbolsMap(
                         Paths.get( baseDir.toURI() ).resolve( "packages" ).resolve( "type.ol" )
                                 .toFile().toURI(),
                         "date", "number", "foo", "bar", "baz", "dateFoo" );
@@ -147,7 +147,7 @@ public class TestModuleParser
                         Collectors.toMap( elem -> elem.getKey(), elem -> elem.getValue() ) );
 
         Map.Entry< String, Set< String > > ifaceEntry =
-                TestCasesCreator.createInterfaceStub( "fooIface", "fooOp" );
+                TestingObjectsCreator.createInterfaceStub( "fooIface", "fooOp" );
 
         PortStub opPort = new PortStub( "OP",
                 Stream.of( ifaceEntry ).collect(
@@ -155,7 +155,7 @@ public class TestModuleParser
                 "fooOp" );
 
         Map.Entry< String, Set< String > > ifaceEntry2 =
-                TestCasesCreator.createInterfaceStub( "fooIface", "fooOp" );
+                TestingObjectsCreator.createInterfaceStub( "fooIface", "fooOp" );
 
         PortStub opPort2 = new PortStub( "OP2",
                 Stream.of( ifaceEntry2 ).collect(
@@ -163,7 +163,7 @@ public class TestModuleParser
                 "fooOp" );
 
         Map< String, PortStub > expectedOutputPorts =
-                TestCasesCreator.createExpectedPortMap( opPort, opPort2 );
+                TestingObjectsCreator.createExpectedPortMap( opPort, opPort2 );
 
         assertDoesNotThrow( () -> {
 
@@ -210,9 +210,9 @@ public class TestModuleParser
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
         Map.Entry< URI, Set< String > > expectedSymbolsRoot =
-                TestCasesCreator.createURISymbolsMap( target, "foo", "bar" );
+                TestingObjectsCreator.createURISymbolsMap( target, "foo", "bar" );
         Map.Entry< URI, Set< String > > expectedSymbolsExt =
-                TestCasesCreator.createURISymbolsMap( target.resolve( "B.ol" ), "foo", "bar" );
+                TestingObjectsCreator.createURISymbolsMap( target.resolve( "B.ol" ), "foo", "bar" );
 
         Map< URI, Set< String > > expectedSourceSymbols =
                 Stream.of( expectedSymbolsRoot, expectedSymbolsExt ).collect(
@@ -267,7 +267,7 @@ public class TestModuleParser
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
         Map.Entry< URI, Set< String > > expectedSymbols =
-                TestCasesCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
+                TestingObjectsCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
                         "someservice" );
         assertDoesNotThrow( () -> {
 
@@ -281,10 +281,12 @@ public class TestModuleParser
 
             symbolResolver.resolveLinkedType();
 
-
             // check ServiceNode
             CheckUtility.checkSymbols( mainRecord.symbolTable(), expectedSymbols.getValue() );
 
+            // check semantic, all linked type should be set
+            CheckUtility.checkSemantic( mainRecord.program(), symbolResolver.symbolTables(),
+                    false );
         } );
     }
 
@@ -298,7 +300,7 @@ public class TestModuleParser
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
         Map.Entry< String, Set< String > > ifaceEntry =
-                TestCasesCreator.createInterfaceStub( "TwiceAPI", "twice" );
+                TestingObjectsCreator.createInterfaceStub( "TwiceAPI", "twice" );
 
         PortStub opPort = new PortStub( "OP",
                 Stream.of( ifaceEntry ).collect(
@@ -306,7 +308,7 @@ public class TestModuleParser
                 "twice" );
 
         Map< String, PortStub > expectedOutputPorts =
-                TestCasesCreator.createExpectedPortMap( opPort );
+                TestingObjectsCreator.createExpectedPortMap( opPort );
 
         assertDoesNotThrow( () -> {
 
@@ -341,7 +343,7 @@ public class TestModuleParser
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
         Map.Entry< String, Set< String > > ifaceEntry =
-                TestCasesCreator.createInterfaceStub( "twiceIface", "twice" );
+                TestingObjectsCreator.createInterfaceStub( "twiceIface", "twice" );
 
         PortStub ipPort = new PortStub( "IP",
                 Stream.of( ifaceEntry ).collect(
@@ -353,9 +355,9 @@ public class TestModuleParser
                 "twice" );
 
         Map< String, PortStub > expectedInputPorts =
-                TestCasesCreator.createExpectedPortMap( ipPort );
+                TestingObjectsCreator.createExpectedPortMap( ipPort );
         Map< String, PortStub > expectedOutputPorts =
-                TestCasesCreator.createExpectedPortMap( opPort );
+                TestingObjectsCreator.createExpectedPortMap( opPort );
 
         assertDoesNotThrow( () -> {
 
@@ -391,10 +393,10 @@ public class TestModuleParser
         Scanner s = new Scanner( is, baseDir.toURI(), null );
 
         Map.Entry< URI, Set< String > > expectedSymbolsRoot =
-                TestCasesCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
+                TestingObjectsCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
                         "date", "number", "foo", "bar", "baz", "dateFoo" );
         Map.Entry< URI, Set< String > > expectedSymbolsExt =
-                TestCasesCreator.createURISymbolsMap(
+                TestingObjectsCreator.createURISymbolsMap(
                         Paths.get( baseDir.toURI() ).resolve( "packages" ).resolve( "type.ol" )
                                 .toFile().toURI(),
                         "date", "number", "foo", "bar", "baz", "dateFoo" );

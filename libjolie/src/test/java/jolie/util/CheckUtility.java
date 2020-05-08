@@ -13,6 +13,7 @@ import jolie.lang.parse.ast.OperationDeclaration;
 import jolie.lang.parse.ast.PortInfo;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
@@ -160,6 +161,32 @@ public class CheckUtility
     }
 
     /**
+     * checks if the ASTNode has all given  name in expectedPorts, throws an Exception is
+     * a
+     * port is not found or has different declaration
+     * 
+     * @param p             Checking Program
+     * @param expectedPorts Map of Port name and PortStub expected to be declared in Program p
+     * @throws Exception
+     */
+    public static void checkServiceNode( Program p, Map< String, ServiceNode > expectedServiceNodes )
+            throws Exception
+    {
+
+        ProgramInspector pi = ParsingUtils.createInspector( p );
+        for (ServiceNode node : pi.getServiceNodes()) {
+            if ( expectedServiceNodes.containsKey( node.name() ) ) {
+                expectedServiceNodes.remove( node.name() );
+            }
+        }
+
+        if ( !expectedServiceNodes.isEmpty() ) {
+            throw new Exception(
+                    "ServiceNode " + Arrays.toString( expectedServiceNodes.keySet().toArray() ) + " not found" );
+        }
+    }
+
+    /**
      * checks if given port has coresponding interfaces and operations accrording to PortStub
      * instance
      * throws an Exception if it is declared in diffent way
@@ -221,8 +248,9 @@ public class CheckUtility
         }
     }
 
+
     /**
-     * checks if the ASTNode has all given OutputPort name in expectedPorts, throws an Exception is
+     * checks if the ASTNode has all given OutputPort in expectedPorts, throws an Exception is
      * a
      * port is not found or has different declaration
      * 

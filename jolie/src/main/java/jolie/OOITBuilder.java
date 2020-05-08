@@ -222,6 +222,7 @@ import jolie.runtime.expression.VoidExpression;
 import jolie.runtime.typing.OneWayTypeDescription;
 import jolie.runtime.typing.RequestResponseTypeDescription;
 import jolie.runtime.typing.Type;
+import jolie.runtime.typing.TypeCheckingException;
 import jolie.util.ArrayListMultiMap;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
@@ -485,8 +486,8 @@ public class OOITBuilder implements OLVisitor
 	
 	public void visit( EmbeddedServiceNode n )
 	{
-		if (n instanceof EmbeddedServiceNode2 ){
-			visit((EmbeddedServiceNode2)n);
+		if ( n instanceof EmbeddedServiceNode2 ) {
+			visit( (EmbeddedServiceNode2) n );
 			return;
 		}
 		try {
@@ -518,9 +519,16 @@ public class OOITBuilder implements OLVisitor
 			final VariablePath path =
 				n.portId() == null ? null
 				: interpreter.getOutputPort( n.portId() ).locationVariablePath();
+			
+			// should not add new type to environment
+			insideOperationDeclarationOrInstanceOf = true;
+			Type paramType = buildType( n.service().parameterType() );
+			insideOperationDeclarationOrInstanceOf = false;
+			Value passingValue = buildExpression( n.passingParam() ).evaluate();
+			paramType.check( passingValue );
 
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
-			new EmbeddedServiceLoader.InternalEmbeddedServiceConfiguration( n.servicePath(), (Program) n.service().program() );
+			new EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration( n.service(), passingValue );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(
@@ -532,6 +540,8 @@ public class OOITBuilder implements OLVisitor
 			error( n.context(), e );
 		} catch( InvalidIdException e ) {
 			error( n.context(), "could not find port " + n.portId() );
+		} catch( TypeCheckingException e ) {
+			error( n.context(), "passing value is not a valid type" + n.service().parameterType().id() );
 		}
 	}
 	

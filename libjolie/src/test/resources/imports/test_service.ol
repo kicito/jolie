@@ -1,12 +1,16 @@
-from .packages.service import someservice
-
-
+include "console.iol"
+from .packages.service import someservice, twiceIface
 
 service main (){
 
-    embed someservice("test")
+    outputPort OP {
+        interfaces: twiceIface
+    }
+
+    embed someservice("test") in OP
 
     main{
-        nullProcess
+        twice@OP(2)(res)
+        println@Console(res)()
     }
 }

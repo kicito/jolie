@@ -11,14 +11,22 @@ public class EmbeddedServiceNode2 extends EmbeddedServiceNode
 
     private ServiceNode service;
     private final OLSyntaxNode passingParam;
-    private final boolean createNewPort;
+    private final OutputPortInfo newOutputPortInfo;
 
-    public EmbeddedServiceNode2( ParsingContext context, String serviceName, boolean createNewPort,
-            String portId, OLSyntaxNode passingParam )
+    public EmbeddedServiceNode2( ParsingContext context, String serviceName,
+            OutputPortInfo newOutputPortInfo, OLSyntaxNode passingParam )
+    {
+        super( context, EmbeddedServiceType.SERVICE, serviceName, newOutputPortInfo.id() );
+        this.passingParam = passingParam;
+        this.newOutputPortInfo = newOutputPortInfo;
+    }
+
+    public EmbeddedServiceNode2( ParsingContext context, String serviceName, String portId,
+            OLSyntaxNode passingParam )
     {
         super( context, EmbeddedServiceType.SERVICE, serviceName, portId );
         this.passingParam = passingParam;
-        this.createNewPort = createNewPort;
+        this.newOutputPortInfo = null;
     }
 
     public String serviceName()
@@ -33,7 +41,12 @@ public class EmbeddedServiceNode2 extends EmbeddedServiceNode
 
     public boolean isCreateNewPort()
     {
-        return this.createNewPort;
+        return this.newOutputPortInfo != null;
+    }
+
+    public OutputPortInfo outputPortInfo( )
+    {
+        return this.newOutputPortInfo;
     }
 
     public ServiceNode service()

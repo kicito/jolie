@@ -972,9 +972,7 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( ServiceNode n )
 		{
-			if ( n.name().equals( "main" ) ) {
-				n.setProgram( OLParseTreeOptimizer.optimize( n.program() ) );
-			}
+			n.setProgram( OLParseTreeOptimizer.optimize( n.program() ) );
 			programChildren.add( n );
 		}
 

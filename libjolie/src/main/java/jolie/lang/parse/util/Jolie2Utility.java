@@ -1,8 +1,14 @@
 package jolie.lang.parse.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import jolie.lang.parse.ast.DefinitionNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.ImportStatement;
+import jolie.lang.parse.ast.InputPortInfo;
+import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.OLSyntaxNode;
+import jolie.lang.parse.ast.OutputPortInfo;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SymbolNode;
@@ -27,6 +33,18 @@ public class Jolie2Utility
             }
         }
         return false;
+    }
+
+    public static Program removeModuleScopePortsAndEmbeds( Program p )
+    {
+        ProgramBuilder moduleProgramBuilder = new ProgramBuilder( p.context() );
+        for (OLSyntaxNode node : p.children()) {
+            if ( !(node instanceof OutputPortInfo) && !(node instanceof InputPortInfo)
+                    && !(node instanceof EmbeddedServiceNode) ) {
+                moduleProgramBuilder.addChild( node );
+            }
+        }
+        return moduleProgramBuilder.toProgram();
     }
 
     public static Program transform( Program p )
@@ -72,11 +90,11 @@ public class Jolie2Utility
 
         // case 1
 
-        if ( node instanceof VariableExpressionNode ){
-            VariableExpressionNode varExprNode = (VariableExpressionNode)node;
+        if ( node instanceof VariableExpressionNode ) {
+            VariableExpressionNode varExprNode = (VariableExpressionNode) node;
             VariablePathNode varPathNode = varExprNode.variablePath();
-            if (varPathNode.path().size() == 1){
-                return varPathNode.path().get(0).key();
+            if ( varPathNode.path().size() == 1 ) {
+                return varPathNode.path().get( 0 ).key();
             }
         }
 
@@ -95,4 +113,24 @@ public class Jolie2Utility
         }
         return node;
     }
+
+
+    public static InterfaceDefinition[] getServiceNodeInterfacesFromInputPortLocal(
+            ServiceNode node )
+    {
+        List< InterfaceDefinition > idef = new ArrayList< InterfaceDefinition >();
+        for (OLSyntaxNode n : node.program().children()) {
+            if ( n instanceof InputPortInfo ) {
+                InputPortInfo ip = (InputPortInfo) n;
+                if ( ip.location() instanceof ConstantStringExpression ) {
+                    String location = ((ConstantStringExpression) ip.location()).value();
+                    if ( location.equals( "local" ) ) {
+                        idef.addAll( ip.getInterfaceList() );
+                    }
+                }
+            }
+        }
+        return idef.toArray( new InterfaceDefinition[idef.size()] );
+    }
+
 }

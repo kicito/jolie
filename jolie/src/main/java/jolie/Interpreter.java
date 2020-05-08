@@ -83,6 +83,7 @@ import jolie.net.SessionMessage;
 import jolie.net.ports.OutputPort;
 import jolie.process.DefinitionProcess;
 import jolie.process.InputOperationProcess;
+import jolie.process.Process;
 import jolie.process.SequentialProcess;
 import jolie.runtime.FaultException;
 import jolie.runtime.InputOperation;
@@ -98,6 +99,7 @@ import jolie.runtime.correlation.CorrelationError;
 import jolie.runtime.correlation.CorrelationSet;
 import jolie.runtime.embedding.EmbeddedServiceLoader;
 import jolie.runtime.embedding.EmbeddedServiceLoaderFactory;
+import jolie.runtime.expression.Expression;
 import jolie.tracer.*;
 
 /**
@@ -963,6 +965,41 @@ public class Interpreter
 		this.symbolTables = parentInterpreter.symbolTables();
 	}
 
+	private String paramPath;
+	private Value receivingArgument;
+
+    /** Constructor.
+	 *
+	 * @param args The command line arguments.
+	 * @param parentClassLoader the parent ClassLoader to fall back when not finding resources.
+	 * @param programDirectory the program directory of this Interpreter, necessary if it is run inside a JAP file.
+	 * @param parentInterpreter
+	 * @param internalServiceProgram
+	 * @param internalServiceProgram
+	 * @throws CommandLineException if the command line is not valid or asks for simple information. (like --help and --version)
+	 * @throws FileNotFoundException if one of the passed input files is not found.
+	 * @throws IOException if a Scanner constructor signals an error.
+	 */
+	public Interpreter( 
+		String[] args,
+		ClassLoader parentClassLoader,
+		File programDirectory,
+		Interpreter parentInterpreter,
+		Program internalServiceProgram,
+		String paramPath,
+		Value receivingArgument
+	)
+		throws CommandLineException, FileNotFoundException, IOException
+	{
+        this( args, parentClassLoader, programDirectory, true );
+        
+		this.parentInterpreter = parentInterpreter;
+		this.internalServiceProgram = internalServiceProgram;
+		this.symbolTables = parentInterpreter.symbolTables();
+		this.paramPath = paramPath;
+		this.receivingArgument = receivingArgument;
+	}
+
 	/**
 	 * Returns the parent directory of the program executed by this Interpreter.
 	 * @return the parent directory of the program executed by this Interpreter.
@@ -1090,7 +1127,12 @@ public class Interpreter
                 try {
                     initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
 
-                    commCore.init();
+					if ( paramPath != null ) {
+						initExecutionThread.state().root().getFirstChild( paramPath )
+								.deepCopy( receivingArgument );
+					}
+					
+					commCore.init();
 
                     // Initialize program arguments in the args variabile.
                     ValueVector jArgs = ValueVector.create();
@@ -1275,6 +1317,8 @@ public class Interpreter
 			} else {
 				if ( this.internalServiceProgram != null ) {
 					program = this.internalServiceProgram;
+					// add process to apply receiving parameter
+					
 					program = OLParseTreeOptimizer.optimize( program );
 					program = Jolie2Utility.transform(program);
 				} else {
