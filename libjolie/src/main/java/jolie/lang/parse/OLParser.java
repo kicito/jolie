@@ -50,6 +50,7 @@ import jolie.lang.parse.ast.CompensateStatement;
 import jolie.lang.parse.ast.CorrelationSetInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationAliasInfo;
 import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationVariableInfo;
+import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.CurrentHandlerStatement;
 import jolie.lang.parse.ast.DeepCopyStatement;
 import jolie.lang.parse.ast.DefinitionCallStatement;
@@ -308,7 +309,7 @@ public class OLParser extends AbstractParser
 
 				currentType = parseType( typeName );
 
-				currentType.setPrivacy( isCurrSymbolPrivate );
+				currentType.setPrivate( isCurrSymbolPrivate );
 				isCurrSymbolPrivate = false;
 
 				if( haveComment ){ haveComment = false; }
@@ -335,7 +336,7 @@ public class OLParser extends AbstractParser
 	{
 		if ( token.is( Scanner.TokenType.DEFINE ) ) {
 			DefinitionNode defNode = parseDefinition();
-			defNode.setPrivacy( isCurrSymbolPrivate );
+			defNode.setPrivate( isCurrSymbolPrivate );
 			isCurrSymbolPrivate = false;
 			programBuilder.addChild( defNode );
 		}
@@ -361,7 +362,7 @@ public class OLParser extends AbstractParser
 			if ( docNode != null ) {
 				parseBackwardAndSetDocumentation( docNode, forwardDocToken );
 			}
-			iface.setPrivacy( isCurrSymbolPrivate );
+			iface.setPrivate( isCurrSymbolPrivate );
 			isCurrSymbolPrivate = false;
 			programBuilder.addChild( iface );
 		}
@@ -1069,25 +1070,24 @@ public class OLParser extends AbstractParser
 	private Pair<TypeDefinition, String> parseServiceParameter()
 		throws IOException, ParserException
 	{
-		if (token.is(TokenType.LPAREN)){
+		if ( token.is( Scanner.TokenType.LPAREN ) ) {
 			getToken();
-			if (token.is(TokenType.RPAREN)){ // case ( )
+			if ( token.is( Scanner.TokenType.RPAREN ) ) { // case ( )
 				getToken();
-				return new Pair< TypeDefinition, String >(TypeDefinitionUndefined.getInstance(), null);
-			} else { // case ( path: type  )
+				return new Pair< TypeDefinition, String >( null, null );
+			} else { // case ( path: type )
 				String paramPath = token.content();
 				getToken();
 
-				eat( TokenType.COLON, "expected :" );
+				eat( Scanner.TokenType.COLON, "expected :" );
 				String typeName = token.content();
 				TypeDefinition parameterType = parseType( typeName );
 
-				eat( TokenType.RPAREN, "expected )" );
+				eat( Scanner.TokenType.RPAREN, "expected )" );
 				return new Pair< TypeDefinition, String >( parameterType, paramPath );
 			}
 		} else {
-			return new Pair< TypeDefinition, String >( TypeDefinitionUndefined.getInstance(),
-					null );
+			return new Pair< TypeDefinition, String >( null, null );
 		}
 	}
 

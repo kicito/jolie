@@ -623,41 +623,47 @@ public class GlobalSymbolReferenceResolver
         {
         }
 
+        public void visit( EmbeddedServiceNode2 n )
+        {
+
+            Optional< SymbolInfo > symbol =
+                    this.moduleMap.get( currentURI ).symbol( n.servicePath() );
+            if ( !symbol.isPresent() ) {
+                this.valid = false;
+                this.error = new ModuleException( n.context(),
+                        n.servicePath() + " is not defined in symbolTable" );
+                return;
+            }
+            if ( !(symbol.get().node() instanceof ServiceNode) ) {
+                this.valid = false;
+                this.error = new ModuleException( n.context(),
+                        n.servicePath() + " is not defined as a Service node" );
+                return;
+            }
+            ServiceNode node = (ServiceNode) symbol.get().node();
+            
+            n.setService( node );
+
+            if ( n.isCreateNewPort() ){
+                // creates binds operation from ServiceNode to PortID
+                OutputPortInfo bindingPorts = n.outputPortInfo();
+                InterfaceDefinition[] publicIfaces = Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal(node);
+                for( InterfaceDefinition iface : publicIfaces){
+                    bindingPorts.addInterface(iface);
+                    iface.operationsMap().values().forEach(op->bindingPorts.addOperation(op));
+                }
+            }
+        }
+
         @Override
         public void visit( EmbeddedServiceNode n )
         {
-            if (n.program() != null){
-                n.program().accept(this);
-            }
             if ( n instanceof EmbeddedServiceNode2 ) {
-                Optional< SymbolInfo > symbol =
-                        this.moduleMap.get( currentURI ).symbol( n.servicePath() );
-                if ( !symbol.isPresent() ) {
-                    this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            n.servicePath() + " is not defined in symbolTable" );
-                    return;
-                }
-                if ( !(symbol.get().node() instanceof ServiceNode) ) {
-                    this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            n.servicePath() + " is not defined as a Service node" );
-                    return;
-                }
-                EmbeddedServiceNode2 embeddedServiceNode2 = (EmbeddedServiceNode2) n;
-
-                ServiceNode node = (ServiceNode) symbol.get().node();
-                embeddedServiceNode2.setService( node );
-
-                if ( embeddedServiceNode2.isCreateNewPort() ){
-                    // creates binds operation from ServiceNode to PortID
-                    OutputPortInfo bindingPorts = embeddedServiceNode2.outputPortInfo();
-                    InterfaceDefinition[] publicIfaces = Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal(node);
-                    for( InterfaceDefinition iface : publicIfaces){
-                        bindingPorts.addInterface(iface);
-                        iface.operationsMap().values().forEach(op->bindingPorts.addOperation(op));
-                    }
-                }
+                this.visit( (EmbeddedServiceNode2) n );
+                return;
+            }
+            if ( n.program() != null ) {
+                n.program().accept( this );
             }
         }
 
@@ -818,10 +824,12 @@ public class GlobalSymbolReferenceResolver
         public void visit( ImportStatement n )
         {
         }
-        
+
         @Override
-        public void visit( ServiceNode n ) {
-            n.program().accept(this);
+        public void visit( ServiceNode n )
+        {
+            n.parameterType().ifPresent( ( type ) -> type.accept( this ) );
+            n.program().accept( this );
         }
     }
 

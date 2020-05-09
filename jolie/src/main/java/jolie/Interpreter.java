@@ -866,6 +866,24 @@ public class Interpreter
 		return classLoader;
 	}
 
+	public Value argumentValue()
+	{
+		return this.receivingParameterValue;
+	}
+
+	public void setServiceNodeArgument( String name, Expression passingArgument )
+	{
+		if ( this.serviceNodeArgument == null ) {
+			this.serviceNodeArgument = new HashMap<>();
+		}
+		this.serviceNodeArgument.put( name, passingArgument );
+	}
+
+	public Expression getServiceNodeArgument( String name )
+	{
+		return this.serviceNodeArgument.get( name );
+	}
+
 	/** Constructor.
 	 *
 	 * @param args The command line arguments.
@@ -878,14 +896,15 @@ public class Interpreter
 	public Interpreter( String[] args, ClassLoader parentClassLoader, File programDirectory )
 		throws CommandLineException, FileNotFoundException, IOException
 	{
-        this( args, parentClassLoader, programDirectory, false );
+        this( args, parentClassLoader, programDirectory, false, null );
 	}
     
-    public Interpreter( String[] args, ClassLoader parentClassLoader, File programDirectory, boolean ignoreFile )
+    public Interpreter( String[] args, ClassLoader parentClassLoader, File programDirectory, boolean ignoreFile, Value argumentValue )
 		throws CommandLineException, FileNotFoundException, IOException
 	{
 		TracerUtils.TracerLevels tracerLevel = TracerUtils.TracerLevels.ALL;
 		this.parentClassLoader = parentClassLoader;
+		this.receivingParameterValue = argumentValue == null ? Value.create() : argumentValue;
         
 		cmdParser = new CommandLineParser( args, parentClassLoader, ignoreFile );
 		classLoader = cmdParser.jolieClassLoader();
@@ -958,7 +977,7 @@ public class Interpreter
 	public Interpreter( String[] args, ClassLoader parentClassLoader, File programDirectory, Interpreter parentInterpreter, Program internalServiceProgram )
 		throws CommandLineException, FileNotFoundException, IOException
 	{
-        this( args, parentClassLoader, programDirectory, true );
+        this( args, parentClassLoader, programDirectory, true, null );
         
 		this.parentInterpreter = parentInterpreter;
 		this.internalServiceProgram = internalServiceProgram;
@@ -966,7 +985,8 @@ public class Interpreter
 	}
 
 	private String paramPath;
-	private Value receivingArgument;
+	private Value receivingParameterValue;
+	private Map<String, Expression> serviceNodeArgument;
 
     /** Constructor.
 	 *
@@ -987,17 +1007,16 @@ public class Interpreter
 		Interpreter parentInterpreter,
 		Program internalServiceProgram,
 		String paramPath,
-		Value receivingArgument
+		Value receivingParameterValue
 	)
 		throws CommandLineException, FileNotFoundException, IOException
 	{
-        this( args, parentClassLoader, programDirectory, true );
+        this( args, parentClassLoader, programDirectory, true, receivingParameterValue );
         
 		this.parentInterpreter = parentInterpreter;
 		this.internalServiceProgram = internalServiceProgram;
 		this.symbolTables = parentInterpreter.symbolTables();
 		this.paramPath = paramPath;
-		this.receivingArgument = receivingArgument;
 	}
 
 	/**
@@ -1129,7 +1148,7 @@ public class Interpreter
 
 					if ( paramPath != null ) {
 						initExecutionThread.state().root().getFirstChild( paramPath )
-								.deepCopy( receivingArgument );
+								.deepCopy( receivingParameterValue );
 					}
 					
 					commCore.init();
@@ -1380,7 +1399,8 @@ public class Interpreter
 					this,
 					program,
 					semanticVerifier.isConstantMap(),
-					semanticVerifier.correlationFunctionInfo() ))
+					semanticVerifier.correlationFunctionInfo(),
+					this.receivingParameterValue ))
 					.build();
 			}
 

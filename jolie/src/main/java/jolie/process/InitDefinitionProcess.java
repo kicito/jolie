@@ -29,6 +29,7 @@ import jolie.runtime.InvalidIdException;
 import jolie.runtime.Value;
 import jolie.runtime.embedding.EmbeddedServiceLoader;
 import jolie.runtime.embedding.EmbeddedServiceLoadingException;
+import jolie.runtime.embedding.ServiceNodeLoader;
 
 public class InitDefinitionProcess extends DefinitionProcess
 {
@@ -55,8 +56,15 @@ public class InitDefinitionProcess extends DefinitionProcess
 				}
 			}
 			
-			for( EmbeddedServiceLoader loader : interpreter.embeddedServiceLoaders() ) {
-				loader.load();
+			for( EmbeddedServiceLoader loader : interpreter.embeddedServiceLoaders()) {
+				if ( loader instanceof ServiceNodeLoader ) {
+					ServiceNodeLoader serviceLoader = (ServiceNodeLoader) loader;
+					Value passingArgument = interpreter
+							.getServiceNodeArgument( serviceLoader.serviceName() ).evaluate();
+					loader.load( passingArgument );
+				} else {
+					loader.load( null );
+				}
 			}
 
 			for( OutputPort outputPort : interpreter.outputPorts() ) {

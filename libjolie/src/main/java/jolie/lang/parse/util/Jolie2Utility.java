@@ -30,9 +30,11 @@ public class Jolie2Utility
                 if ( ((DefinitionNode) node).id().equals( "main" ) ) {
                     return true;
                 }
+            } else if ( node instanceof ServiceNode ){
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     public static Program removeModuleScopePortsAndEmbeds( Program p )
@@ -76,6 +78,8 @@ public class Jolie2Utility
             }
         }
         mainService.setProgram( mainServiceProgramBuilder.toProgram() );
+        mainService.setPrivate(false);
+        mainService.setAcceptParameter(null, null);
         moduleProgramBuilder.addChild( mainService );
         return moduleProgramBuilder.toProgram();
     }

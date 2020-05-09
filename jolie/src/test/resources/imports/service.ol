@@ -4,17 +4,23 @@ interface twiceIface{
     requestResponse: twice(int)(int)
 }
 
-service someservice (someparam : string)  {
+type serviceParam: void{
+    loc: string
+    proto: string
+}
+
+service someservice (someparam : serviceParam)  {
     
     inputPort IP {
         interfaces : twiceIface
-        location: "local"
+        protocol: someparam.proto
+        location: someparam.loc
     }
 
     outputPort ServiceOp {
         oneWay: notice(string)
         protocol: sodep
-        location: someparam
+        location: "socket://localhost:8000"
     }
 
     main {

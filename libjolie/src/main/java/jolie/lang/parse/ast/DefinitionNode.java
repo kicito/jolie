@@ -62,7 +62,7 @@ public class DefinitionNode extends OLSyntaxNode implements SymbolNode
 	}
 
 	@Override
-	public void setPrivacy( boolean isPrivate )
+	public void setPrivate( boolean isPrivate )
 	{
 		this.privacy = isPrivate ? Privacy.PRIVATE : Privacy.PUBLIC;
 	}

@@ -35,6 +35,7 @@ import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.DivideAssignStatement;
 import jolie.lang.parse.ast.DocumentationComment;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
+import jolie.lang.parse.ast.EmbeddedServiceNode2;
 import jolie.lang.parse.ast.ExecutionInfo;
 import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
@@ -212,7 +213,27 @@ public class OLParseTreeOptimizer
 		@Override
 		public void visit( EmbeddedServiceNode n )
 		{
+			if ( n instanceof EmbeddedServiceNode2 ) {
+				this.visit( (EmbeddedServiceNode2) n );
+				return;
+			}
 			programChildren.add( n );
+		}
+
+		public void visit( EmbeddedServiceNode2 n )
+		{
+			OLSyntaxNode passingParam = null;
+			if ( n.passingParam() != null ) {
+				n.passingParam().accept( this );
+				passingParam = currNode;
+			}
+			if ( n.isCreateNewPort() ) {
+				programChildren.add( new EmbeddedServiceNode2( n.context(), n.serviceName(),
+						n.outputPortInfo(), passingParam ) );
+			} else {
+				programChildren.add( new EmbeddedServiceNode2( n.context(), n.serviceName(),
+						n.portId(), passingParam ) );
+			}
 		}
 
 		@Override

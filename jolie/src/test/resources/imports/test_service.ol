@@ -5,15 +5,17 @@ service main (){
 
     outputPort OP {
         interfaces: twiceIface
+        protocol: sodep
+        location: "socket://localhost:3000"
     }
 
     inputPort IP {
         oneWay: notice(string)
-        protocol: "sodep"
-        location: "socket://localhost:3000"
+        protocol: sodep
+        location: "socket://localhost:8000"
     }
 
-    embed someservice("socket://localhost:3000") in OP
+    embed someservice({loc="socket://localhost:3000" proto="sodep"})
 
     main{
         println@Console("hello!")()

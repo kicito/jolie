@@ -25,13 +25,13 @@ package jolie.runtime.embedding;
 import jolie.Interpreter;
 import jolie.lang.Constants;
 import jolie.lang.Constants.EmbeddedServiceType;
-import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.ServiceNode;
 import jolie.net.CommChannel;
 import jolie.runtime.Value;
 import jolie.runtime.VariablePath;
 import jolie.runtime.expression.Expression;
+import jolie.runtime.typing.Type;
 
 public abstract class EmbeddedServiceLoader
 {
@@ -54,7 +54,7 @@ public abstract class EmbeddedServiceLoader
 			if ( configuration.isInternal() ) {
 				if ( configuration.type == EmbeddedServiceType.SERVICE){
 					EmbeddedServiceNodeConfiguration serviceNodeConfiguration = (EmbeddedServiceNodeConfiguration) configuration;
-					ret = new ServiceNodeLoader( channelDest, interpreter, serviceNodeConfiguration.serviceNode(), serviceNodeConfiguration.argumentExpression() );
+					ret = new ServiceNodeLoader( channelDest, interpreter, serviceNodeConfiguration.serviceNode(), serviceNodeConfiguration.acceptedType() );
 				} else {
 					InternalEmbeddedServiceConfiguration internalConfiguration = (InternalEmbeddedServiceConfiguration) configuration;
 					ret = new InternalJolieServiceLoader( channelDest, interpreter, internalConfiguration.serviceName(), internalConfiguration.program() );
@@ -116,7 +116,7 @@ public abstract class EmbeddedServiceLoader
 		}
 	}
 	
-	public abstract void load()
+	public abstract void load(Value argumentValue)
 		throws EmbeddedServiceLoadingException;
 
 	public static abstract class EmbeddedServiceConfiguration
@@ -195,18 +195,18 @@ public abstract class EmbeddedServiceLoader
 	public static class EmbeddedServiceNodeConfiguration extends EmbeddedServiceConfiguration
 	{
 		private final ServiceNode serviceNode;
-		private final Expression argumentExpr;
+		private final Type acceptedType;
 
 		/**
 		 *
-		 * @param node         ServiceNode to be embeded
-		 * @param argumentExpr passing argument expression
+		 * @param node      ServiceNode to be embeded
+		 * @param acceptedType accepting parameter type
 		 */
-		public EmbeddedServiceNodeConfiguration( ServiceNode node, Expression argumentExpr )
+		public EmbeddedServiceNodeConfiguration( ServiceNode node, Type acceptedType )
 		{
 			super( Constants.EmbeddedServiceType.SERVICE );
 			this.serviceNode = node;
-			this.argumentExpr = argumentExpr;
+			this.acceptedType = acceptedType;
 		}
 
 		public ServiceNode serviceNode()
@@ -214,9 +214,9 @@ public abstract class EmbeddedServiceLoader
 			return this.serviceNode;
 		}
 
-		public Expression argumentExpression()
+		public Type acceptedType()
 		{
-			return this.argumentExpr;
+			return this.acceptedType;
 		}
 	}
 }

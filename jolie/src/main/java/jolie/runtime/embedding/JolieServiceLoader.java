@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 import jolie.CommandLineException;
 import jolie.Interpreter;
+import jolie.runtime.Value;
 import jolie.runtime.expression.Expression;
 
 public class JolieServiceLoader extends EmbeddedServiceLoader
@@ -55,7 +56,7 @@ public class JolieServiceLoader extends EmbeddedServiceLoader
 	}
 
 	@Override
-	public void load()
+	public void load( Value argumentValue )
 		throws EmbeddedServiceLoadingException
 	{
 		Future< Exception > f = interpreter.start();

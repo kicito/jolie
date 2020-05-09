@@ -259,7 +259,7 @@ public class RuntimeService extends JavaService
                 new EmbeddedServiceLoader.ExternalEmbeddedServiceConfiguration(type, filePath);
 			EmbeddedServiceLoader loader =
 					EmbeddedServiceLoader.create( interpreter(), configuration, channel );
-			loader.load();
+			loader.load(null);
 
 			return channel;
 		} catch ( EmbeddedServiceLoaderCreationException e ) {

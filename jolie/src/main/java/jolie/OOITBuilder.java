@@ -222,7 +222,6 @@ import jolie.runtime.expression.VoidExpression;
 import jolie.runtime.typing.OneWayTypeDescription;
 import jolie.runtime.typing.RequestResponseTypeDescription;
 import jolie.runtime.typing.Type;
-import jolie.runtime.typing.TypeCheckingException;
 import jolie.util.ArrayListMultiMap;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
@@ -253,6 +252,7 @@ public class OOITBuilder implements OLVisitor
 		new HashMap<>();
 	private final Deque< OLSyntaxNode > lazyVisits = new LinkedList<>();	
 	private boolean firstPass = true;
+	private final Value parameterValue;
 
 	private static class AggregationConfiguration {
 		private final OutputPort defaultOutputPort;
@@ -282,11 +282,13 @@ public class OOITBuilder implements OLVisitor
 		Interpreter interpreter,
 		Program program,
 		Map< String, Boolean > isConstantMap,
-		CorrelationFunctionInfo correlationFunctionInfo
+		CorrelationFunctionInfo correlationFunctionInfo,
+		Value parameterValue
 	) {
 		this.interpreter = interpreter;
 		this.isConstantMap = isConstantMap;
 		this.correlationFunctionInfo = correlationFunctionInfo;
+		this.parameterValue = parameterValue;
 
 		List< OLSyntaxNode > programChildren = new ArrayList<>();
 		programChildren.addAll( OLParser.createTypeDeclarationMap( program.context() ).values() );
@@ -438,35 +440,29 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( OutputPortInfo n )
 	{
-		// final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
+		final boolean isConstant = isConstantMap.computeIfAbsent( n.id(), k -> false );
 
 		currentOutputPort = n.id();
 		notificationTypes.put( currentOutputPort, new HashMap<>() );
 		solicitResponseTypes.put( currentOutputPort, new HashMap<>() );
-		for( OperationDeclaration decl : n.operations() ) {
+		for( OperationDeclaration decl : n.operations()) {
 			decl.accept( this );
 		}
 		currentOutputPort = null;
 
 		Expression locationExpr = buildExpression( n.location() );
 
-		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocol());
+		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression( n.protocol() );
 		Expression protocolExpr = buildExpression( protocolNode );
 
-		if ( protocolExpr instanceof VariablePath ) {
-			VariablePath protocolExprPath = (VariablePath) protocolExpr;
-			// initiate protocol related field from parameter fields
-
-			// error( n.context(), "Variable path protocol is not support to create inputPort" );
-		}
-
-		interpreter.register( n.id(), new OutputPort(
+		interpreter.register( n.id(),
+				new OutputPort(
 				interpreter,
 				n.id(),
 				locationExpr,
 				protocolExpr,
 				getOutputPortInterface( n.id() ),
-				false
+				isConstant
 			)
 		);
 	}
@@ -522,13 +518,16 @@ public class OOITBuilder implements OLVisitor
 			
 			// should not add new type to environment
 			insideOperationDeclarationOrInstanceOf = true;
-			Type paramType = buildType( n.service().parameterType() );
+			Type paramType = n.service().parameterType().isPresent()
+					? buildType( n.service().parameterType().get() )
+					: null;
 			insideOperationDeclarationOrInstanceOf = false;
-			Value passingValue = buildExpression( n.passingParam() ).evaluate();
-			paramType.check( passingValue );
+			Expression passingArgument = buildExpression( n.passingParam() );
+
+			this.interpreter.setServiceNodeArgument(n.serviceName(), passingArgument);
 
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
-			new EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration( n.service(), passingValue );
+			new EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration( n.service(), paramType );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(
@@ -540,8 +539,6 @@ public class OOITBuilder implements OLVisitor
 			error( n.context(), e );
 		} catch( InvalidIdException e ) {
 			error( n.context(), "could not find port " + n.portId() );
-		} catch( TypeCheckingException e ) {
-			error( n.context(), "passing value is not a valid type" + n.service().parameterType().id() );
 		}
 	}
 	
@@ -637,30 +634,39 @@ public class OOITBuilder implements OLVisitor
 		locationPath = new ClosedVariablePath( locationPath, interpreter.globalValue() );
 
 		Expression locationExpr = buildExpression( n.location() );
+		Value locationVal = null;
 		String location = null;
 		if ( locationExpr instanceof Value ) {
-			Value locationVal = locationExpr.evaluate();
-			location = locationVal.strValue();
+			locationVal = locationExpr.evaluate();
 		} else if ( locationExpr instanceof VariablePath ) {
-			error( n.context(), "Variable path location is not support to create inputPort" );
+			VariablePath path =
+					new ClosedVariablePath( (VariablePath) locationExpr, parameterValue );
+			locationVal = path.evaluate();
 		} else {
 			error( n.context(), "location expression is not valid" );
 		}
-		locationPath.getValue().setValue( location );
-		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression(n.protocol());
-		Expression protocolExpr = buildExpression( protocolNode );
-		String protocol = null;
-		if ( protocolExpr instanceof Value ||  protocolExpr instanceof InlineTreeExpression) {
-			Value protocolVal = protocolExpr.evaluate();
-			protocol = protocolVal.strValue();
-		} else if ( protocolExpr instanceof VariablePath ) {
-			VariablePath protocolExprPath = (VariablePath) protocolExpr;
-			// initiate protocol related field from parameter fields
-			error( n.context(), "Variable path protocol is not support to create inputPort" );
-		}
+		location = locationVal.strValue();
 
-		Process protocolProc = protocolExpr == null ? NullProcess.getInstance()
-				: new DeepCopyProcess( protocolPath, protocolExpr, true, n.context() );
+		locationPath.getValue().setValue( location );
+		String protocol = null;
+
+		if ( n.protocol() != null ) {
+			OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression( n.protocol() );
+			Expression protocolExpr = buildExpression( protocolNode );
+			Value protocolVal = null;
+			if ( protocolExpr instanceof Value || protocolExpr instanceof InlineTreeExpression ) {
+				protocolVal = protocolExpr.evaluate();
+			} else if ( protocolExpr instanceof VariablePath ) {
+				VariablePath path =
+						new ClosedVariablePath( (VariablePath) protocolExpr, parameterValue );
+				protocolVal = path.evaluate();
+			} else {
+				error( n.context(), "location expression is not valid" );
+			}
+			protocol = protocolVal.strValue();
+		}
+		Process protocolProc = protocol == null ? NullProcess.getInstance()
+				: new DeepCopyProcess( protocolPath, Value.create(protocol), true, n.context() );
 		Process[] confChildren = new Process[] {protocolProc};
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
 
@@ -1864,8 +1870,9 @@ public class OOITBuilder implements OLVisitor
 	public void visit( ImportStatement n ){}
 	
 	@Override
-	public void visit( ServiceNode n ){
-		if (n.name().equals("main")){
+	public void visit( ServiceNode n )
+	{
+		if ( n.name().equals( "main" ) ) {
 			n.program().accept( this );
 		}
 	}
