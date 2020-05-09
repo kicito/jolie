@@ -83,7 +83,6 @@ import jolie.net.SessionMessage;
 import jolie.net.ports.OutputPort;
 import jolie.process.DefinitionProcess;
 import jolie.process.InputOperationProcess;
-import jolie.process.Process;
 import jolie.process.SequentialProcess;
 import jolie.runtime.FaultException;
 import jolie.runtime.InputOperation;

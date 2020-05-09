@@ -116,7 +116,7 @@ public abstract class EmbeddedServiceLoader
 		}
 	}
 	
-	public abstract void load(Value argumentValue)
+	public abstract void load( Value argumentValue )
 		throws EmbeddedServiceLoadingException;
 
 	public static abstract class EmbeddedServiceConfiguration

@@ -41,9 +41,10 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 		Interpreter interpreter = null;
 		try {
 			Value passingArgument = Value.create();
-			if (acceptedType != null){
+			if ( acceptedType != null ) {
 				acceptedType.check( argumentValue );
-				passingArgument.getChildren(this.serviceNode.parameterPath().get()).first().deepCopy(argumentValue);
+				passingArgument.getChildren( this.serviceNode.parameterPath().get() ).first()
+						.deepCopy( argumentValue );
 			}
 			List< String > newArgs = new ArrayList<>();
 			newArgs.add( "-i" );

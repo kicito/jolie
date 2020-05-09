@@ -445,7 +445,7 @@ public class OOITBuilder implements OLVisitor
 		currentOutputPort = n.id();
 		notificationTypes.put( currentOutputPort, new HashMap<>() );
 		solicitResponseTypes.put( currentOutputPort, new HashMap<>() );
-		for( OperationDeclaration decl : n.operations()) {
+		for( OperationDeclaration decl : n.operations() ) {
 			decl.accept( this );
 		}
 		currentOutputPort = null;
@@ -575,18 +575,18 @@ public class OOITBuilder implements OLVisitor
 			new HashMap< String, OneWayTypeDescription >(),
 			new HashMap< String, RequestResponseTypeDescription >() 
 		);
-		for (OperationDeclaration op : n.operations()) {
+		for( OperationDeclaration op : n.operations() ) {
 			op.accept( this );
 		}
 
-		Map< String, OutputPort > redirectionMap = new HashMap< String, OutputPort >();
+		Map< String, OutputPort > redirectionMap =
+			new HashMap< String, OutputPort > ();
 		OutputPort oPort = null;
-		for (Entry< String, String > entry : n.redirectionMap().entrySet()) {
+		for( Entry< String, String > entry : n.redirectionMap().entrySet() ) {
 			try {
 				oPort = interpreter.getOutputPort( entry.getValue() );
-			} catch (InvalidIdException e) {
-				error( n.context(), "Unknown output port (" + entry.getValue()
-						+ ") in redirection for input port " + n.id() );
+			} catch( InvalidIdException e ) {
+				error( n.context(), "Unknown output port (" + entry.getValue() + ") in redirection for input port " + n.id() );
 			}
 			redirectionMap.put( entry.getKey(), oPort );
 		}
@@ -594,10 +594,9 @@ public class OOITBuilder implements OLVisitor
 		OutputPort outputPort;
 		Map< String, OneWayTypeDescription > outputPortNotificationTypes;
 		Map< String, RequestResponseTypeDescription > outputPortSolicitResponseTypes;
-		Map< String, AggregatedOperation > aggregationMap =
-				new HashMap< String, AggregatedOperation >();
+		Map< String, AggregatedOperation > aggregationMap = new HashMap< String, AggregatedOperation >();
 		InterfaceExtender extender;
-		for (InputPortInfo.AggregationItemInfo item : n.aggregationList()) {
+		for( InputPortInfo.AggregationItemInfo item : n.aggregationList() ) {
 			String outputPortName = item.outputPortList()[0];
 			if ( item.interfaceExtender() == null ) {
 				extender = null;
@@ -608,21 +607,17 @@ public class OOITBuilder implements OLVisitor
 				outputPort = interpreter.getOutputPort( outputPortName );
 				outputPortNotificationTypes = notificationTypes.get( outputPortName );
 				outputPortSolicitResponseTypes = solicitResponseTypes.get( outputPortName );
-				for (String operationName : outputPortNotificationTypes.keySet()) {
-					aggregationMap.put( operationName, AggregatedOperation.createDirect(
-							operationName, Constants.OperationType.ONE_WAY, outputPort ) );
+				for( String operationName : outputPortNotificationTypes.keySet() ) {
+					aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.ONE_WAY, outputPort ) );
 					putAggregationConfiguration( n.id(), operationName,
-							new AggregationConfiguration( outputPort, outputPort.getInterface(),
-									extender ) );
+						new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
 				}
-				for (String operationName : outputPortSolicitResponseTypes.keySet()) {
-					aggregationMap.put( operationName, AggregatedOperation.createDirect(
-							operationName, Constants.OperationType.REQUEST_RESPONSE, outputPort ) );
+				for( String operationName : outputPortSolicitResponseTypes.keySet() ) {
+					aggregationMap.put( operationName, AggregatedOperation.createDirect( operationName, Constants.OperationType.REQUEST_RESPONSE, outputPort ) );
 					putAggregationConfiguration( n.id(), operationName,
-							new AggregationConfiguration( outputPort, outputPort.getInterface(),
-									extender ) );
+						new AggregationConfiguration( outputPort, outputPort.getInterface(), extender ) );
 				}
-			} catch (InvalidIdException e) {
+			} catch( InvalidIdException e ) {
 				error( n.context(), e );
 			}
 		}
@@ -771,16 +766,8 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( Program p )
 	{
-		for( OLSyntaxNode node : p.children() ){
-			if (node instanceof DefinitionNode){
-				DefinitionNode defNode = (DefinitionNode) node;
-				if (defNode.id().equals("init") || defNode.id().equals("main")){
-					node.accept(this);
-				} 
-			}else{
-				node.accept( this );
-			}
-		}
+		for( OLSyntaxNode node : p.children() )
+			node.accept( this );
 	}
 
 	private boolean insideOperationDeclarationOrInstanceOf = false;
@@ -872,7 +859,7 @@ public class OOITBuilder implements OLVisitor
 	
 	public void visit( DefinitionNode n )
 	{
-		final DefinitionProcess def;
+		DefinitionProcess def = null;
 		
 		switch( n.id() ) {
 		case "main":
@@ -895,9 +882,6 @@ public class OOITBuilder implements OLVisitor
 				buildProcess( n.body() )
 			};
 			def = new InitDefinitionProcess( new ScopeProcess( "main", new SequentialProcess( initChildren ), false ) );
-			break;
-		default:
-			def = new DefinitionProcess( buildProcess( n.body() ) );
 			break;
 		}
 
@@ -972,6 +956,7 @@ public class OOITBuilder implements OLVisitor
 					registerSessionStarter( guard, currProcess );
 				}
 			} catch( Exception e ) {
+				e.printStackTrace();
 			}
 		}
 		
@@ -997,7 +982,6 @@ public class OOITBuilder implements OLVisitor
 				registerSessionStarter( inputProcess, NullProcess.getInstance() );
 			}
 		} catch( InvalidIdException e ) {
-			e.printStackTrace();
 			error( n.context(), e ); 
 		}
 
@@ -1029,7 +1013,6 @@ public class OOITBuilder implements OLVisitor
 				registerSessionStarter( inputProcess, NullProcess.getInstance() );
 			}
 		} catch( InvalidIdException e ) {
-			e.printStackTrace();
 			error( n.context(), e ); 
 		}
 
@@ -1053,7 +1036,6 @@ public class OOITBuilder implements OLVisitor
 						n.context()
 					);
 		} catch( InvalidIdException e ) {
-			e.printStackTrace();
 			error( n.context(), e );
 		}
 	}
@@ -1075,7 +1057,6 @@ public class OOITBuilder implements OLVisitor
 						n.context()
 					);
 		} catch( InvalidIdException e ) {
-			e.printStackTrace();
 			error( n.context(), e );
 		}
 	}
@@ -1276,11 +1257,11 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( DefinitionCallStatement n )
 	{
-		// try {
-		// 	interpreter.getDefinition( n.id() );
-		// } catch (InvalidIdException e) {
+		try {
+			interpreter.getDefinition( n.id() );
+		} catch (InvalidIdException e) {
 			n.definition().accept( this );
-		// }
+		}
 		currProcess = new CallProcess( n.id() );
 	}
 
@@ -1825,7 +1806,6 @@ public class OOITBuilder implements OLVisitor
 				n.context()
 			);
 		} catch( InvalidIdException e ) {
-			e.printStackTrace();
 			error( n.context(), e );
 		}
 	}
@@ -1841,11 +1821,10 @@ public class OOITBuilder implements OLVisitor
 		final boolean wasInsideType = insideType;
 		insideType = true;
 
-		currType =
-				Type.createChoice( n.cardinality(), buildType( n.left() ), buildType( n.right() ) );
-
-		insideType = wasInsideType;
-		if ( insideType == false && insideOperationDeclarationOrInstanceOf == false ) {
+		currType = Type.createChoice( n.cardinality(), buildType( n.left() ), buildType( n.right() ) );
+		
+		insideType = wasInsideType;		
+		if ( insideType == false && insideOperationDeclaration == false ) {
 			typeMap.put( n, currType );
 		}
 	}
