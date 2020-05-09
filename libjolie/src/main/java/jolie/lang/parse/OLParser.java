@@ -71,6 +71,7 @@ import jolie.lang.parse.ast.InstallFunctionNode;
 import jolie.lang.parse.ast.InstallStatement;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.InterfaceExtenderDefinition;
+import jolie.lang.parse.ast.JavaServiceNode;
 import jolie.lang.parse.ast.LinkInStatement;
 import jolie.lang.parse.ast.LinkOutStatement;
 import jolie.lang.parse.ast.MultiplyAssignStatement;
@@ -1105,6 +1106,20 @@ public class OLParser extends AbstractParser
 		String serviceName = token.content();
 		getToken();
 
+		ServiceNode.Technology tech = ServiceNode.Technology.JOLIE;
+		Optional<String> javaServicePath = Optional.empty();
+		if ( token.isKeyword("Java") ){
+			tech = ServiceNode.Technology.JAVA;
+			getToken();
+			eat(Scanner.TokenType.LPAREN, "expected ( after JAVA technology");
+			if (token.isNot(Scanner.TokenType.STRING)){
+				throwException("expected java service path string for JAVA technology");
+			}
+			javaServicePath = Optional.of(token.content());
+			getToken();
+			eat(Scanner.TokenType.RPAREN, "expected ) after java service path");
+		}
+
 		Pair<TypeDefinition, String> parameter = parseServiceParameter();
 		this.serviceName = Optional.of(serviceName);
 
@@ -1164,24 +1179,31 @@ public class OLParser extends AbstractParser
 
 		programBuilder = backupProgrambuilder;
 
-		eat( TokenType.RCURLY, "expected }" );
+		eat( Scanner.TokenType.RCURLY, "expected }" );
 		// it is a Jolie 1's internal service
 		if ( internalIfaces != null && internalIfaces.length > 0 ) {
 			if ( internalMain == null ) {
 				throwException( "You must specify a main for service " + serviceName );
 			}
-			programBuilder.addChild( createInternalService( ctx, serviceName, internalIfaces,
-					initSequence, internalMain, programBuilder ) );
+			EmbeddedServiceNode node = createInternalService( ctx, serviceName, internalIfaces,
+			initSequence, internalMain, programBuilder );
+			if (node != null){
+				programBuilder.addChild( node );
+			}
 		} else {
-			programBuilder.addChild( createServiceNode( ctx, serviceName, parameter.value(),
-					parameter.key(), initSequence, internalMain, backupProgrambuilder,
-					serviceBlockProgramBuilder ) );
+			ServiceNode node = createServiceNode( ctx, serviceName, tech, parameter.value(),
+			parameter.key(), initSequence, internalMain, backupProgrambuilder,
+			serviceBlockProgramBuilder );
+			if (node != null){
+				programBuilder.addChild( node );
+			}
 		}
 	}
 
 	private ServiceNode createServiceNode(
 		ParsingContext ctx,
 		String serviceName,
+		ServiceNode.Technology tech,
 		String paramPath,
 		TypeDefinition paramType,
 		SequenceStatement initNode,
@@ -1190,10 +1212,6 @@ public class OLParser extends AbstractParser
 		ProgramBuilder serviceBlockProgramBuilder
 	)
 	{
-		ServiceNode node = new ServiceNode( ctx, serviceName );
-		node.setAcceptParameter( paramPath, paramType );
-		node.setPrivacy( isCurrSymbolPrivate );
-
 		// create Program representing the internal service
 		ProgramBuilder serviceNodeProgramBuilder = new ProgramBuilder( ctx );
 
@@ -1211,11 +1229,19 @@ public class OLParser extends AbstractParser
 		if ( initSequence != null ) {
 			serviceNodeProgramBuilder.addChild( new DefinitionNode( getContext(), "init", initSequence ) );
 		}
-		//add main defined in service
-		serviceNodeProgramBuilder.addChild( main );
 
-		//set service program
-		node.setProgram( serviceNodeProgramBuilder.toProgram() );
+		// add main defined in service
+		if ( main != null ) {
+			serviceNodeProgramBuilder.addChild( main );
+		}
+		ServiceNode node;
+		if(tech == ServiceNode.Technology.JAVA){
+			node = new JavaServiceNode(ctx, serviceName, serviceName, serviceNodeProgramBuilder.toProgram())
+		}else{
+			node = new ServiceNode( ctx, serviceName, serviceNodeProgramBuilder.toProgram() );
+		}
+		node.setAcceptParameter( paramPath, paramType );
+		node.setPrivate( isCurrSymbolPrivate );
 
 		return node;
 	}
