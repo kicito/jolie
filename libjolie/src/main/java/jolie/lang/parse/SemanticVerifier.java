@@ -378,7 +378,7 @@ public class SemanticVerifier implements OLVisitor
 		}
 	}
 
-	private boolean symbolTableHasSymbol( ParsingContext context, String name )
+	private boolean hasSymbolDefined( ParsingContext context, String name )
 	{
 		Optional< Boolean > hasSymbol = Helpers.firstNonNull( () -> {
 			if ( symbolTables.get( program.context().source() ) == null ) {
@@ -625,7 +625,7 @@ public class SemanticVerifier implements OLVisitor
 	{
 		if ( definedTypes.get( n.requestType().id() ) == null ) {
 			// check from symbolTable
-			if ( !symbolTableHasSymbol( n.context(), n.requestType().id()) ) {
+			if ( !hasSymbolDefined( n.context(), n.requestType().id()) ) {
 				error( n, "unknown type: " + n.requestType().id() + " for operation " + n.id() );
 			}
 		}
@@ -645,20 +645,20 @@ public class SemanticVerifier implements OLVisitor
 	{
 		if ( definedTypes.get( n.requestType().id() ) == null ) {
 			// check form symbolTable
-			if ( !symbolTableHasSymbol( n.context(), n.requestType().id()) ) {
+			if ( !hasSymbolDefined( n.context(), n.requestType().id()) ) {
 				error( n, "unknown type: " + n.requestType().id() + " for operation " + n.id() );
 			}
 		}
 		if ( definedTypes.get( n.responseType().id() ) == null ) {
 			// check form symbolTable
-			if ( !symbolTableHasSymbol( n.context(), n.responseType().id()) ) {
+			if ( !hasSymbolDefined( n.context(), n.responseType().id()) ) {
 				error( n, "unknown type: " + n.responseType().id() + " for operation " + n.id() );
 			}
 		}
 		for (Entry< String, TypeDefinition > fault : n.faults().entrySet()) {
 			if ( definedTypes.containsKey( fault.getValue().id() ) == false ) {
 				// check form symbolTable
-				if ( !symbolTableHasSymbol( n.context(), fault.getValue().id() ) ) {
+				if ( !hasSymbolDefined( n.context(), fault.getValue().id() ) ) {
 					error( n, "unknown type for fault " + fault.getKey() );
 				}
 			}

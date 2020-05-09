@@ -115,9 +115,11 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
+import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.module.SymbolInfo.Privacy;
 import jolie.lang.parse.module.SymbolInfo.Scope;
 import jolie.lang.parse.util.Jolie2Utility;
+import jolie.util.Helpers;
 import jolie.util.Pair;
 
 public class GlobalSymbolReferenceResolver
@@ -306,7 +308,7 @@ public class GlobalSymbolReferenceResolver
         public void visit( DefinitionCallStatement n )
         {
 
-            Optional< SymbolInfo > symbol = this.moduleMap.get( currentURI ).symbol( n.id() );
+            Optional< SymbolInfo > symbol = getSymbol( n.context(), n.id() );
             if ( !symbol.isPresent() ) {
                 this.valid = false;
                 this.error = new ModuleException( n.context(),
@@ -464,8 +466,7 @@ public class GlobalSymbolReferenceResolver
         {
             // resolve interface definition
             for (InterfaceDefinition iface : n.getInterfaceList()) {
-                Optional< SymbolInfo > symbol =
-                        this.moduleMap.get( currentURI ).symbol( iface.name() );
+                Optional< SymbolInfo > symbol = getSymbol( n.context(),iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
@@ -500,8 +501,7 @@ public class GlobalSymbolReferenceResolver
         {
             // resolve interface definition
             for (InterfaceDefinition iface : n.getInterfaceList()) {
-                Optional< SymbolInfo > symbol =
-                        this.moduleMap.get( iface.context().source() ).symbol( iface.name() );
+                Optional< SymbolInfo > symbol = getSymbol( n.context(), iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
@@ -625,9 +625,7 @@ public class GlobalSymbolReferenceResolver
 
         public void visit( EmbeddedServiceNode2 n )
         {
-
-            Optional< SymbolInfo > symbol =
-                    this.moduleMap.get( currentURI ).symbol( n.servicePath() );
+            Optional< SymbolInfo > symbol = getSymbol( n.context(), n.servicePath() );
             if ( !symbol.isPresent() ) {
                 this.valid = false;
                 this.error = new ModuleException( n.context(),
@@ -702,8 +700,7 @@ public class GlobalSymbolReferenceResolver
             if ( n.linkedTypeName().equals( TypeDefinitionUndefined.UNDEFINED_KEYWORD ) ) {
                 linkedType = TypeDefinitionUndefined.getInstance();
             } else {
-                Optional< SymbolInfo > targetSymbolInfo =
-                        this.moduleMap.get( currentURI ).symbol( n.linkedTypeName() );
+                Optional< SymbolInfo > targetSymbolInfo = getSymbol( n.context(), n.linkedTypeName() );
                 if ( !targetSymbolInfo.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
@@ -837,6 +834,22 @@ public class GlobalSymbolReferenceResolver
         {
             n.parameterType().ifPresent( ( type ) -> type.accept( this ) );
             n.program().accept( this );
+        }
+
+        private Optional<SymbolInfo> getSymbol( ParsingContext context, String name )
+        {
+            Optional< SymbolInfo > symbol = Helpers.firstNonNull( () -> {
+                if ( !symbolTables.containsKey( currentURI ) ) {
+                    return null;
+                }
+                return symbolTables.get( currentURI ).symbol( name ).get();
+            }, () -> {
+                if ( !symbolTables.containsKey( context.source() ) ) {
+                    return null;
+                }
+                return symbolTables.get( context.source() ).symbol( name ).get();
+            } );
+            return symbol;
         }
     }
 

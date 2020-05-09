@@ -61,47 +61,6 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 	private final boolean isConstant;
 	private final Interface iface;
 
-	public OutputPort(
-		Interpreter interpreter,
-		String id,
-		Expression locationExpr,
-		Expression protocolExpr,
-		Interface iface,
-		boolean isConstant )
-	{
-		super( id );
-		this.interpreter = interpreter;
-
-		this.protocolVariablePath = new VariablePathBuilder( false ).add( id(), 0 )
-				.add( Constants.PROTOCOL_NODE_NAME, 0 ).toVariablePath();
-
-		this.locationVariablePath = new VariablePathBuilder( false ).add( id(), 0 )
-				.add( Constants.LOCATION_NODE_NAME, 0 ).toVariablePath();
-
-		this.locationExpression = locationVariablePath;
-		
-		// Create the location configuration Process
-		List< Process > children = new LinkedList<>();
-		if ( locationExpr != null ) {
-			children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
-		}
-		
-		if ( protocolExpr != null ) {
-			children.add( new DeepCopyProcess( this.protocolVariablePath, protocolExpr, true, null ) );
-		}
-
-		if ( children.size() == 0 ) {
-			children.add( NullProcess.getInstance() );
-		}
-		
-		this.configurationProcess =
-				new SequentialProcess( children.toArray( new Process[children.size()] ) );
-
-		this.isConstant = isConstant;
-
-		this.iface = iface;
-	}
-
 	/* To be called at runtime, after main is run.
 	 * Requires the caller to set the variables by itself.
 	 */
@@ -152,53 +111,50 @@ public class OutputPort extends AbstractIdentifiableObject implements Port
 	 * To be called by OOITBuilder
 	 * @param interpreter
 	 * @param id
-	 * @param protocolId
-	 * @param protocolConfigurationProcess
-	 * @param locationURI
+	 * @param locationExpr
+	 * @param protocolExpr
 	 * @param iface
 	 * @param isConstant
 	 */
 	public OutputPort(
-			Interpreter interpreter,
-			String id,
-			String protocolId,
-			Process protocolConfigurationProcess,
-			URI locationURI,
-			Interface iface,
-			boolean isConstant
-	) {
+		Interpreter interpreter,
+		String id,
+		Expression locationExpr,
+		Expression protocolExpr,
+		Interface iface,
+		boolean isConstant )
+	{
 		super( id );
-		this.isConstant = isConstant;
 		this.interpreter = interpreter;
-		this.iface = iface;
 
-		this.protocolVariablePath =
-					new VariablePathBuilder( false )
-					.add( id(), 0 )
-					.add( Constants.PROTOCOL_NODE_NAME, 0 )
-					.toVariablePath();
+		this.protocolVariablePath = new VariablePathBuilder( false ).add( id(), 0 )
+				.add( Constants.PROTOCOL_NODE_NAME, 0 ).toVariablePath();
 
-		this.locationVariablePath =
-					new VariablePathBuilder( false )
-					.add( id(), 0 )
-					.add( Constants.LOCATION_NODE_NAME, 0 )
-					.toVariablePath();
+		this.locationVariablePath = new VariablePathBuilder( false ).add( id(), 0 )
+				.add( Constants.LOCATION_NODE_NAME, 0 ).toVariablePath();
 
 		this.locationExpression = locationVariablePath;
 		
 		// Create the configuration Process
-		Process a = ( locationURI == null ) ? NullProcess.getInstance() : 
-			new AssignmentProcess( this.locationVariablePath, Value.create( locationURI.toString() ), null );
-
 		List< Process > children = new LinkedList<>();
-		children.add( a );
-		if ( protocolConfigurationProcess != null ) {
-			children.add( protocolConfigurationProcess );
+		if ( locationExpr != null ) {
+			children.add( new AssignmentProcess( this.locationVariablePath, locationExpr, null ) );
 		}
-		if ( protocolId != null ) {
-			children.add( new AssignmentProcess( this.protocolVariablePath, Value.create( protocolId ), null ) );
+		
+		if ( protocolExpr != null ) {
+			children.add( new DeepCopyProcess( this.protocolVariablePath, protocolExpr, true, null ) );
 		}
-		this.configurationProcess = new SequentialProcess( children.toArray( new Process[ children.size() ] ) );
+
+		if ( children.size() == 0 ) {
+			children.add( NullProcess.getInstance() );
+		}
+		
+		this.configurationProcess =
+				new SequentialProcess( children.toArray( new Process[children.size()] ) );
+
+		this.isConstant = isConstant;
+
+		this.iface = iface;
 	}
 	
 	/**
