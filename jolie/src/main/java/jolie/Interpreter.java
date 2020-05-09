@@ -868,7 +868,7 @@ public class Interpreter
 
 	public Value argumentValue()
 	{
-		return this.receivingParameterValue;
+		return this.receivingArgumentValue;
 	}
 
 	public void setServiceNodeArgument( String name, Expression passingArgument )
@@ -904,7 +904,7 @@ public class Interpreter
 	{
 		TracerUtils.TracerLevels tracerLevel = TracerUtils.TracerLevels.ALL;
 		this.parentClassLoader = parentClassLoader;
-		this.receivingParameterValue = argumentValue == null ? Value.create() : argumentValue;
+		this.receivingArgumentValue = argumentValue == null ? Value.create() : argumentValue;
         
 		cmdParser = new CommandLineParser( args, parentClassLoader, ignoreFile );
 		classLoader = cmdParser.jolieClassLoader();
@@ -984,8 +984,7 @@ public class Interpreter
 		this.symbolTables = parentInterpreter.symbolTables();
 	}
 
-	private String paramPath;
-	private Value receivingParameterValue;
+	private Value receivingArgumentValue;
 	private Map<String, Expression> serviceNodeArgument;
 
     /** Constructor.
@@ -1006,17 +1005,15 @@ public class Interpreter
 		File programDirectory,
 		Interpreter parentInterpreter,
 		Program internalServiceProgram,
-		String paramPath,
-		Value receivingParameterValue
+		Value receivingArgumentValue
 	)
 		throws CommandLineException, FileNotFoundException, IOException
 	{
-        this( args, parentClassLoader, programDirectory, true, receivingParameterValue );
+        this( args, parentClassLoader, programDirectory, true, receivingArgumentValue );
         
 		this.parentInterpreter = parentInterpreter;
 		this.internalServiceProgram = internalServiceProgram;
 		this.symbolTables = parentInterpreter.symbolTables();
-		this.paramPath = paramPath;
 	}
 
 	/**
@@ -1146,9 +1143,9 @@ public class Interpreter
                 try {
                     initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
 
-					if ( paramPath != null ) {
-						initExecutionThread.state().root().getFirstChild( paramPath )
-								.deepCopy( receivingParameterValue );
+					if ( receivingArgumentValue.isDefined() ) {
+						initExecutionThread.state().root()
+								.deepCopy( receivingArgumentValue );
 					}
 					
 					commCore.init();
@@ -1400,7 +1397,7 @@ public class Interpreter
 					program,
 					semanticVerifier.isConstantMap(),
 					semanticVerifier.correlationFunctionInfo(),
-					this.receivingParameterValue ))
+					this.receivingArgumentValue ))
 					.build();
 			}
 
