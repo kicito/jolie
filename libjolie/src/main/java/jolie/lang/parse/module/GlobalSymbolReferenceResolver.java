@@ -469,13 +469,13 @@ public class GlobalSymbolReferenceResolver
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined in symbolTable" );
+                            iface.name() + " is not defined in symbolTable" );
                     return;
                 }
                 if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined as an interface definition" );
+                            iface.name() + " is not defined as an interface definition" );
                     return;
                 }
                 InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
@@ -501,7 +501,7 @@ public class GlobalSymbolReferenceResolver
             // resolve interface definition
             for (InterfaceDefinition iface : n.getInterfaceList()) {
                 Optional< SymbolInfo > symbol =
-                        this.moduleMap.get( currentURI ).symbol( iface.name() );
+                        this.moduleMap.get( iface.context().source() ).symbol( iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
@@ -646,11 +646,18 @@ public class GlobalSymbolReferenceResolver
 
             if ( n.isCreateNewPort() ){
                 // creates binds operation from ServiceNode to PortID
-                OutputPortInfo bindingPorts = n.outputPortInfo();
-                InterfaceDefinition[] publicIfaces = Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal(node);
-                for( InterfaceDefinition iface : publicIfaces){
-                    bindingPorts.addInterface(iface);
-                    iface.operationsMap().values().forEach(op->bindingPorts.addOperation(op));
+                OutputPortInfo bindingPort = n.outputPortInfo();
+                try{
+                    InterfaceDefinition[] publicIfaces = Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal(node);
+                    for( InterfaceDefinition iface : publicIfaces){
+                        bindingPort.addInterface(iface);
+                    }
+                    bindingPort.accept( this );
+                }catch (ModuleException e){
+                    e.setContext(n.context());
+                    this.valid = false;
+                    this.error = e;
+                    return;
                 }
             }
         }

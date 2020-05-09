@@ -451,9 +451,17 @@ public class OOITBuilder implements OLVisitor
 		currentOutputPort = null;
 
 		Expression locationExpr = buildExpression( n.location() );
+		if ( locationExpr instanceof VariablePath ) {
+			locationExpr =
+					new ClosedVariablePath( (VariablePath) locationExpr, parameterValue );
+		}
 
 		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression( n.protocol() );
 		Expression protocolExpr = buildExpression( protocolNode );
+		if ( protocolExpr instanceof VariablePath ) {
+			protocolExpr =
+					new ClosedVariablePath( (VariablePath) protocolExpr, parameterValue );
+		}
 
 		interpreter.register( n.id(),
 				new OutputPort(

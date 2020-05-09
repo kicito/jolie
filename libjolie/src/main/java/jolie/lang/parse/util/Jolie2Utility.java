@@ -1,7 +1,9 @@
 package jolie.lang.parse.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import jolie.lang.parse.ast.DefinitionNode;
 import jolie.lang.parse.ast.EmbeddedServiceNode;
 import jolie.lang.parse.ast.ImportStatement;
@@ -16,6 +18,7 @@ import jolie.lang.parse.ast.VariablePathNode;
 import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
+import jolie.lang.parse.module.ModuleException;
 
 /**
  * A Utility class to handle backward compatibility of Jolie 1
@@ -121,15 +124,31 @@ public class Jolie2Utility
 
     public static InterfaceDefinition[] getServiceNodeInterfacesFromInputPortLocal(
             ServiceNode node )
+            throws ModuleException
     {
         List< InterfaceDefinition > idef = new ArrayList< InterfaceDefinition >();
+        Map<String, OutputPortInfo> internalOp = new HashMap<>();
+        
         for (OLSyntaxNode n : node.program().children()) {
-            if ( n instanceof InputPortInfo ) {
+            if ( n instanceof OutputPortInfo ) {
+                OutputPortInfo op = (OutputPortInfo) n;
+                internalOp.put(op.id(), op);
+            } else if ( n instanceof InputPortInfo ) {
                 InputPortInfo ip = (InputPortInfo) n;
                 if ( ip.location() instanceof ConstantStringExpression ) {
                     String location = ((ConstantStringExpression) ip.location()).value();
                     if ( location.equals( "local" ) ) {
                         idef.addAll( ip.getInterfaceList() );
+                        for (InputPortInfo.AggregationItemInfo item : ip.aggregationList()) {
+                            for (String opName : item.outputPortList()) {
+                                OutputPortInfo op = internalOp.get(opName);
+                                if(op == null){
+                                    throw new ModuleException("aggregating outputport " + opName + " not found");
+                                }
+                                idef.addAll( op.getInterfaceList() );
+                            }
+                        }
+
                     }
                 }
             }

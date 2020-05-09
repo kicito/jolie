@@ -1101,10 +1101,6 @@ public class OLParser extends AbstractParser
 			return;
 		}
 		getToken();
-		assertToken( Scanner.TokenType.ID, "expected service name" );
-		ParsingContext ctx = getContext();
-		String serviceName = token.content();
-		getToken();
 
 		ServiceNode.Technology tech = ServiceNode.Technology.JOLIE;
 		Optional<String> javaServicePath = Optional.empty();
@@ -1119,6 +1115,11 @@ public class OLParser extends AbstractParser
 			getToken();
 			eat(Scanner.TokenType.RPAREN, "expected ) after java service path");
 		}
+		
+		assertToken( Scanner.TokenType.ID, "expected service name" );
+		ParsingContext ctx = getContext();
+		String serviceName = token.content();
+		getToken();
 
 		Pair<TypeDefinition, String> parameter = parseServiceParameter();
 		this.serviceName = Optional.of(serviceName);
@@ -1191,7 +1192,7 @@ public class OLParser extends AbstractParser
 				programBuilder.addChild( node );
 			}
 		} else {
-			ServiceNode node = createServiceNode( ctx, serviceName, tech, parameter.value(),
+			ServiceNode node = createServiceNode( ctx, serviceName, tech, javaServicePath, parameter.value(),
 			parameter.key(), initSequence, internalMain, backupProgrambuilder,
 			serviceBlockProgramBuilder );
 			if (node != null){
@@ -1204,6 +1205,7 @@ public class OLParser extends AbstractParser
 		ParsingContext ctx,
 		String serviceName,
 		ServiceNode.Technology tech,
+		Optional<String> javaServicePath,
 		String paramPath,
 		TypeDefinition paramType,
 		SequenceStatement initNode,
@@ -1234,10 +1236,12 @@ public class OLParser extends AbstractParser
 		if ( main != null ) {
 			serviceNodeProgramBuilder.addChild( main );
 		}
+
 		ServiceNode node;
-		if(tech == ServiceNode.Technology.JAVA){
-			node = new JavaServiceNode(ctx, serviceName, serviceName, serviceNodeProgramBuilder.toProgram())
-		}else{
+		if ( tech == ServiceNode.Technology.JAVA ) {
+			node = new JavaServiceNode( ctx, serviceName, javaServicePath.get(),
+					serviceNodeProgramBuilder.toProgram() );
+		} else {
 			node = new ServiceNode( ctx, serviceName, serviceNodeProgramBuilder.toProgram() );
 		}
 		node.setAcceptParameter( paramPath, paramType );

@@ -22,7 +22,6 @@
 
 package jolie.runtime.embedding;
 
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,142 +29,58 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import jolie.CommandLineException;
 import jolie.Interpreter;
 import jolie.JolieClassLoader;
-import jolie.lang.Constants;
-import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InterfaceDefinition;
-import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.ast.OperationDeclaration;
-import jolie.lang.parse.ast.OutputPortInfo;
-import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
-import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
-import jolie.net.CommChannel;
-import jolie.net.CommListener;
+import jolie.lang.parse.context.URIParsingContext;
 import jolie.runtime.JavaService;
-import jolie.runtime.Value;
-import jolie.runtime.expression.Expression;
-import jolie.runtime.typing.Type;
-import jolie.runtime.typing.TypeCheckingException;
-import jolie.tracer.EmbeddingTraceAction;
 
 
-public class JavaServiceLoader2 extends EmbeddedServiceLoader
+public class JavaServiceLoader2
 {
-	private final String serviceName;
-	private final Interpreter parentInterpreter;
 
-	private final JavaService service;
-	private final Value argumentValue;
-	private final Type parameterType;
+	private final Interpreter interpreter;
 
-	public JavaServiceLoader2( Expression channelDest, String servicePath,
-			Interpreter parentInterpreter, ServiceNode serviceNode, Type acceptedType )
-			throws EmbeddedServiceLoaderCreationException
+	public JavaServiceLoader2(Interpreter interpreter){
+		this.interpreter = interpreter;
+	}
+
+	public JavaService loadJavaService( String servicePath )
+			throws EmbeddedServiceLoadingException
 	{
-		super( channelDest );
-		this.serviceName = "JAVA_" + serviceName;
-		this.parentInterpreter = parentInterpreter;
 
-		final JolieClassLoader cl = parentInterpreter.getClassLoader();
+		final JolieClassLoader cl = interpreter.getClassLoader();
 		try {
 			final Class< ? > c = cl.loadClass( servicePath );
 			final Object obj = c.getDeclaredConstructor().newInstance();
 
 			if ( !(obj instanceof JavaService) ) {
-				throw new EmbeddedServiceLoaderCreationException(
+				throw new EmbeddedServiceLoadingException(
 						servicePath + " is not a valid JavaService" );
 			}
-			this.service = (JavaService) obj;
+			return (JavaService) obj;
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 				| IllegalArgumentException | InvocationTargetException | NoSuchMethodException
 				| SecurityException e) {
-			throw new EmbeddedServiceLoaderCreationException( e );
-		}
-
-
-		InterfaceDefinition ifaceDef = buildInterfaceFromJavaService( service );
-
-		ParameterizeInputPortInfo ip = null;
-		Program p = program;
-		int portIndex;
-		for (portIndex = 0; portIndex < p.children().size(); portIndex++) {
-			OLSyntaxNode node = p.children().get( portIndex );
-			// there shall be only one inputport
-			if ( node instanceof ParameterizeInputPortInfo ) {
-				ip = (ParameterizeInputPortInfo) node;
-				break;
-			}
-		}
-
-		if ( ip == null ) {
-			throw new EmbeddedServiceLoaderCreationException(
-					"inputPort to communicate with embedder is not defined" );
-		}
-
-		// create new outputPort for communicate with embedder via aggregation
-		OutputPortInfo opInfo = new OutputPortInfo( ip.context(), this.serviceName );
-		fromClientPortName = ip.id();
-
-		Map< String, String > redirection = new HashMap< String, String >();
-
-		opInfo.addInterface( ifaceDef );
-		for (Entry< String, OperationDeclaration > op : ifaceDef.operationsMap().entrySet()) {
-			opInfo.addOperation( op.getValue() );
-		}
-
-		// set create new aggregation for existed inputPort
-		InputPortInfo.AggregationItemInfo[] aggregationList =
-				new InputPortInfo.AggregationItemInfo[] {new InputPortInfo.AggregationItemInfo(
-						new String[] {this.serviceName}, null )};
-
-		ParameterizeInputPortInfo newIp = new ParameterizeInputPortInfo( ip.context(), ip.id(),
-				aggregationList, redirection );
-		newIp.setParameter( ip.parameter() );
-		newIp.setIsJavaSerivePort( true );
-
-		if ( ip.getDocumentation() != null && ip.getDocumentation().length() > 0 ) {
-			newIp.setDocumentation( ip.getDocumentation() );
-		}
-		p.children().set( portIndex, newIp );
-		p.children().add( portIndex - 1, opInfo );
-
-		List< String > newArgs = new ArrayList<>();
-		newArgs.add( "-i" );
-		newArgs.add( currInterpreter.programDirectory().getAbsolutePath() );
-
-		String[] options = currInterpreter.optionArgs();
-		newArgs.addAll( Arrays.asList( options ) );
-		newArgs.add( "#" + servicePath + ".ol" );
-		try {
-			interpreter = new Interpreter( newArgs.toArray( new String[newArgs.size()] ),
-					currInterpreter.getClassLoader(), currInterpreter.programDirectory(),
-					currInterpreter, p, argument );
-		} catch (CommandLineException | IOException e) {
-			throw new EmbeddedServiceLoaderCreationException(
-					"unable to create interpreter instance" );
+			throw new EmbeddedServiceLoadingException( e );
 		}
 	}
-
-	private InterfaceDefinition buildInterfaceFromJavaService( JavaService service )
+	public static InterfaceDefinition buildInterfaceFromJavaService( JavaService service )
 	{
 
 		List< Method > requestResponses =
 				getMethodsAnnotatedWith( service.getClass(), RequestResponse.class );
-		InterfaceDefinition ifaceDef = new InterfaceDefinition( null, this.serviceName );
+		InterfaceDefinition ifaceDef = new InterfaceDefinition( URIParsingContext.DEFAULT, service.getClass().getSimpleName() + "Interface" );
 		for (Method rr : requestResponses) {
 			String opName = rr.getName();
-			OperationDeclaration op = new RequestResponseOperationDeclaration( null, opName,
+			OperationDeclaration op = new RequestResponseOperationDeclaration( URIParsingContext.DEFAULT, opName,
 					TypeDefinitionUndefined.getInstance(), TypeDefinitionUndefined.getInstance(),
 					new HashMap< String, TypeDefinition >() );
+			System.out.println(op.id());
 			ifaceDef.addOperation( op );
 		}
 		return ifaceDef;
@@ -188,48 +103,5 @@ public class JavaServiceLoader2 extends EmbeddedServiceLoader
 			klass = klass.getSuperclass();
 		}
 		return methods;
-	}
-
-	@Override
-	public void load( Value argumentValue ) throws EmbeddedServiceLoadingException
-	{
-		if ( parameterType != null ) {
-			try {
-				parameterType.check( argumentValue );
-			} catch (TypeCheckingException e1) {
-				throw new EmbeddedServiceLoadingException( e1 );
-			}
-		}
-
-		Future< Exception > f = interpreter.start();
-		try {
-			Exception e = f.get();
-
-			if ( e == null ) {
-				setChannel( interpreter.commCore().getLocalCommChannel() );
-			} else {
-				throw new EmbeddedServiceLoadingException( e );
-			}
-		} catch (InterruptedException | ExecutionException | EmbeddedServiceLoadingException e) {
-			throw new EmbeddedServiceLoadingException( e );
-		}
-
-		service.setInterpreter( interpreter );
-		final CommChannel javaChannel = new JavaCommChannel( service );
-
-		Value l;
-		Value r = interpreter.initThread().state().root();
-		l = r.getFirstChild( serviceName ).getFirstChild( Constants.LOCATION_NODE_NAME );
-		l.setValue( javaChannel );
-
-		CommListener cListener =
-				interpreter.commCore().getListenerByInputPortName( fromClientPortName );
-		CommChannel cc = interpreter.commCore().getLocalCommChannel( cListener );
-		cc.setRedirectionChannel( javaChannel );
-
-		interpreter.tracer()
-				.trace( () -> new EmbeddingTraceAction( EmbeddingTraceAction.Type.SERVICE_LOAD,
-						"Java Service Loader", service.getClass().getCanonicalName(), null ) );
-
 	}
 }

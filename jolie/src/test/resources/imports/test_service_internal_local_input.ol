@@ -1,16 +1,19 @@
 include "console.iol"
-from .service import someservice
-
+from .service_internal_local_input import someservice, twiceIface
 
 service main (){
 
-    inputPort IP {
-        oneWay: notice(string)
-        protocol: "sodep"
-        location: "socket://localhost:3000"
+    outputPort OP {
+        interfaces: twiceIface
     }
 
-    embed someservice("socket://localhost:3000") in new OP
+    inputPort IP {
+        oneWay: notice(string)
+        protocol: sodep
+        location: "socket://localhost:8000"
+    }
+
+    embed someservice({loc="socket://localhost:8000" proto="sodep"}) in OP
 
     main{
         println@Console("hello!")()
