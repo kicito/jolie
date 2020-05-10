@@ -12,7 +12,7 @@ service main(){
 		location: "local://asdasd"
 	}
 
-    embed ConsoleService("hello") in new Console
+    embed ConsoleService("local://asdasd") in new Console
 
     main{
         println@Console("Hello")()

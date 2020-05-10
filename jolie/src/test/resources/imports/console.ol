@@ -93,12 +93,13 @@ service Java("joliex.io.ConsoleService") ConsoleService( inloc: string ) {
 	}
 
 	outputPort toClient {
-		location: "local://asdasd"
+		location: inloc
 		interfaces: ConsoleInputInterface
 	}
 
+	execution {concurrent}
+
     main {
-		//linkIn( dummy )
 		[in(incoming)]{
 			in@toClient(incoming)
 		}

@@ -1,6 +1,7 @@
 package jolie.lang.parse.module;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
@@ -24,6 +25,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import jolie.lang.parse.ParserException;
 import jolie.lang.parse.Scanner;
+import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
 import jolie.util.CheckUtility;
 import jolie.util.PortStub;
 import jolie.util.TestingObjectsCreator;
@@ -60,7 +62,7 @@ public class TestModuleParser
             // resolve symbols
             symbolResolver.resolveExternalSymbols();
         } );
-        assertTrue(exception.getMessage().contains("cannot refer to private name privateType"));
+        assertTrue( exception.getMessage().contains( "cannot refer to private name privateType" ) );
     }
 
     @Test
@@ -75,12 +77,13 @@ public class TestModuleParser
         Map.Entry< URI, Set< String > > aOLSymbols = TestingObjectsCreator.createURISymbolsMap(
                 Paths.get( baseDir.toURI() ).resolve( "A.ol" ).toUri(), "A", "from_b" );
 
-        Map.Entry< URI, Set< String > > packageBDotBSymbols = TestingObjectsCreator.createURISymbolsMap(
-                Paths.get( baseDir.toURI() ).resolve( "A" ).resolve( "B.ol" ).toUri(), "C_type",
-                "b_type", "b_type" );
+        Map.Entry< URI, Set< String > > packageBDotBSymbols =
+                TestingObjectsCreator.createURISymbolsMap(
+                        Paths.get( baseDir.toURI() ).resolve( "A" ).resolve( "B.ol" ).toUri(),
+                        "C_type", "b_type", "b_type" );
 
-        Map.Entry< URI, Set< String > > packageCSymbols =
-                TestingObjectsCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).resolve( "A" )
+        Map.Entry< URI, Set< String > > packageCSymbols = TestingObjectsCreator
+                .createURISymbolsMap( Paths.get( baseDir.toURI() ).resolve( "A" )
                         .resolve( "packages" ).resolve( "C.ol" ).toUri(), "b_type", "c" );
 
         Map< URI, Set< String > > expectedSourceSymbols =
@@ -134,8 +137,9 @@ public class TestModuleParser
                 this.getClass().getClassLoader() );
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
-        Map.Entry< URI, Set< String > > expectedSymbolsRoot = TestingObjectsCreator.createURISymbolsMap(
-                target, "date", "number", "foo", "bar", "baz", "dateFoo", "fooIface" );
+        Map.Entry< URI, Set< String > > expectedSymbolsRoot =
+                TestingObjectsCreator.createURISymbolsMap( target, "date", "number", "foo", "bar",
+                        "baz", "dateFoo", "fooIface" );
         Map.Entry< URI, Set< String > > expectedSymbolsExt =
                 TestingObjectsCreator.createURISymbolsMap(
                         Paths.get( baseDir.toURI() ).resolve( "packages" ).resolve( "type.ol" )
@@ -266,9 +270,8 @@ public class TestModuleParser
                 this.getClass().getClassLoader() );
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
 
-        Map.Entry< URI, Set< String > > expectedSymbols =
-                TestingObjectsCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
-                        "someservice" );
+        Map.Entry< URI, Set< String > > expectedSymbols = TestingObjectsCreator.createURISymbolsMap(
+                Paths.get( baseDir.toURI() ).toFile().toURI(), "someservice" );
         assertDoesNotThrow( () -> {
 
             // parse a program
@@ -392,9 +395,9 @@ public class TestModuleParser
         ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
         Scanner s = new Scanner( is, baseDir.toURI(), null );
 
-        Map.Entry< URI, Set< String > > expectedSymbolsRoot =
-                TestingObjectsCreator.createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(),
-                        "date", "number", "foo", "bar", "baz", "dateFoo" );
+        Map.Entry< URI, Set< String > > expectedSymbolsRoot = TestingObjectsCreator
+                .createURISymbolsMap( Paths.get( baseDir.toURI() ).toFile().toURI(), "date",
+                        "number", "foo", "bar", "baz", "dateFoo" );
         Map.Entry< URI, Set< String > > expectedSymbolsExt =
                 TestingObjectsCreator.createURISymbolsMap(
                         Paths.get( baseDir.toURI() ).resolve( "packages" ).resolve( "type.ol" )
@@ -445,47 +448,68 @@ public class TestModuleParser
         is.close();
     }
 
-    @Test
-    void testDuplicateSymbolDeclError() throws FileNotFoundException, IOException, ParserException,
-            ModuleException, URISyntaxException
+    @ParameterizedTest
+    @MethodSource("moduleSystemExceptionTestProvider")
+    void testModuleSystemException( String code, String exception, String errorMessage )
     {
 
-        String code = "from A import A\n from B import A";
         InputStream is = new ByteArrayInputStream( code.getBytes() );
-
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
                 this.getClass().getClassLoader() );
 
-        Scanner s = new Scanner( is, baseDir.toURI(), null );
-
-        Exception exception = assertThrows( ModuleException.class, () -> {
-            parser.parse( s );
+        Throwable ex = assertThrows( Exception.class, () -> {
+            Scanner s = new Scanner( is, baseDir.toURI(), null );
+            ModuleRecord mr = parser.parse( s );
+            ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+            Set< ModuleRecord > crawlResult = crawler.crawl( mr, parser );
+            GlobalSymbolReferenceResolver symbolResolver =
+                    new GlobalSymbolReferenceResolver( crawlResult );
+            symbolResolver.resolve();
         } );
 
-        String expectedMessage = "detected redeclaration of symbol A";
-        String actualMessage = exception.getMessage();
-
-        assertTrue( actualMessage.contains( expectedMessage ) );
-
+        String expectedMessage = errorMessage;
+        String actualMessage = ex.getMessage();
+        String exceptionClassName = ex.getClass().getSimpleName();
+        assertEquals( exception, exceptionClassName, "from parsing " + code );
+        assertTrue( actualMessage.contains( expectedMessage ),
+                "expected exception message to contain " + expectedMessage + " but found "
+                        + actualMessage );
     }
 
-    @Test
-    void testParser()
+
+    private static Stream< Arguments > moduleSystemExceptionTestProvider()
     {
-        ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
-                this.getClass().getClassLoader() );
-        Set< String > expectedType = new HashSet<>( Arrays.asList( "A", "from_b" ) );
-        assertDoesNotThrow( () -> {
-            URI target = Paths.get( baseDir.toURI() ).resolve( "A.ol" ).toUri();
-            ModuleRecord p = parser.parse( target );
-            CheckUtility.checkTypes( p.program(), expectedType );
-        } );
+        return Stream.of(
+                Arguments.of( "from .some.where import A", "ModuleException",
+                        "Module \"where\" not found from lookup path" ),
+                Arguments.of( "from A import A\n from B import A", "ModuleException",
+                        "detected duplicate declaration of symbol A" ),
+                Arguments.of( "from A import someSymbol", "ModuleException",
+                        "someSymbol is not defined" ),
+                Arguments.of( "main{ someProc }", "ModuleException",
+                        "someProc is not defined in symbolTable" ),
+                Arguments.of( "outputPort OP { interfaces: iface }", "ModuleException",
+                        "iface is not defined in symbolTable" ),
+                Arguments.of( "inputPort ip { interfaces: iface location:\"local\" }", "ModuleException",
+                        "iface is not defined in symbolTable" ),
+                Arguments.of( "main { t = 2 instanceof customType }", "ModuleException",
+                        "customType is not defined in symbolTable" ),
+                Arguments.of( "interface iface {oneWay: test(customType)}", "ModuleException",
+                        "customType is not defined in symbolTable" ),
+                Arguments.of( "interface iface {requestResponse: test(customType)(string)}",
+                        "ModuleException", "customType is not defined in symbolTable" ),
+                Arguments.of( "interface iface {requestResponse: test(void)(customType)}",
+                        "ModuleException", "customType is not defined in symbolTable" ),
+                Arguments.of(
+                        "interface iface {requestResponse: test(void)(string) throws NumberException( NumberExceptionType )}",
+                        "ModuleException", "NumberExceptionType is not defined in symbolTable" ) );
     }
+
 
     @ParameterizedTest
     @MethodSource("importStatementExceptionTestProvider")
     void testImportStatementExceptions( String code, String errorMessage )
-            throws FileNotFoundException, RuntimeException, IOException, URISyntaxException
+            throws IOException, URISyntaxException
     {
         InputStream is = new ByteArrayInputStream( code.getBytes() );
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
@@ -504,7 +528,7 @@ public class TestModuleParser
 
     }
 
-    private static Stream< Arguments > importStatementExceptionTestProvider()
+    private static Stream< ? extends Arguments > importStatementExceptionTestProvider()
     {
         return Stream.of(
                 Arguments.of( "from .A import AA as", "error: expected Identifier after as" ),
