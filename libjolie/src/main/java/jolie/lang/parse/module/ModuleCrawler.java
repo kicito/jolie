@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import jolie.lang.parse.ParserException;
+import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
 
 public class ModuleCrawler
 {
@@ -57,7 +58,7 @@ public class ModuleCrawler
     }
 
     private Source findModule( URI parentURI, String[] importTargetStrings )
-            throws FileNotFoundException
+            throws ModuleNotFoundException
     {
         Finder finder = finderCreator.getFinderForTarget( parentURI, importTargetStrings );
         Source targetFile = finder.find();
@@ -67,20 +68,19 @@ public class ModuleCrawler
     private void crawlModule( ModuleRecord record ) throws ModuleException
     {
         for (SymbolInfoExternal externalSymbol : record.symbolTable().externalSymbols()) {
-            Source moduleSource;
             try {
-                moduleSource = this.findModule( record.source(), externalSymbol.moduleTargets() );
-            } catch (FileNotFoundException e) {
-                throw new ModuleException( e );
+                Source moduleSource =
+                        this.findModule( record.source(), externalSymbol.moduleTargets() );
+                externalSymbol.setModuleSource( moduleSource );
+                modulesToCrawl.add( moduleSource );
+            } catch (ModuleNotFoundException e) {
+                throw new ModuleException(externalSymbol.context(), e);
             }
-            externalSymbol.setModuleSource( moduleSource );
-            modulesToCrawl.add( moduleSource );
         }
         moduleCrawled.put( record.source(), record );
     }
 
     public Set< ModuleRecord > crawl( ModuleRecord parentRecord, ModuleParser parser )
-
             throws ParserException, IOException, ModuleException
     {
 

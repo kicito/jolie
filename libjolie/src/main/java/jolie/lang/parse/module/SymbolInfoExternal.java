@@ -40,14 +40,10 @@ public class SymbolInfoExternal extends SymbolInfo
     }
     
     /**
-     * set a destination source of the symbol, this should be called once
+     * set a destination source of the symbol
      */
-    public void setModuleSource( Source moduleSource ) throws ModuleException
+    public void setModuleSource( Source moduleSource )
     {
-        if ( this.moduleSource != null ) {
-            new ModuleException( "Symbol " + this.name() + " has already defined moduleSource at "
-                    + this.moduleSource.source().toString() );
-        }
         this.moduleSource = moduleSource;
     }
 

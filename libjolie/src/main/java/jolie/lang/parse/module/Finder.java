@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import jolie.lang.Constants;
+import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
 
 /**
  * Finder find a module target, it is divided into two class, a finder for relative path or absolute
@@ -49,9 +50,9 @@ public abstract class Finder
      * Find a module target, return a File object points to first found path.
      * 
      * @return Source object
-     * @throws FileNotFoundException if there is finder cannot locate any file.
+     * @throws ModuleNotFoundException if there is finder cannot locate any file.
      */
-    public abstract Source find() throws FileNotFoundException;
+    public abstract Source find() throws ModuleNotFoundException;
 
     /**
      * @return an array of tokens except last one, which denote the module name
@@ -103,7 +104,7 @@ public abstract class Finder
      * 
      * @param basePath base path for lookup
      * @return Source object corresponding to the module.
-     * @throws ModuleException when a module is not found
+     * @throws FileNotFoundException when a module is not found
      */
     protected Source locateModule( Path basePath ) throws FileNotFoundException
     {
@@ -163,11 +164,15 @@ class RelativePathFinder extends Finder
     }
 
     @Override
-    public Source find() throws FileNotFoundException
+    public Source find() throws ModuleNotFoundException
     {
         Path basePath = resolveDotPrefix();
-        Source moduleFile = super.locateModule( basePath );
-        return moduleFile;
+        try {
+            Source moduleFile = super.locateModule( basePath );
+            return moduleFile;
+        } catch (FileNotFoundException e) {
+            throw new ModuleNotFoundException(this.moduleName(), e.getMessage());
+        }
     }
 
     @Override
@@ -197,20 +202,20 @@ class AbsolutePathFinder extends Finder
 
 
     @Override
-    public Source find() throws FileNotFoundException
+    public Source find() throws ModuleNotFoundException
     {
         /**
          * 1. Try to resolve P directly from WDIR.
          * 2. Check if FIRST.jap is in WDIR/lib. If so, resolve REST inside of this jap.
          * 3. Try to resolve P from the list of packages directories.
          */
-        FileNotFoundException err = null;
+        ModuleNotFoundException err = new ModuleNotFoundException(this.moduleName());
         try {
             // 1. resolve from Working directory
             Source moduleFile = super.locateModule( workingDirectory );
             return moduleFile;
         } catch (FileNotFoundException e) {
-            err = e;
+            err.addLookedPath(e.getMessage());
         }
 
         try {
@@ -219,7 +224,7 @@ class AbsolutePathFinder extends Finder
             return new JapSource( japFile, String.join( Constants.fileSeparator,
                     Arrays.copyOfRange( this.target, 1, this.target.length ) ) );
         } catch (IOException e) {
-            err.addSuppressed( e );
+            err.addLookedPath(e.getMessage());
         }
 
         try {
@@ -229,7 +234,7 @@ class AbsolutePathFinder extends Finder
                 return moduleFile;
             }
         } catch (FileNotFoundException e) {
-            err.addSuppressed( e );
+            err.addLookedPath(e.getMessage());
         }
 
         // throw if module not found

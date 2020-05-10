@@ -72,7 +72,7 @@ public class SymbolTable
         for (SymbolInfo symbolFromWildcard : symbolsFromWildcard) {
             if ( isDuplicateSymbol( symbolFromWildcard.name() ) ) {
                 throw new ModuleException(
-                        "detected redeclaration of symbol " + symbolFromWildcard.name() );
+                        "detected duplicate declaration of symbol " + symbolFromWildcard.name() );
             }
             if ( symbolFromWildcard.privacy() == Privacy.PUBLIC ) {
                 this.symbols.put( symbolFromWildcard.name(), symbolFromWildcard );
@@ -92,7 +92,7 @@ public class SymbolTable
     public void addSymbol( String name, SymbolNode node ) throws ModuleException
     {
         if ( isDuplicateSymbol( name ) ) {
-            throw new ModuleException( "detected redeclaration of symbol " + name );
+            throw new ModuleException( "detected duplicate declaration of symbol " + name );
         }
         this.symbols.put( name, new SymbolInfoLocal( name, node ) );
     }
@@ -111,7 +111,7 @@ public class SymbolTable
             throws ModuleException
     {
         if ( isDuplicateSymbol( name ) ) {
-            throw new ModuleException( "detected redeclaration of symbol " + name );
+            throw new ModuleException( "detected duplicate declaration of symbol " + name );
         }
         this.symbols.put( name,
                 new SymbolInfoExternal( context, name, moduleTargetStrings, name ) );
@@ -132,7 +132,7 @@ public class SymbolTable
             String moduleSymbol ) throws ModuleException
     {
         if ( isDuplicateSymbol( name ) ) {
-            throw new ModuleException( "detected redeclaration of symbol " + name );
+            throw new ModuleException( "detected duplicate declaration of symbol " + name );
         }
         this.symbols.put( name,
                 new SymbolInfoExternal( context, name, moduleTargetStrings, moduleSymbol ) );
