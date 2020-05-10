@@ -323,7 +323,7 @@ public class CommCore
 		String medium = uri.getScheme();
 		CommChannelFactory factory = getCommChannelFactory( medium );
 		if ( factory == null ) {
-			throw new UnsupportedCommMediumException( medium );
+			throw new UnsupportedCommMediumException( medium + " for port " + port.id() );
 		}
 		
 		return factory.createChannel( uri, port );
