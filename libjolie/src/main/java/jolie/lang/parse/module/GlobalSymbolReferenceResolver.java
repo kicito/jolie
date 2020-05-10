@@ -481,13 +481,11 @@ public class GlobalSymbolReferenceResolver
                 }
                 InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
                 ifaceDeclFromSymbol.operationsMap().values().forEach( op -> {
+                    op.accept(this);
                     iface.addOperation( op );
                     n.addOperation( op );
                 } );
                 iface.setDocumentation( ifaceDeclFromSymbol.getDocumentation() );
-            }
-            for (OperationDeclaration op : n.operations()) {
-                op.accept( this );
             }
             for (AggregationItemInfo aggregationItem : n.aggregationList()) {
                 if ( aggregationItem.interfaceExtender() != null ) {
@@ -716,6 +714,12 @@ public class GlobalSymbolReferenceResolver
                     return;
                 }
                 linkedType = (TypeDefinition) targetSymbolInfo.get().node();
+                if ( linkedType.equals( n ) ) {
+                    this.valid = false;
+                    this.error = new ModuleException( n.context(),
+                            n.id() + " is not defined in symbolTable" );
+                    return;
+                }
             }
             n.setLinkedType( linkedType );
         }
@@ -841,12 +845,14 @@ public class GlobalSymbolReferenceResolver
         private Optional< SymbolInfo > getSymbol( ParsingContext context, String name )
         {
             Optional< SymbolInfo > symbol = Helpers.firstNonNull( () -> {
-                if ( !symbolTables.containsKey( currentURI ) ) {
+                if ( !symbolTables.containsKey( currentURI )
+                        || !symbolTables.get( currentURI ).symbol( name ).isPresent() ) {
                     return null;
                 }
                 return symbolTables.get( currentURI ).symbol( name ).get();
             }, () -> {
-                if ( !symbolTables.containsKey( context.source() ) ) {
+                if ( !symbolTables.containsKey( context.source() )
+                        || !symbolTables.get( context.source() ).symbol( name ).isPresent() ) {
                     return null;
                 }
                 return symbolTables.get( context.source() ).symbol( name ).get();

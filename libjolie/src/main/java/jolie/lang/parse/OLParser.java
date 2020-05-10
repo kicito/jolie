@@ -1150,6 +1150,8 @@ public class OLParser extends AbstractParser
 				case "execution":
 					parseExecution();
 					break;
+				case "courier":
+					programBuilder.addChild( parseCourierDefinition() );
 				case "init":
 					if ( internalInit == null ) {
 						internalInit = new SequenceStatement( getContext() );
@@ -1614,10 +1616,14 @@ public class OLParser extends AbstractParser
 				opDecl.setRequestType( TypeDefinitionUndefined.getInstance() );
 				if ( token.is( Scanner.TokenType.LPAREN ) ) { // Type declaration
 					getToken(); //eat (
-					if ( definedTypes.containsKey( token.content() ) == false ) {
-						throwException( "invalid type: " + token.content() );
+					TypeDefinition type = null;
+					if ( definedTypes.containsKey( token.content() ) ) {
+						type = definedTypes.get( token.content() );
+					} else {
+						type = new TypeDefinitionLink( getContext(), token.content(),
+								Constants.RANGE_ONE_TO_ONE, token.content() );
 					}
-					opDecl.setRequestType( definedTypes.get( token.content() ) );
+					opDecl.setRequestType( type );
 					getToken(); // eat the type name
 					eat( Scanner.TokenType.RPAREN, "expected )" );
 				}
@@ -1686,30 +1692,42 @@ public class OLParser extends AbstractParser
 						if ( token.is( Scanner.TokenType.LPAREN ) ) {
 							getToken(); //eat (
 							faultTypeName = token.content();
-							if ( definedTypes.containsKey( faultTypeName ) == false ) {
-								throwException( "invalid type: " + faultTypeName );
-							}
 							getToken();
 							eat( Scanner.TokenType.RPAREN, "expected )" );
 						}
-						faultTypesMap.put( faultName, definedTypes.get( faultTypeName ) );
+						TypeDefinition faultType = null;
+						if ( definedTypes.containsKey( faultTypeName ) ) {
+							faultType = definedTypes.get( faultTypeName );
+						} else {
+							faultType = new TypeDefinitionLink( getContext(), faultTypeName,
+									Constants.RANGE_ONE_TO_ONE, faultTypeName );
+						}
+						faultTypesMap.put( faultName, faultType );
 					}
 				}
 
-				if ( definedTypes.containsKey( requestTypeName ) == false ) {
-					throwException( "invalid type: " + requestTypeName );
+				TypeDefinition requestType = null;
+				if ( definedTypes.containsKey( requestTypeName ) ) {
+					requestType = definedTypes.get( requestTypeName );
+				} else {
+					requestType = new TypeDefinitionLink( getContext(), requestTypeName,
+							Constants.RANGE_ONE_TO_ONE, requestTypeName );
 				}
 
-				if ( definedTypes.containsKey( responseTypeName ) == false ) {
-					throwException( "invalid type: " + responseTypeName );
+				TypeDefinition responseType = null;
+				if ( definedTypes.containsKey( responseTypeName ) ) {
+					responseType = definedTypes.get( responseTypeName );
+				} else {
+					responseType = new TypeDefinitionLink( getContext(), responseTypeName,
+							Constants.RANGE_ONE_TO_ONE, responseTypeName );
 				}
 
 				RequestResponseOperationDeclaration opRR =
 					new RequestResponseOperationDeclaration(
 						getContext(),
 						opId,
-						definedTypes.get( requestTypeName ),
-						definedTypes.get( responseTypeName ),
+						requestType,
+						responseType,
 						faultTypesMap
 					);
 
