@@ -466,7 +466,7 @@ public class GlobalSymbolReferenceResolver
         {
             // resolve interface definition
             for (InterfaceDefinition iface : n.getInterfaceList()) {
-                Optional< SymbolInfo > symbol = getSymbol( n.context(),iface.name() );
+                Optional< SymbolInfo > symbol = getSymbol( n.context(), iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
@@ -639,20 +639,21 @@ public class GlobalSymbolReferenceResolver
                 return;
             }
             ServiceNode node = (ServiceNode) symbol.get().node();
-            
+
             n.setService( node );
 
-            if ( n.isCreateNewPort() ){
+            if ( n.isCreateNewPort() ) {
                 // creates binds operation from ServiceNode to PortID
                 OutputPortInfo bindingPort = n.outputPortInfo();
-                try{
-                    InterfaceDefinition[] publicIfaces = Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal(node);
-                    for( InterfaceDefinition iface : publicIfaces){
-                        bindingPort.addInterface(iface);
+                try {
+                    InterfaceDefinition[] publicIfaces =
+                            Jolie2Utility.getServiceNodeInterfacesFromInputPortLocal( node );
+                    for (InterfaceDefinition iface : publicIfaces) {
+                        bindingPort.addInterface( iface );
                     }
                     bindingPort.accept( this );
-                }catch (ModuleException e){
-                    e.setContext(n.context());
+                } catch (ModuleException e) {
+                    e.setContext( n.context() );
                     this.valid = false;
                     this.error = e;
                     return;
@@ -700,7 +701,8 @@ public class GlobalSymbolReferenceResolver
             if ( n.linkedTypeName().equals( TypeDefinitionUndefined.UNDEFINED_KEYWORD ) ) {
                 linkedType = TypeDefinitionUndefined.getInstance();
             } else {
-                Optional< SymbolInfo > targetSymbolInfo = getSymbol( n.context(), n.linkedTypeName() );
+                Optional< SymbolInfo > targetSymbolInfo =
+                        getSymbol( n.context(), n.linkedTypeName() );
                 if ( !targetSymbolInfo.isPresent() ) {
                     this.valid = false;
                     this.error = new ModuleException( n.context(),
@@ -836,7 +838,7 @@ public class GlobalSymbolReferenceResolver
             n.program().accept( this );
         }
 
-        private Optional<SymbolInfo> getSymbol( ParsingContext context, String name )
+        private Optional< SymbolInfo > getSymbol( ParsingContext context, String name )
         {
             Optional< SymbolInfo > symbol = Helpers.firstNonNull( () -> {
                 if ( !symbolTables.containsKey( currentURI ) ) {
@@ -857,9 +859,9 @@ public class GlobalSymbolReferenceResolver
     {
         ModuleRecord externalSourceRecord =
                 this.moduleMap.get( symbolInfo.moduleSource().get().source() );
-        Optional<SymbolInfo> externalSourceSymbol =
+        Optional< SymbolInfo > externalSourceSymbol =
                 externalSourceRecord.symbol( symbolInfo.moduleSymbol() );
-        if ( !externalSourceSymbol.isPresent()) {
+        if ( !externalSourceSymbol.isPresent() ) {
             throw new ModuleException(
                     symbolInfo.name() + " is not defined in " + externalSourceRecord.source() );
         }

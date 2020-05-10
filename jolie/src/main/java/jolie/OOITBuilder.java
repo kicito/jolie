@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import jolie.lang.Constants;
@@ -252,7 +253,7 @@ public class OOITBuilder implements OLVisitor
 		new HashMap<>();
 	private final Deque< OLSyntaxNode > lazyVisits = new LinkedList<>();	
 	private boolean firstPass = true;
-	private final Value parameterValue;
+	private final Optional< Value > parameterValue;
 
 	private static class AggregationConfiguration {
 		private final OutputPort defaultOutputPort;
@@ -283,7 +284,7 @@ public class OOITBuilder implements OLVisitor
 		Program program,
 		Map< String, Boolean > isConstantMap,
 		CorrelationFunctionInfo correlationFunctionInfo,
-		Value parameterValue
+		Optional< Value > parameterValue
 	) {
 		this.interpreter = interpreter;
 		this.isConstantMap = isConstantMap;
@@ -452,15 +453,23 @@ public class OOITBuilder implements OLVisitor
 
 		Expression locationExpr = buildExpression( n.location() );
 		if ( locationExpr instanceof VariablePath ) {
-			locationExpr =
-					new ClosedVariablePath( (VariablePath) locationExpr, parameterValue );
+			if ( this.parameterValue.isPresent() ) {
+				locationExpr = new ClosedVariablePath( (VariablePath) locationExpr,
+						this.parameterValue.get() );
+			} else {
+				error( n.context(), "argument for location of port " + n.id() + " is undefined" );
+			}
 		}
 
 		OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression( n.protocol() );
 		Expression protocolExpr = buildExpression( protocolNode );
 		if ( protocolExpr instanceof VariablePath ) {
-			protocolExpr =
-					new ClosedVariablePath( (VariablePath) protocolExpr, parameterValue );
+			if ( this.parameterValue.isPresent() ) {
+				protocolExpr = new ClosedVariablePath( (VariablePath) protocolExpr,
+						this.parameterValue.get() );
+			} else {
+				error( n.context(), "argument for protocol of port " + n.id() + " is undefined" );
+			}
 		}
 
 		interpreter.register( n.id(),
@@ -641,10 +650,14 @@ public class OOITBuilder implements OLVisitor
 		String location = null;
 		if ( locationExpr instanceof Value ) {
 			locationVal = locationExpr.evaluate();
-		} else if ( locationExpr instanceof VariablePath ) {
-			VariablePath path =
-					new ClosedVariablePath( (VariablePath) locationExpr, parameterValue );
-			locationVal = path.evaluate();
+		} else if ( locationExpr instanceof VariablePath && this.parameterValue.isPresent() ) {
+			if ( this.parameterValue.isPresent() ) {
+				VariablePath path = new ClosedVariablePath( (VariablePath) locationExpr,
+						this.parameterValue.get() );
+				locationVal = path.evaluate();
+			} else {
+				error( n.context(), "argument for location of port " + n.id() + " is undefined" );
+			}
 		} else {
 			error( n.context(), "location expression is not valid" );
 		}
@@ -659,15 +672,20 @@ public class OOITBuilder implements OLVisitor
 			Value protocolVal = null;
 			if ( protocolExpr instanceof Value || protocolExpr instanceof InlineTreeExpression ) {
 				protocolVal = protocolExpr.evaluate();
-			} else if ( protocolExpr instanceof VariablePath ) {
-				VariablePath path =
-						new ClosedVariablePath( (VariablePath) protocolExpr, parameterValue );
-				protocolVal = path.evaluate();
+			} else if ( protocolExpr instanceof VariablePath && this.parameterValue.isPresent() ) {
+				if ( this.parameterValue.isPresent() ) {
+					VariablePath path = new ClosedVariablePath( (VariablePath) protocolExpr,
+							this.parameterValue.get() );
+					protocolVal = path.evaluate();
+				} else {
+					error( n.context(), "argument for location of port " + n.id() + " is undefined" );
+				}
 			} else {
 				error( n.context(), "location expression is not valid" );
 			}
 			protocol = protocolVal.strValue();
 		}
+		
 		Process protocolProc = protocol == null ? NullProcess.getInstance()
 				: new DeepCopyProcess( protocolPath, Value.create(protocol), true, n.context() );
 		Process[] confChildren = new Process[] {protocolProc};
@@ -856,6 +874,8 @@ public class OOITBuilder implements OLVisitor
 		}
 		insideOperationDeclarationOrInstanceOf = backup;
 	}
+
+	private Map<String, DefinitionNode> definitionNodes = new HashMap<>();
 	
 	public void visit( DefinitionNode n )
 	{
@@ -883,6 +903,12 @@ public class OOITBuilder implements OLVisitor
 			};
 			def = new InitDefinitionProcess( new ScopeProcess( "main", new SequentialProcess( initChildren ), false ) );
 			break;
+		default:
+			// to be evaluate at first Definition call statement
+			definitionNodes.put( n.id(), n );
+			return;
+			// def = new DefinitionProcess( buildProcess( n.body() ) );
+			// break;
 		}
 
 		interpreter.register( n.id(), def );
@@ -1260,7 +1286,10 @@ public class OOITBuilder implements OLVisitor
 		try {
 			interpreter.getDefinition( n.id() );
 		} catch (InvalidIdException e) {
-			n.definition().accept( this );
+			// definitionNodes.get(n.id());
+			interpreter.register( n.id(),
+					new DefinitionProcess( buildProcess( n.definition().body() ) ) );
+			// n.definition().accept( this );
 		}
 		currProcess = new CallProcess( n.id() );
 	}
@@ -1824,7 +1853,7 @@ public class OOITBuilder implements OLVisitor
 		currType = Type.createChoice( n.cardinality(), buildType( n.left() ), buildType( n.right() ) );
 		
 		insideType = wasInsideType;		
-		if ( insideType == false && insideOperationDeclaration == false ) {
+		if ( insideType == false && insideOperationDeclarationOrInstanceOf == false ) {
 			typeMap.put( n, currType );
 		}
 	}

@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
@@ -865,7 +866,7 @@ public class Interpreter
 		return classLoader;
 	}
 
-	public Value argumentValue()
+	public Optional<Value> argumentValue()
 	{
 		return this.receivingArgumentValue;
 	}
@@ -903,7 +904,7 @@ public class Interpreter
 	{
 		TracerUtils.TracerLevels tracerLevel = TracerUtils.TracerLevels.ALL;
 		this.parentClassLoader = parentClassLoader;
-		this.receivingArgumentValue = argumentValue == null ? Value.create() : argumentValue;
+		this.receivingArgumentValue = Optional.ofNullable(argumentValue);
         
 		cmdParser = new CommandLineParser( args, parentClassLoader, ignoreFile );
 		classLoader = cmdParser.jolieClassLoader();
@@ -983,7 +984,7 @@ public class Interpreter
 		this.symbolTables = parentInterpreter.symbolTables();
 	}
 
-	private Value receivingArgumentValue;
+	private Optional<Value> receivingArgumentValue;
 	private Map<String, Expression> serviceNodeArgument;
 
     /** Constructor.
@@ -1142,11 +1143,10 @@ public class Interpreter
                 try {
                     initExecutionThread = new InitSessionThread( this, getDefinition( "init" ) );
 
-					if ( receivingArgumentValue.isDefined() ) {
-						initExecutionThread.state().root()
-								.deepCopy( receivingArgumentValue );
-					}
-					
+					receivingArgumentValue.ifPresent( ( val ) -> {
+						initExecutionThread.state().root().deepCopy( val );
+					} );
+
 					commCore.init();
 
                     // Initialize program arguments in the args variabile.
