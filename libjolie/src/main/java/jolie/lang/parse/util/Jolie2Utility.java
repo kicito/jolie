@@ -15,6 +15,7 @@ import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SymbolNode;
 import jolie.lang.parse.ast.VariablePathNode;
+import jolie.lang.parse.ast.courier.CourierDefinitionNode;
 import jolie.lang.parse.ast.expression.ConstantStringExpression;
 import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
@@ -33,25 +34,35 @@ public class Jolie2Utility
                 if ( ((DefinitionNode) node).id().equals( "main" ) ) {
                     return true;
                 }
-            } else if ( node instanceof ServiceNode ){
+            } else if ( node instanceof ServiceNode ) {
                 return false;
             }
         }
         return true;
     }
 
+    /**
+     * Utility function for remove a module scope's AST node from a program
+     * used for remove unused node for include statement.
+     * @param p
+     * @return
+     */
     public static Program removeModuleScopePortsAndEmbeds( Program p )
     {
         ProgramBuilder moduleProgramBuilder = new ProgramBuilder( p.context() );
         for (OLSyntaxNode node : p.children()) {
             if ( !(node instanceof OutputPortInfo) && !(node instanceof InputPortInfo)
-                    && !(node instanceof EmbeddedServiceNode) ) {
+            && !(node instanceof EmbeddedServiceNode&& !(node instanceof CourierDefinitionNode)) ) {
                 moduleProgramBuilder.addChild( node );
             }
         }
         return moduleProgramBuilder.toProgram();
     }
 
+
+    /**
+     * Transform a Jolie1 execution program into ServiceNode used in Jolie2
+     */
     public static Program transform( Program p )
     {
         ProgramBuilder moduleProgramBuilder = new ProgramBuilder( p.context() );
@@ -81,13 +92,18 @@ public class Jolie2Utility
             }
         }
         mainService.setProgram( mainServiceProgramBuilder.toProgram() );
-        mainService.setPrivate(false);
-        mainService.setAcceptParameter(null, null);
+        mainService.setPrivate( false );
+        mainService.setAcceptParameter( null, null );
         moduleProgramBuilder.addChild( mainService );
         return moduleProgramBuilder.toProgram();
     }
 
 
+    /**
+     * transform protocol symbol to expression
+     * @param node
+     * @return
+     */
     public static OLSyntaxNode transformProtocolExpression( OLSyntaxNode node )
     {
         // case http -> "http" return ConstantString
@@ -118,21 +134,24 @@ public class Jolie2Utility
                         inlineTreeNodeProtocol.operations() );
             }
         }
+
         return node;
     }
 
 
+    /**
+     * retrieves InterfaceDefinitions from local location inputPorts in ServiceNode
+     */
     public static InterfaceDefinition[] getServiceNodeInterfacesFromInputPortLocal(
-            ServiceNode node )
-            throws ModuleException
+            ServiceNode node ) throws ModuleException
     {
         List< InterfaceDefinition > idef = new ArrayList< InterfaceDefinition >();
-        Map<String, OutputPortInfo> internalOp = new HashMap<>();
-        
+        Map< String, OutputPortInfo > internalOp = new HashMap<>();
+
         for (OLSyntaxNode n : node.program().children()) {
             if ( n instanceof OutputPortInfo ) {
                 OutputPortInfo op = (OutputPortInfo) n;
-                internalOp.put(op.id(), op);
+                internalOp.put( op.id(), op );
             } else if ( n instanceof InputPortInfo ) {
                 InputPortInfo ip = (InputPortInfo) n;
                 if ( ip.location() instanceof ConstantStringExpression ) {
@@ -141,9 +160,10 @@ public class Jolie2Utility
                         idef.addAll( ip.getInterfaceList() );
                         for (InputPortInfo.AggregationItemInfo item : ip.aggregationList()) {
                             for (String opName : item.outputPortList()) {
-                                OutputPortInfo op = internalOp.get(opName);
-                                if(op == null){
-                                    throw new ModuleException("aggregating outputport " + opName + " not found");
+                                OutputPortInfo op = internalOp.get( opName );
+                                if ( op == null ) {
+                                    throw new ModuleException(
+                                            "aggregating outputport " + opName + " not found" );
                                 }
                                 idef.addAll( op.getInterfaceList() );
                             }

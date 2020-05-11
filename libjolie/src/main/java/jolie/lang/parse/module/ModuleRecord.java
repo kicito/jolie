@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.module.exceptions.DuplicateSymbolException;
 
 /**
  * A class represent a Jolie module record, which contain an URI of source, a AST tree and
@@ -57,16 +58,12 @@ public class ModuleRecord
         return program;
     }
 
-    public void setSymbolTable( SymbolTable symbolTable ) throws ModuleException
+    public void setSymbolTable( SymbolTable symbolTable )
     {
-        if ( this.symbolTable != null ) {
-            new ModuleException(
-                    "Module " + this.source().toString() + " SymbolTable is already defined" );
-        }
         this.symbolTable = symbolTable;
     }
 
-    public void addWildcardImportedRecord( SymbolWildCard symbol, SymbolInfo ... symbolsFromWildcard ) throws ModuleException
+    public void addWildcardImportedRecord( SymbolWildCard symbol, SymbolInfo ... symbolsFromWildcard ) throws DuplicateSymbolException
     {
         this.symbolTable.replaceWildCardSymbol(symbol, symbolsFromWildcard);
     }

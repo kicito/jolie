@@ -254,6 +254,7 @@ public class OOITBuilder implements OLVisitor
 	private final Deque< OLSyntaxNode > lazyVisits = new LinkedList<>();	
 	private boolean firstPass = true;
 	private final Optional< Value > parameterValue;
+	private final Map<String, DefinitionNode> definitionNodes = new HashMap<>();
 
 	private static class AggregationConfiguration {
 		private final OutputPort defaultOutputPort;
@@ -665,11 +666,11 @@ public class OOITBuilder implements OLVisitor
 
 		locationPath.getValue().setValue( location );
 		String protocol = null;
-
+		Expression protocolExpr = null;
 		if ( n.protocol() != null ) {
 			OLSyntaxNode protocolNode = Jolie2Utility.transformProtocolExpression( n.protocol() );
-			Expression protocolExpr = buildExpression( protocolNode );
 			Value protocolVal = null;
+			protocolExpr = buildExpression( protocolNode );
 			if ( protocolExpr instanceof Value || protocolExpr instanceof InlineTreeExpression ) {
 				protocolVal = protocolExpr.evaluate();
 			} else if ( protocolExpr instanceof VariablePath && this.parameterValue.isPresent() ) {
@@ -687,7 +688,7 @@ public class OOITBuilder implements OLVisitor
 		}
 		
 		Process protocolProc = protocol == null ? NullProcess.getInstance()
-				: new DeepCopyProcess( protocolPath, Value.create(protocol), true, n.context() );
+				: new DeepCopyProcess( protocolPath, protocolExpr, true, n.context() );
 		Process[] confChildren = new Process[] {protocolProc};
 		SequentialProcess protocolConfigurationSequence = new SequentialProcess( confChildren );
 
@@ -819,6 +820,7 @@ public class OOITBuilder implements OLVisitor
 
 	public void visit( OneWayOperationDeclaration decl )
 	{
+		boolean backup = insideOperationDeclarationOrInstanceOf;
 		insideOperationDeclarationOrInstanceOf = true;
 		OneWayTypeDescription typeDescription;
 		if ( currentOutputPort == null ) { // We are in an input port
@@ -844,7 +846,7 @@ public class OOITBuilder implements OLVisitor
 			currentPortInterface.oneWayOperations().put( decl.id(), typeDescription );
 		}
 
-		insideOperationDeclarationOrInstanceOf = false;
+		insideOperationDeclarationOrInstanceOf = backup;
 	}
 
 	public void visit( RequestResponseOperationDeclaration decl )
@@ -874,8 +876,6 @@ public class OOITBuilder implements OLVisitor
 		}
 		insideOperationDeclarationOrInstanceOf = backup;
 	}
-
-	private Map<String, DefinitionNode> definitionNodes = new HashMap<>();
 	
 	public void visit( DefinitionNode n )
 	{
@@ -1736,8 +1736,6 @@ public class OOITBuilder implements OLVisitor
 				extendedFaultMap.putAll( extenderDesc.faults() );
 			}
 		}
-		
-		
 		
 		return new RequestResponseOperation(
 			operationName,

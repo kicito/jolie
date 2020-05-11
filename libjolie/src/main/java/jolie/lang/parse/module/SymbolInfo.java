@@ -113,11 +113,8 @@ public abstract class SymbolInfo
     /**
      * set a pointer to an AST node. the pointer should be only defined once
      */
-    public void setPointer( OLSyntaxNode pointer ) throws ModuleException
+    public void setPointer( OLSyntaxNode pointer )
     {
-        if ( this.node != null ) {
-            new ModuleException( "Symbol " + this.name() + " AST node pointer is already defined" );
-        }
         this.node = pointer;
     }
 

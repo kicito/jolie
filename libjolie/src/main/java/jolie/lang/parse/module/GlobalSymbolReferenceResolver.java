@@ -22,7 +22,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import jolie.lang.Constants.OperandType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.AddAssignStatement;
@@ -116,8 +115,13 @@ import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeDefinitionUndefined;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.module.ModuleCrawler.ModuleCrawlerResult;
 import jolie.lang.parse.module.SymbolInfo.Privacy;
 import jolie.lang.parse.module.SymbolInfo.Scope;
+import jolie.lang.parse.module.exceptions.DuplicateSymbolException;
+import jolie.lang.parse.module.exceptions.IllegalAccessSymbolException;
+import jolie.lang.parse.module.exceptions.SymbolNotFoundException;
+import jolie.lang.parse.module.exceptions.SymbolTypeMismatchException;
 import jolie.lang.parse.util.Jolie2Utility;
 import jolie.util.Helpers;
 import jolie.util.Pair;
@@ -127,12 +131,11 @@ public class GlobalSymbolReferenceResolver
     private final Map< URI, ModuleRecord > moduleMap;
     private final Map< URI, SymbolTable > symbolTables;
 
-    public GlobalSymbolReferenceResolver( Set< ModuleRecord > moduleMap )
+    public GlobalSymbolReferenceResolver( ModuleCrawlerResult moduleMap )
     {
-        this.moduleMap = new HashMap<>();
+        this.moduleMap = moduleMap.toMap();
         this.symbolTables = new HashMap<>();
-        for (ModuleRecord mr : moduleMap) {
-            this.moduleMap.put( mr.source(), mr );
+        for (ModuleRecord mr : this.moduleMap.values()) {
             this.symbolTables.put( mr.source(), mr.symbolTable() );
         }
     }
@@ -140,18 +143,12 @@ public class GlobalSymbolReferenceResolver
     private class SymbolReferenceResolverVisitor implements OLVisitor
     {
 
-        private final Map< URI, ModuleRecord > moduleMap;
         private URI currentURI;
         private boolean valid = true;
-        private ModuleException error;
+        private Exception error;
 
-        /**
-         * @param moduleMap a map of module source URI and it's ModuleRecord object, result
-         *                  form resolving all pointer of external Symbols
-         */
-        protected SymbolReferenceResolverVisitor( Map< URI, ModuleRecord > moduleMap )
+        protected SymbolReferenceResolverVisitor()
         {
-            this.moduleMap = moduleMap;
         }
 
 
@@ -163,7 +160,7 @@ public class GlobalSymbolReferenceResolver
             currentURI = p.context().source();
             visit( p );
             if ( !this.valid ) {
-                throw error;
+                throw new ModuleException( p.context(), this.error );
             }
             return;
         }
@@ -311,24 +308,17 @@ public class GlobalSymbolReferenceResolver
             Optional< SymbolInfo > symbol = getSymbol( n.context(), n.id() );
             if ( !symbol.isPresent() ) {
                 this.valid = false;
-                this.error = new ModuleException( n.context(),
-                        n.id() + " is not defined in symbolTable" );
+                this.error = new SymbolNotFoundException( n.id() );
                 return;
             }
             if ( !(symbol.get().node() instanceof DefinitionNode) ) {
                 this.valid = false;
-                this.error = new ModuleException( n.context(),
-                        n.id() + " is not defined as an procedure definition" );
+                this.error = new SymbolTypeMismatchException( n.id(), "DefintionNode",
+                        symbol.get().node().getClass().getSimpleName() );
                 return;
             }
 
             DefinitionNode linkedNode = (DefinitionNode) symbol.get().node();
-            if ( linkedNode == null ) {
-                this.valid = false;
-                this.error = new ModuleException(
-                        "procedure " + n.id() + " points to an undefined procedure" );
-                return;
-            }
             n.setDefinitionLink( linkedNode );
         }
 
@@ -469,19 +459,18 @@ public class GlobalSymbolReferenceResolver
                 Optional< SymbolInfo > symbol = getSymbol( n.context(), iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            iface.name() + " is not defined in symbolTable" );
+                    this.error = new SymbolNotFoundException( iface.name() );
                     return;
                 }
                 if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            iface.name() + " is not defined as an interface definition" );
+                    this.error = new SymbolTypeMismatchException( n.id(), "InterfaceDefinition",
+                            symbol.get().node().getClass().getSimpleName() );
                     return;
                 }
                 InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
                 ifaceDeclFromSymbol.operationsMap().values().forEach( op -> {
-                    op.accept(this);
+                    op.accept( this );
                     iface.addOperation( op );
                     n.addOperation( op );
                 } );
@@ -502,14 +491,13 @@ public class GlobalSymbolReferenceResolver
                 Optional< SymbolInfo > symbol = getSymbol( n.context(), iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            iface.name() + " is not defined in symbolTable" );
+                    this.error = new SymbolNotFoundException( iface.name() );
                     return;
                 }
                 if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            iface.name() + " is not defined as an interface definition" );
+                    this.error = new SymbolTypeMismatchException( iface.name(), "InterfaceDefinition",
+                            symbol.get().node().getClass().getSimpleName() );
                     return;
                 }
                 InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
@@ -626,14 +614,13 @@ public class GlobalSymbolReferenceResolver
             Optional< SymbolInfo > symbol = getSymbol( n.context(), n.servicePath() );
             if ( !symbol.isPresent() ) {
                 this.valid = false;
-                this.error = new ModuleException( n.context(),
-                        n.servicePath() + " is not defined in symbolTable" );
+                this.error = new SymbolNotFoundException( n.servicePath() );
                 return;
             }
             if ( !(symbol.get().node() instanceof ServiceNode) ) {
                 this.valid = false;
-                this.error = new ModuleException( n.context(),
-                        n.servicePath() + " is not defined as a Service node" );
+                this.error = new SymbolTypeMismatchException( n.servicePath(), "ServiceNode",
+                        symbol.get().node().getClass().getSimpleName() );
                 return;
             }
             ServiceNode node = (ServiceNode) symbol.get().node();
@@ -703,21 +690,19 @@ public class GlobalSymbolReferenceResolver
                         getSymbol( n.context(), n.linkedTypeName() );
                 if ( !targetSymbolInfo.isPresent() ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined in symbolTable" );
+                    this.error = new SymbolNotFoundException( n.id() );
                     return;
                 }
                 if ( !(targetSymbolInfo.get().node() instanceof TypeDefinition) ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined as a type definition" );
+                    this.error = new SymbolTypeMismatchException( n.id(), "TypeDefinition",
+                            targetSymbolInfo.get().node().getClass().getSimpleName() );
                     return;
                 }
                 linkedType = (TypeDefinition) targetSymbolInfo.get().node();
                 if ( linkedType.equals( n ) ) {
                     this.valid = false;
-                    this.error = new ModuleException( n.context(),
-                            n.id() + " is not defined in symbolTable" );
+                    this.error = new SymbolNotFoundException( n.id() );
                     return;
                 }
             }
@@ -861,20 +846,25 @@ public class GlobalSymbolReferenceResolver
         }
     }
 
-    private SymbolInfo symbolLookup( SymbolInfoExternal symbolInfo ) throws ModuleException
+    /**
+     * perform lookup to external symbol's source of AST node
+     * 
+     * @throws SymbolNotFoundException
+     */
+    private SymbolInfo symbolSourceLookup( SymbolInfoExternal symbolInfo )
+            throws SymbolNotFoundException
     {
         ModuleRecord externalSourceRecord =
                 this.moduleMap.get( symbolInfo.moduleSource().get().source() );
         Optional< SymbolInfo > externalSourceSymbol =
                 externalSourceRecord.symbol( symbolInfo.moduleSymbol() );
         if ( !externalSourceSymbol.isPresent() ) {
-            throw new ModuleException(
-                    symbolInfo.name() + " is not defined in " + externalSourceRecord.source() );
+            throw new SymbolNotFoundException( symbolInfo.name(), symbolInfo.moduleTargets() );
         }
         if ( externalSourceSymbol.get().scope() == Scope.LOCAL ) {
             return externalSourceSymbol.get();
         } else {
-            return symbolLookup( (SymbolInfoExternal) externalSourceSymbol.get() );
+            return symbolSourceLookup( (SymbolInfoExternal) externalSourceSymbol.get() );
         }
     }
 
@@ -882,27 +872,28 @@ public class GlobalSymbolReferenceResolver
      * Find and set a pointer of externalSymbol to it's corresponding AST node by
      * perform lookup at ModuleRecord Map, a result from ModuleCrawler.
      * 
-     * @throws ModuleException when the target module or the target Symbol is not found. adding
-     *                         wildcard symbol failed
+     * @throws DuplicateSymbolException
+     * @throws IllegalAccessSymbolException
+     * @throws SymbolNotFoundException
+     * 
      */
-    public void resolveExternalSymbols() throws ModuleException
+    public void resolveExternalSymbols()
+            throws SymbolNotFoundException, IllegalAccessSymbolException, DuplicateSymbolException
     {
         for (ModuleRecord md : moduleMap.values()) {
-            for (SymbolInfoExternal si : md.externalSymbols()) {
-                SymbolInfoExternal localSymbol = (SymbolInfoExternal) si;
-                if ( si instanceof SymbolWildCard ) {
+            for (SymbolInfoExternal localSymbol : md.externalSymbols()) {
+                if ( localSymbol instanceof SymbolWildCard ) {
                     ModuleRecord wildcardImportedRecord =
                             this.moduleMap.get( localSymbol.moduleSource().get().source() );
-                    md.addWildcardImportedRecord( (SymbolWildCard) si,
+                    md.addWildcardImportedRecord( (SymbolWildCard) localSymbol,
                             wildcardImportedRecord.symbols() );
                 } else {
-                    SymbolInfo targetSymbol = symbolLookup( localSymbol );
+                    SymbolInfo targetSymbol = symbolSourceLookup( localSymbol );
                     if ( targetSymbol.privacy() == Privacy.PRIVATE ) {
-                        throw new ModuleException( si.context(),
-                                "cannot refer to private name " + si.name() + " of module "
-                                        + si.moduleTargets()[si.moduleTargets().length - 1] );
+                        throw new IllegalAccessSymbolException( localSymbol.name(),
+                                localSymbol.moduleTargets() );
                     }
-                    si.setPointer( targetSymbol.node() );
+                    localSymbol.setPointer( targetSymbol.node() );
                 }
             }
         }
@@ -915,8 +906,7 @@ public class GlobalSymbolReferenceResolver
      */
     public void resolveLinkedType() throws ModuleException
     {
-        SymbolReferenceResolverVisitor resolver =
-                new SymbolReferenceResolverVisitor( this.moduleMap );
+        SymbolReferenceResolverVisitor resolver = new SymbolReferenceResolverVisitor();
         for (ModuleRecord md : moduleMap.values()) {
             resolver.resolve( md.program() );
         }
@@ -929,7 +919,12 @@ public class GlobalSymbolReferenceResolver
      */
     public void resolve() throws ModuleException
     {
-        this.resolveExternalSymbols();
+        try {
+            this.resolveExternalSymbols();
+        } catch (SymbolNotFoundException | IllegalAccessSymbolException
+                | DuplicateSymbolException e) {
+            throw new ModuleException( e );
+        }
         this.resolveLinkedType();
     }
 

@@ -106,6 +106,7 @@ import jolie.lang.parse.ast.types.TypeDefinition;
 import jolie.lang.parse.ast.types.TypeDefinitionLink;
 import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.lang.parse.context.ParsingContext;
+import jolie.lang.parse.module.exceptions.DuplicateSymbolException;
 
 public class SymbolTableGenerator
 {
@@ -164,10 +165,9 @@ public class SymbolTableGenerator
         {
             try {
                 this.symbolTable.addSymbol( n.id(), n );
-            } catch (ModuleException e) {
+            } catch (DuplicateSymbolException e) {
                 this.valid = false;
-                e.setContext( n.context() );
-                this.error = e;
+                this.error = new ModuleException( n.context(), e );
             }
         }
 
@@ -479,10 +479,9 @@ public class SymbolTableGenerator
             }
             try {
                 this.symbolTable.addSymbol( n.id(), n );
-            } catch (ModuleException e) {
+            } catch (DuplicateSymbolException e) {
                 this.valid = false;
-                e.setContext( n.context() );
-                this.error = e;
+                this.error = new ModuleException( n.context(), e );
             }
         }
 
@@ -491,10 +490,9 @@ public class SymbolTableGenerator
         {
             try {
                 this.symbolTable.addSymbol( n.id(), n );
-            } catch (ModuleException e) {
+            } catch (DuplicateSymbolException e) {
                 this.valid = false;
-                e.setContext( n.context() );
-                this.error = e;
+                this.error = new ModuleException( n.context(), e );
             }
         }
 
@@ -503,10 +501,9 @@ public class SymbolTableGenerator
         {
             try {
                 this.symbolTable.addSymbol( n.name(), n );
-            } catch (ModuleException e) {
+            } catch (DuplicateSymbolException e) {
                 this.valid = false;
-                e.setContext( n.context() );
-                this.error = e;
+                this.error = new ModuleException( n.context(), e );
                 return;
             }
             for (Map.Entry< String, OperationDeclaration > op : n.operationsMap().entrySet()) {
@@ -569,10 +566,9 @@ public class SymbolTableGenerator
         {
             try {
                 this.symbolTable.addSymbol( n.id(), n );
-            } catch (ModuleException e) {
+            } catch (DuplicateSymbolException e) {
                 this.valid = false;
-                e.setContext( n.context() );
-                this.error = e;
+                this.error = new ModuleException(n.context(), e);
             }
         }
 
@@ -587,10 +583,9 @@ public class SymbolTableGenerator
                     try {
                         this.symbolTable.addSymbol( n.context(), targetSymbol.localSymbol(),
                                 n.importTarget(), targetSymbol.moduleSymbol() );
-                    } catch (ModuleException e) {
+                    } catch (DuplicateSymbolException e) {
                         this.valid = false;
-                        e.setContext( n.context() );
-                        this.error = e;
+                        this.error = new ModuleException(n.context(), e);
                     }
                 }
             }
@@ -601,10 +596,9 @@ public class SymbolTableGenerator
         {
             try {
                 this.symbolTable.addSymbol( n.name(), n );
-            } catch (ModuleException e) {
+            } catch (DuplicateSymbolException e) {
                 this.valid = false;
-                e.setContext( n.context() );
-                this.error = e;
+                this.error = new ModuleException(n.context(), e);
             }
         }
     }

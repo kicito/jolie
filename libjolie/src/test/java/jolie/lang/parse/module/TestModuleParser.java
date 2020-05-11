@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import jolie.lang.parse.ParserException;
 import jolie.lang.parse.Scanner;
-import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
+import jolie.lang.parse.module.ModuleCrawler.ModuleCrawlerResult;
 import jolie.util.CheckUtility;
 import jolie.util.PortStub;
 import jolie.util.TestingObjectsCreator;
@@ -37,33 +37,11 @@ public class TestModuleParser
     static {
         JolieURLStreamHandlerFactory.registerInVM();
     }
+
     private static String BASE_DIR = "imports/";
     private static URL baseDir = TestModuleParser.class.getClassLoader().getResource( BASE_DIR );
 
     private static String[] includePaths = new String[0];
-
-
-    @Test
-    void testImportPrivateError() throws IOException, URISyntaxException
-    {
-
-        String code = "from A import privateType";
-        InputStream is = new ByteArrayInputStream( code.getBytes() );
-
-        ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
-                this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
-        Scanner s = new Scanner( is, baseDir.toURI(), null );
-        Exception exception = assertThrows( ModuleException.class, () -> {
-            ModuleRecord mr = parser.parse( s );
-            Set< ModuleRecord > crawlResult = crawler.crawl( mr, parser );
-            GlobalSymbolReferenceResolver symbolResolver =
-                    new GlobalSymbolReferenceResolver( crawlResult );
-            // resolve symbols
-            symbolResolver.resolveExternalSymbols();
-        } );
-        assertTrue( exception.getMessage().contains( "cannot refer to private name privateType" ) );
-    }
 
     @Test
     void testImportNestedModules() throws FileNotFoundException, URISyntaxException
@@ -95,11 +73,11 @@ public class TestModuleParser
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
             // crawl dependencies
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
 
             // check symbols
             Set< URI > visitedURI = new HashSet<>();
-            for (ModuleRecord mr : crawlResult) {
+            for (ModuleRecord mr : crawlResult.toMap().values()) {
                 if ( expectedSourceSymbols.containsKey( mr.source() ) ) {
                     Set< String > expectedSymbols = expectedSourceSymbols.get( mr.source() );
                     CheckUtility.checkSymbols( mr.symbolTable(), expectedSymbols );
@@ -121,7 +99,7 @@ public class TestModuleParser
             symbolResolver.resolveExternalSymbols();
 
             // check if all external symbol is linked
-            for (ModuleRecord mr : crawlResult) {
+            for (ModuleRecord mr : crawlResult.toMap().values()) {
                 CheckUtility.checkSymbolNodeLinked( mr.symbolTable() );
             }
 
@@ -174,14 +152,14 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
 
             // check symbols
             Set< URI > visitedURI = new HashSet<>();
-            for (ModuleRecord mr : crawlResult) {
+            for (ModuleRecord mr : crawlResult.toMap().values()) {
                 if ( expectedSourceSymbols.containsKey( mr.source() ) ) {
                     Set< String > expectedSymbols = expectedSourceSymbols.get( mr.source() );
                     CheckUtility.checkSymbols( mr.symbolTable(), expectedSymbols );
@@ -229,14 +207,14 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
 
             // check symbols
             Set< URI > visitedURI = new HashSet<>();
-            for (ModuleRecord mr : crawlResult) {
+            for (ModuleRecord mr : crawlResult.toMap().values()) {
                 if ( expectedSourceSymbols.containsKey( mr.source() ) ) {
                     Set< String > expectedSymbols = expectedSourceSymbols.get( mr.source() );
                     CheckUtility.checkSymbols( mr.symbolTable(), expectedSymbols );
@@ -277,7 +255,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -318,7 +296,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -367,7 +345,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -413,11 +391,11 @@ public class TestModuleParser
             ModuleRecord mainRecord = parser.parse( s );
 
             // crawl dependencies
-            Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
 
             // check symbols
             Set< URI > visitedURI = new HashSet<>();
-            for (ModuleRecord mr : crawlResult) {
+            for (ModuleRecord mr : crawlResult.toMap().values()) {
                 if ( expectedSourceSymbols.containsKey( mr.source() ) ) {
                     Set< String > symbols = expectedSourceSymbols.get( mr.source() );
                     CheckUtility.checkSymbols( mr.symbolTable(), symbols );
@@ -440,7 +418,7 @@ public class TestModuleParser
             symbolResolver.resolveExternalSymbols();
 
             // check if all external symbol is linked
-            for (ModuleRecord mr : crawlResult) {
+            for (ModuleRecord mr : crawlResult.toMap().values()) {
                 CheckUtility.checkSymbolNodeLinked( mr.symbolTable() );
             }
 
@@ -452,7 +430,6 @@ public class TestModuleParser
     @MethodSource("moduleSystemExceptionTestProvider")
     void testModuleSystemException( String code, String exception, String errorMessage )
     {
-
         InputStream is = new ByteArrayInputStream( code.getBytes() );
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
                 this.getClass().getClassLoader() );
@@ -461,7 +438,7 @@ public class TestModuleParser
             Scanner s = new Scanner( is, baseDir.toURI(), null );
             ModuleRecord mr = parser.parse( s );
             ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
-            Set< ModuleRecord > crawlResult = crawler.crawl( mr, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mr, parser );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolve();
@@ -469,8 +446,7 @@ public class TestModuleParser
 
         String expectedMessage = errorMessage;
         String actualMessage = ex.getMessage();
-        String exceptionClassName = ex.getClass().getSimpleName();
-        assertEquals( exception, exceptionClassName, "from parsing " + code );
+        assertTrue( actualMessage.contains( exception ), "exception class mismatch expected " + exception );
         assertTrue( actualMessage.contains( expectedMessage ),
                 "expected exception message to contain " + expectedMessage + " but found "
                         + actualMessage );
@@ -480,29 +456,40 @@ public class TestModuleParser
     private static Stream< Arguments > moduleSystemExceptionTestProvider()
     {
         return Stream.of(
-                Arguments.of( "from .some.where import A", "ModuleException",
+                Arguments.of( "from .some.where import A", "ModuleNotFoundException",
                         "Module \"where\" not found from lookup path" ),
-                Arguments.of( "from A import A\n from B import A", "ModuleException",
+                Arguments.of( "from A import A\n from B import A", "DuplicateSymbolException",
                         "detected duplicate declaration of symbol A" ),
-                Arguments.of( "from A import someSymbol", "ModuleException",
+                Arguments.of( "from A import someSymbol", "SymbolNotFoundException",
                         "someSymbol is not defined" ),
-                Arguments.of( "main{ someProc }", "ModuleException",
+                Arguments.of( "from twice.some.where import someSymbol", "ModuleNotFoundException",
+                        "some/where in" ),
+                Arguments.of( "main{ someProc }", "ModuleNotFoundException",
                         "someProc is not defined in symbolTable" ),
-                Arguments.of( "outputPort OP { interfaces: iface }", "ModuleException",
+                Arguments.of( "outputPort OP { interfaces: iface }", "ModuleNotFoundException",
                         "iface is not defined in symbolTable" ),
-                Arguments.of( "inputPort ip { interfaces: iface location:\"local\" }", "ModuleException",
-                        "iface is not defined in symbolTable" ),
-                Arguments.of( "main { t = 2 instanceof customType }", "ModuleException",
+                Arguments.of( "inputPort IP { interfaces: iface location:\"local\" }",
+                        "ModuleNotFoundException", "iface is not defined in symbolTable" ),
+                Arguments.of( "main { t = 2 instanceof customType }", "SymbolNotFoundException",
                         "customType is not defined in symbolTable" ),
-                Arguments.of( "interface iface {oneWay: test(customType)}", "ModuleException",
+                Arguments.of( "interface iface {oneWay: test(customType)}", "SymbolNotFoundException",
                         "customType is not defined in symbolTable" ),
                 Arguments.of( "interface iface {requestResponse: test(customType)(string)}",
-                        "ModuleException", "customType is not defined in symbolTable" ),
+                        "SymbolNotFoundException", "customType is not defined in symbolTable" ),
                 Arguments.of( "interface iface {requestResponse: test(void)(customType)}",
-                        "ModuleException", "customType is not defined in symbolTable" ),
+                        "SymbolNotFoundException", "customType is not defined in symbolTable" ),
                 Arguments.of(
                         "interface iface {requestResponse: test(void)(string) throws NumberException( NumberExceptionType )}",
-                        "ModuleException", "NumberExceptionType is not defined in symbolTable" ) );
+                        "SymbolNotFoundException", "NumberExceptionType is not defined in symbolTable" ),
+                Arguments.of( "from A import privateType", "IllegalAccessSymbolException",
+                        "Illegal access to symbol privateType" ),
+                Arguments.of(
+                        "from packages.interface import twiceIface main{ t = 2 instanceof twiceIface}",
+                        "SymbolTypeMismatchException",
+                        "twiceIface is not defined as a TypeDefinition" ),
+                Arguments.of( "from packages.type import foo outputPort op{interfaces: foo}",
+                        "SymbolTypeMismatchException",
+                        "foo is not defined as a InterfaceDefinition" ) );
     }
 
 

@@ -71,6 +71,7 @@ import jolie.lang.parse.module.ModuleCrawler;
 import jolie.lang.parse.module.ModuleParser;
 import jolie.lang.parse.module.ModuleRecord;
 import jolie.lang.parse.module.SymbolTable;
+import jolie.lang.parse.module.ModuleCrawler.ModuleCrawlerResult;
 import jolie.lang.parse.util.Jolie2Utility;
 import jolie.monitoring.MonitoringEvent;
 import jolie.monitoring.events.MonitorAttachedEvent;
@@ -1344,7 +1345,7 @@ public class Interpreter
 							cmdParser.programFilepath().toURI(), cmdParser.charset() ) );
 
 					ModuleCrawler crawler = new ModuleCrawler( cmdParser.packagesPaths() );
-					Set< ModuleRecord > crawlResult = crawler.crawl( mainRecord, parser );
+					ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
 
 					GlobalSymbolReferenceResolver symbolResolver =
 							new GlobalSymbolReferenceResolver( crawlResult );

@@ -27,6 +27,7 @@ import jolie.lang.parse.ast.SymbolNode;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.module.SymbolInfo.Privacy;
 import jolie.lang.parse.module.SymbolInfo.Scope;
+import jolie.lang.parse.module.exceptions.DuplicateSymbolException;
 
 /**
  * A class represent the Symbol table of a Jolie module
@@ -67,12 +68,11 @@ public class SymbolTable
      * @throws ModuleException when adding name duplicate name to the symbol
      */
     public void replaceWildCardSymbol( SymbolWildCard wildCardSymbol,
-            SymbolInfo... symbolsFromWildcard ) throws ModuleException
+            SymbolInfo... symbolsFromWildcard ) throws DuplicateSymbolException
     {
         for (SymbolInfo symbolFromWildcard : symbolsFromWildcard) {
             if ( isDuplicateSymbol( symbolFromWildcard.name() ) ) {
-                throw new ModuleException(
-                        "detected duplicate declaration of symbol " + symbolFromWildcard.name() );
+                throw new DuplicateSymbolException( symbolFromWildcard.name() );
             }
             if ( symbolFromWildcard.privacy() == Privacy.PUBLIC ) {
                 this.symbols.put( symbolFromWildcard.name(), symbolFromWildcard );
@@ -89,10 +89,10 @@ public class SymbolTable
      * 
      * @throws ModuleException when adding name duplicate name to the symbol
      */
-    public void addSymbol( String name, SymbolNode node ) throws ModuleException
+    public void addSymbol( String name, SymbolNode node ) throws DuplicateSymbolException
     {
         if ( isDuplicateSymbol( name ) ) {
-            throw new ModuleException( "detected duplicate declaration of symbol " + name );
+            throw new DuplicateSymbolException( name );
         }
         this.symbols.put( name, new SymbolInfoLocal( name, node ) );
     }
@@ -108,11 +108,11 @@ public class SymbolTable
      * @throws ModuleException when adding name duplicate name to the symbol
      */
     public void addSymbol( ParsingContext context, String name, String[] moduleTargetStrings )
-            throws ModuleException
+            throws DuplicateSymbolException
     {
         if ( isDuplicateSymbol( name ) ) {
-            throw new ModuleException( "detected duplicate declaration of symbol " + name );
-        }
+            throw new DuplicateSymbolException( name );
+         }
         this.symbols.put( name,
                 new SymbolInfoExternal( context, name, moduleTargetStrings, name ) );
     }
@@ -129,10 +129,10 @@ public class SymbolTable
      * @throws ModuleException when adding name duplicate name to the symbol
      */
     public void addSymbol( ParsingContext context, String name, String[] moduleTargetStrings,
-            String moduleSymbol ) throws ModuleException
+            String moduleSymbol ) throws DuplicateSymbolException
     {
         if ( isDuplicateSymbol( name ) ) {
-            throw new ModuleException( "detected duplicate declaration of symbol " + name );
+            throw new DuplicateSymbolException( name );
         }
         this.symbols.put( name,
                 new SymbolInfoExternal( context, name, moduleTargetStrings, moduleSymbol ) );
