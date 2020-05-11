@@ -41,11 +41,6 @@ public class ProgramBuilder
 		children.add( node );
 	}
 
-	public void removeChild( int index )
-	{
-		children.remove( index );
-	}
-
 	public List< OLSyntaxNode > children()
 	{
 		return children;

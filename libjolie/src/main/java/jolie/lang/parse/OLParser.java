@@ -63,6 +63,7 @@ import jolie.lang.parse.ast.ExitStatement;
 import jolie.lang.parse.ast.ForEachArrayItemStatement;
 import jolie.lang.parse.ast.ForEachSubNodeStatement;
 import jolie.lang.parse.ast.ForStatement;
+import jolie.lang.parse.ast.ForeignServiceNode;
 import jolie.lang.parse.ast.IfStatement;
 import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.InputPortInfo;
@@ -71,7 +72,6 @@ import jolie.lang.parse.ast.InstallFunctionNode;
 import jolie.lang.parse.ast.InstallStatement;
 import jolie.lang.parse.ast.InterfaceDefinition;
 import jolie.lang.parse.ast.InterfaceExtenderDefinition;
-import jolie.lang.parse.ast.JavaServiceNode;
 import jolie.lang.parse.ast.LinkInStatement;
 import jolie.lang.parse.ast.LinkOutStatement;
 import jolie.lang.parse.ast.MultiplyAssignStatement;
@@ -96,7 +96,6 @@ import jolie.lang.parse.ast.RequestResponseOperationDeclaration;
 import jolie.lang.parse.ast.RequestResponseOperationStatement;
 import jolie.lang.parse.ast.Scope;
 import jolie.lang.parse.ast.SequenceStatement;
-import jolie.lang.parse.ast.ServiceNode;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
@@ -1102,18 +1101,28 @@ public class OLParser extends AbstractParser
 		}
 		getToken();
 
-		ServiceNode.Technology tech = ServiceNode.Technology.JOLIE;
+		Constants.EmbeddedServiceType tech = Constants.EmbeddedServiceType.JOLIE;
 		Optional<String> javaServicePath = Optional.empty();
 		if ( token.isKeyword("Java") ){
-			tech = ServiceNode.Technology.JAVA;
+			tech = Constants.EmbeddedServiceType.JAVA;
 			getToken();
-			eat(Scanner.TokenType.LPAREN, "expected ( after JAVA technology");
+			eat(Scanner.TokenType.LPAREN, "expected ( after Java technology");
 			if (token.isNot(Scanner.TokenType.STRING)){
-				throwException("expected java service path string for JAVA technology");
+				throwException("expected java service path string for Java technology");
 			}
 			javaServicePath = Optional.of(token.content());
 			getToken();
-			eat(Scanner.TokenType.RPAREN, "expected ) after java service path");
+			eat(Scanner.TokenType.RPAREN, "expected ) after the service path");
+		} else if ( token.isKeyword("JavaScript") ){
+			tech = Constants.EmbeddedServiceType.JAVASCRIPT;
+			getToken();
+			eat(Scanner.TokenType.LPAREN, "expected ( after JavaScript technology");
+			if (token.isNot(Scanner.TokenType.STRING)){
+				throwException("expected javascript service path string for JavaScript technology");
+			}
+			javaServicePath = Optional.of(token.content());
+			getToken();
+			eat(Scanner.TokenType.RPAREN, "expected ) after the service path");
 		}
 		
 		assertToken( Scanner.TokenType.ID, "expected service name" );
@@ -1206,7 +1215,7 @@ public class OLParser extends AbstractParser
 	private ServiceNode createServiceNode(
 		ParsingContext ctx,
 		String serviceName,
-		ServiceNode.Technology tech,
+		Constants.EmbeddedServiceType tech,
 		Optional<String> javaServicePath,
 		String paramPath,
 		TypeDefinition paramType,
@@ -1240,11 +1249,11 @@ public class OLParser extends AbstractParser
 		}
 
 		ServiceNode node;
-		if ( tech == ServiceNode.Technology.JAVA ) {
-			node = new JavaServiceNode( ctx, serviceName, javaServicePath.get(),
-					serviceNodeProgramBuilder.toProgram() );
-		} else {
+		if ( tech == Constants.EmbeddedServiceType.JOLIE ) {
 			node = new ServiceNode( ctx, serviceName, serviceNodeProgramBuilder.toProgram() );
+		} else {
+			node = new ForeignServiceNode( ctx, serviceName, tech, javaServicePath.get(),
+					serviceNodeProgramBuilder.toProgram() );
 		}
 		node.setAcceptParameter( paramPath, paramType );
 		node.setPrivate( isCurrSymbolPrivate );

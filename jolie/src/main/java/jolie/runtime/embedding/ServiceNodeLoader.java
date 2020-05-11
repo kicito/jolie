@@ -9,9 +9,8 @@ import java.util.concurrent.Future;
 import jolie.CommandLineException;
 import jolie.Interpreter;
 import jolie.lang.Constants;
-import jolie.lang.parse.ast.JavaServiceNode;
+import jolie.lang.parse.ast.ForeignServiceNode;
 import jolie.lang.parse.ast.ServiceNode;
-import jolie.lang.parse.ast.ServiceNode.Technology;
 import jolie.net.CommChannel;
 import jolie.runtime.JavaService;
 import jolie.runtime.Value;
@@ -53,11 +52,9 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 			String[] options = parentInterpreter.optionArgs();
 			newArgs.addAll( Arrays.asList( options ) );
 			newArgs.add( "#" + serviceNode.name() + ".ol" );
-			interpreter =
-					new Interpreter( newArgs.toArray( new String[newArgs.size()] ),
-							parentInterpreter.getClassLoader(),
-							parentInterpreter.programDirectory(), parentInterpreter,
-							serviceNode.program(), passingArgument );
+			interpreter = new Interpreter( newArgs.toArray( new String[newArgs.size()] ),
+					parentInterpreter.getClassLoader(), parentInterpreter.programDirectory(),
+					parentInterpreter, serviceNode.program(), passingArgument );
 			Future< Exception > f = interpreter.start();
 			Exception e = f.get();
 			if ( e == null ) {
@@ -66,28 +63,50 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 				throw new EmbeddedServiceLoadingException( e );
 			}
 
+
+
+			final EmbeddedServiceLoader foreignLoader;
+			final Expression channelDest;
+			switch (serviceNode.type()) {
+				case JOLIE:
+					// do nothing
+					return;
+				case JAVA:
+					ForeignServiceNode javaServiceNode = (ForeignServiceNode) this.serviceNode;
+					channelDest =
+							interpreter.initThread().state().root().getFirstChild( "toForeign" )
+									.getFirstChild( Constants.LOCATION_NODE_NAME );
+					foreignLoader = new JavaServiceLoader( channelDest,
+							javaServiceNode.servicePath(), interpreter );
+					foreignLoader.load( null );
+					break;
+				default:
+					String serviceType = serviceNode.type().toString();
+					ForeignServiceNode foreignServiceNode = (ForeignServiceNode) this.serviceNode;
+					EmbeddedServiceLoaderFactory factory =
+							interpreter.getEmbeddedServiceLoaderFactory( serviceType );
+					channelDest =
+							interpreter.initThread().state().root().getFirstChild( "toForeign" )
+									.getFirstChild( Constants.LOCATION_NODE_NAME );
+					if ( factory == null ) {
+						throw new IOException( "Could not find extension to load services of type "
+								+ serviceType );
+					}
+					foreignLoader = factory.createLoader( interpreter, serviceType,
+							foreignServiceNode.servicePath(), channelDest );
+					foreignLoader.load( null );
+					break;
+			}
+
 		} catch (IOException | InterruptedException | ExecutionException
-				| EmbeddedServiceLoadingException | CommandLineException
-				| TypeCheckingException e) {
+				| EmbeddedServiceLoadingException | CommandLineException | TypeCheckingException
+				| EmbeddedServiceLoaderCreationException e) {
 			throw new EmbeddedServiceLoadingException( e );
-		}
-
-		if ( this.serviceNode.technology() == Technology.JAVA ) {
-			// create redirects from client to java service port
-			JavaServiceLoader2 javaServiceLoader = new JavaServiceLoader2( parentInterpreter );
-			JavaServiceNode javaServiceNode = (JavaServiceNode) this.serviceNode;
-			JavaService javaService =
-					javaServiceLoader.loadJavaService( javaServiceNode.javaServicePath() );
-			javaService.setInterpreter(interpreter);
-			final CommChannel javaChannel = new JavaCommChannel( javaService );
-
-			Value r = interpreter.initThread().state().root();
-			r.getFirstChild( "toJava" ).getFirstChild( Constants.LOCATION_NODE_NAME )
-					.setValue( javaChannel );
 		}
 	}
 
-	public String serviceName(){
+	public String serviceName()
+	{
 		return serviceNode.name();
 	}
 

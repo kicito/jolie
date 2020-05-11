@@ -10,36 +10,32 @@ import jolie.lang.parse.module.SymbolInfo.Privacy;
 public class ServiceNode extends OLSyntaxNode implements SymbolNode
 {
 
-    public enum Technology {
-        JOLIE, JAVA
-    }
-
     private static final long serialVersionUID = Constants.serialVersionUID();
     private final String name;
     private Program program;
     private Optional< TypeDefinition > parameterType;
     private Optional< String > parameterPath;
     private Privacy privacy;
-    private Technology technology;
+    private Constants.EmbeddedServiceType type;
 
     public ServiceNode( ParsingContext context, String name )
     {
-        this( context, name, null, Technology.JOLIE );
+        this( context, name, null, Constants.EmbeddedServiceType.JOLIE );
     }
 
     public ServiceNode( ParsingContext context, String name, Program p )
     {
-        this( context, name, p, Technology.JOLIE );
+        this( context, name, p, Constants.EmbeddedServiceType.JOLIE );
     }
 
-    public ServiceNode( ParsingContext context, String name, Program p, Technology tech )
+    public ServiceNode( ParsingContext context, String name, Program p, Constants.EmbeddedServiceType type )
     {
         super( context );
         this.name = name;
         this.program = p;
         this.parameterType = Optional.empty();
         this.parameterPath = Optional.empty();
-        this.technology = tech;
+        this.type = type;
     }
 
     public void setAcceptParameter( String paramPath, TypeDefinition paramType )
@@ -68,9 +64,9 @@ public class ServiceNode extends OLSyntaxNode implements SymbolNode
         this.program = p;
     }
 
-    public Technology technology()
+    public Constants.EmbeddedServiceType type()
     {
-        return technology;
+        return type;
     }
 
 
