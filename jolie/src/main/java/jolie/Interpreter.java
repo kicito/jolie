@@ -877,12 +877,14 @@ public class Interpreter
 		if ( this.serviceNodeArgument == null ) {
 			this.serviceNodeArgument = new HashMap<>();
 		}
-		this.serviceNodeArgument.put( name, passingArgument );
+		this.serviceNodeArgument.put( name, Optional.ofNullable(passingArgument) );
 	}
 
 	public Expression getServiceNodeArgument( String name )
 	{
-		return this.serviceNodeArgument.get( name );
+		return this.serviceNodeArgument.get( name ).isPresent()
+				? this.serviceNodeArgument.get( name ).get()
+				: Value.create();
 	}
 
 	/** Constructor.
@@ -986,7 +988,7 @@ public class Interpreter
 	}
 
 	private Optional<Value> receivingArgumentValue;
-	private Map<String, Expression> serviceNodeArgument;
+	private Map<String, Optional<Expression>> serviceNodeArgument;
 
     /** Constructor.
 	 *
