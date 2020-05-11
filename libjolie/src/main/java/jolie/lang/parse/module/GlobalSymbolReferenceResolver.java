@@ -456,7 +456,7 @@ public class GlobalSymbolReferenceResolver
         {
             // resolve interface definition
             for (InterfaceDefinition iface : n.getInterfaceList()) {
-                Optional< SymbolInfo > symbol = getSymbol( n.context(), iface.name() );
+                Optional< SymbolInfo > symbol = getSymbol( iface.context(), iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new SymbolNotFoundException( iface.name() );
@@ -488,7 +488,7 @@ public class GlobalSymbolReferenceResolver
         {
             // resolve interface definition
             for (InterfaceDefinition iface : n.getInterfaceList()) {
-                Optional< SymbolInfo > symbol = getSymbol( n.context(), iface.name() );
+                Optional< SymbolInfo > symbol = getSymbol( iface.context(), iface.name() );
                 if ( !symbol.isPresent() ) {
                     this.valid = false;
                     this.error = new SymbolNotFoundException( iface.name() );
