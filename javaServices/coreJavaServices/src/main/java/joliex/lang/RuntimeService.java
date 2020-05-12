@@ -21,16 +21,29 @@
 
 package joliex.lang;
 
-import com.sun.management.UnixOperatingSystemMXBean;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import com.sun.management.UnixOperatingSystemMXBean;
 import jolie.ExecutionThread;
 import jolie.Interpreter;
 import jolie.lang.Constants;
 import jolie.lang.Constants.EmbeddedServiceType;
+import jolie.lang.parse.ParserException;
+import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.module.Finder;
+import jolie.lang.parse.module.FinderCreator;
+import jolie.lang.parse.module.GlobalSymbolReferenceResolver;
+import jolie.lang.parse.module.ModuleException;
+import jolie.lang.parse.module.ModuleRecord;
+import jolie.lang.parse.module.Source;
+import jolie.lang.parse.module.ModuleCrawler.ModuleCrawlerResult;
+import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
+import jolie.lang.parse.util.ParsingUtils;
+import jolie.lang.parse.util.ProgramInspector;
 import jolie.net.CommListener;
 import jolie.net.LocalCommChannel;
 import jolie.net.ports.OutputPort;
@@ -244,6 +257,57 @@ public class RuntimeService extends JavaService
 			ret.getNewChild( "path" ).setValue( path );
 		}
 		return ret;
+	}
+
+	@RequestResponse
+	public Value loadEmbeddedServiceNode( Value request )
+			throws FaultException
+	{
+		try {
+			Value channel = Value.create();
+
+			String module = request.getFirstChild( "module" ).strValue();
+			String serviceNode = request.getFirstChild( "serviceNode" ).strValue();
+			Value argument = request.getFirstChild( "argumentValue" );
+
+			String[] moduleTarget = module.split( "\\." );
+
+			Finder moduleFinder = interpreter().finderCreator()
+					.getFinderForTarget( interpreter().programDirectory().toURI(), moduleTarget );
+			Source s = moduleFinder.find();
+			
+			ModuleRecord mr = interpreter().moduleParser().parse(s);
+			ModuleCrawlerResult crawlResult = interpreter().moduleCrawler().crawl(mr);
+			GlobalSymbolReferenceResolver resolver = new GlobalSymbolReferenceResolver(crawlResult);
+			resolver.resolve();
+			ProgramInspector pi = ParsingUtils.createInspector(mr.program());
+			ServiceNode targetNode = null;
+			for (ServiceNode node : pi.getServiceNodes()){
+				if (node.name().equals(serviceNode)){
+					targetNode = node;
+				}
+			}
+			if (targetNode == null){
+				throw new FaultException( "ServiceNodeNotFound", "target node " + serviceNode + " not found in " + s.source().toString() );
+			}
+			
+			EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration configuration =
+                new EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration(targetNode);
+			
+			EmbeddedServiceLoader loader =
+					EmbeddedServiceLoader.create( interpreter(), configuration, channel );
+			loader.load(argument);
+
+			return channel;
+		} catch ( FileNotFoundException e) {
+			throw new FaultException( "ModuleNotFound", e );
+		} catch ( EmbeddedServiceLoaderCreationException e ) {
+			throw new FaultException( "RuntimeException", e );
+		} catch ( EmbeddedServiceLoadingException e ) {
+			throw new FaultException( "RuntimeException", e );
+		} catch (ParserException | IOException | ModuleException e) {
+			throw new FaultException( "RuntimeException", e );
+		}
 	}
 
 	public Value loadEmbeddedService( Value request )
