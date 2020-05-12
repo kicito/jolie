@@ -47,34 +47,42 @@ public class ModuleCrawler
             this.moduleCrawled.put( mr.source(), mr );
         }
 
-        public boolean isRecordInCache( URI source )
+        public boolean isRecordInResult( URI source )
         {
             return this.moduleCrawled.containsKey( source );
         }
 
-        public Map<URI, ModuleRecord> toMap(){
+        public Map< URI, ModuleRecord > toMap()
+        {
             return this.moduleCrawled;
         }
 
     }
 
     private final Queue< Source > modulesToCrawl;
+    private final Map<URI, ModuleRecord> cache;
     private final ModuleCrawlerResult result;
     private final FinderCreator finderCreator;
+    private final ModuleParser parser;
 
-    public ModuleCrawler( String[] packagesPath ) throws FileNotFoundException
+    public ModuleCrawler( String[] packagesPath, ModuleParser parser ) throws FileNotFoundException
     {
-        this.modulesToCrawl = new LinkedList<>();
-        this.result = new ModuleCrawlerResult();
-        this.finderCreator = new FinderCreator( packagesPath );
+        this( new FinderCreator( packagesPath ), parser );
     }
 
-    public ModuleCrawler( Path workingDirectory, String[] packagesPath )
-            throws FileNotFoundException
+    public ModuleCrawler( FinderCreator finderCreator, ModuleParser parser ) throws FileNotFoundException
     {
         this.modulesToCrawl = new LinkedList<>();
         this.result = new ModuleCrawlerResult();
-        this.finderCreator = new FinderCreator( workingDirectory, packagesPath );
+        this.finderCreator = finderCreator;
+        this.parser = parser;
+        this.cache = new HashMap<>();
+    }
+
+    public ModuleCrawler( Path workingDirectory, String[] packagesPath, ModuleParser parser )
+            throws FileNotFoundException
+    {
+        this( new FinderCreator( workingDirectory, packagesPath ), parser );
     }
 
     private Source findModule( URI parentURI, String[] importTargetStrings )
@@ -100,7 +108,7 @@ public class ModuleCrawler
         this.result.addModuleRecord( record );
     }
 
-    public ModuleCrawlerResult crawl( ModuleRecord parentRecord, ModuleParser parser )
+    public ModuleCrawlerResult crawl( ModuleRecord parentRecord )
             throws ParserException, IOException, ModuleException
     {
         // start with parentRecord
@@ -110,7 +118,12 @@ public class ModuleCrawler
         while (modulesToCrawl.peek() != null) {
             Source module = modulesToCrawl.poll();
 
-            if ( this.result.isRecordInCache( module.source() ) ) {
+            if ( this.result.isRecordInResult( module.source() ) ) {
+                continue;
+            }
+
+            if (this.cache.containsKey(module.source())){
+                this.result.addModuleRecord(this.cache.get(module.source()));
                 continue;
             }
 

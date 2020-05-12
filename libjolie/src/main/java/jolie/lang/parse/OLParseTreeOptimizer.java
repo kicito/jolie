@@ -227,13 +227,21 @@ public class OLParseTreeOptimizer
 				n.passingParam().accept( this );
 				passingParam = currNode;
 			}
+			EmbeddedServiceNode2 node;
 			if ( n.isCreateNewPort() ) {
-				programChildren.add( new EmbeddedServiceNode2( n.context(), n.serviceName(),
-						n.outputPortInfo(), passingParam ) );
+				node = new EmbeddedServiceNode2( n.context(), n.serviceName(), n.outputPortInfo(),
+						passingParam );
 			} else {
-				programChildren.add( new EmbeddedServiceNode2( n.context(), n.serviceName(),
-						n.portId(), passingParam ) );
+				node = new EmbeddedServiceNode2( n.context(), n.serviceName(), n.portId(),
+						passingParam );
 			}
+			if ( n.service() != null ) {
+				node.setService( n.service() );
+			}
+			if ( n.program() != null ) {
+				node.setProgram( n.program() );
+			}
+			programChildren.add( node );
 		}
 
 		@Override

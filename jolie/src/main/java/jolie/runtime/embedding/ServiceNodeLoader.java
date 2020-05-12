@@ -3,7 +3,10 @@ package jolie.runtime.embedding;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import jolie.CommandLineException;
@@ -11,8 +14,10 @@ import jolie.Interpreter;
 import jolie.lang.Constants;
 import jolie.lang.parse.ast.ForeignServiceNode;
 import jolie.lang.parse.ast.ServiceNode;
-import jolie.net.CommChannel;
-import jolie.runtime.JavaService;
+import jolie.lang.parse.ast.types.TypeChoiceDefinition;
+import jolie.lang.parse.ast.types.TypeDefinition;
+import jolie.lang.parse.ast.types.TypeDefinitionLink;
+import jolie.lang.parse.ast.types.TypeInlineDefinition;
 import jolie.runtime.Value;
 import jolie.runtime.expression.Expression;
 import jolie.runtime.typing.Type;
@@ -22,15 +27,13 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 {
 	private final Interpreter parentInterpreter;
 	private final ServiceNode serviceNode;
-	private final Type acceptedType;
 
 	protected ServiceNodeLoader( Expression channelDest, Interpreter parentInterpreter,
-			ServiceNode serviceNode, Type acceptedType ) throws IOException, CommandLineException
+			ServiceNode serviceNode ) throws IOException, CommandLineException
 	{
 		super( channelDest );
 		this.parentInterpreter = parentInterpreter;
 		this.serviceNode = serviceNode;
-		this.acceptedType = acceptedType;
 	}
 
 	@Override
@@ -40,7 +43,8 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 		Interpreter interpreter = null;
 		try {
 			Value passingArgument = Value.create();
-			if ( acceptedType != null ) {
+			if ( this.serviceNode.parameterType().isPresent() ) {
+				Type acceptedType = buildType( this.serviceNode.parameterType().get() );
 				acceptedType.check( argumentValue );
 				passingArgument.getChildren( this.serviceNode.parameterPath().get() ).first()
 						.deepCopy( argumentValue );
@@ -62,8 +66,6 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 			} else {
 				throw new EmbeddedServiceLoadingException( e );
 			}
-
-
 
 			final EmbeddedServiceLoader foreignLoader;
 			final Expression channelDest;
@@ -108,6 +110,46 @@ public class ServiceNodeLoader extends EmbeddedServiceLoader
 	public String serviceName()
 	{
 		return serviceNode.name();
+	}
+
+	private Type buildType( TypeDefinition typeDefinition )
+	{
+		if ( typeDefinition instanceof TypeDefinitionLink ) {
+			return buildType( (TypeDefinitionLink) typeDefinition );
+		} else if ( typeDefinition instanceof TypeInlineDefinition ) {
+			return buildType( (TypeInlineDefinition) typeDefinition );
+		} else if ( typeDefinition instanceof TypeChoiceDefinition ) {
+			return buildType( (TypeChoiceDefinition) typeDefinition );
+		}
+		return null; // dead code
+	}
+
+	private Type buildType( TypeDefinitionLink n )
+	{
+		return buildType( n.linkedType() );
+	}
+
+
+	private Type buildType( TypeInlineDefinition n )
+	{
+		Type t;
+		if ( n.untypedSubTypes() ) {
+			t = Type.create( n.nativeType(), n.cardinality(), true, null );
+		} else {
+			Map< String, Type > subTypes = new HashMap< String, Type >();
+			if ( n.subTypes() != null ) {
+				for (Entry< String, TypeDefinition > entry : n.subTypes()) {
+					subTypes.put( entry.getKey(), buildType( entry.getValue() ) );
+				}
+			}
+			t = Type.create( n.nativeType(), n.cardinality(), false, subTypes );
+		}
+		return t;
+	}
+
+	private Type buildType( TypeChoiceDefinition n )
+	{
+		return Type.createChoice( n.cardinality(), buildType( n.left() ), buildType( n.right() ) );
 	}
 
 }

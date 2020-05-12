@@ -68,8 +68,8 @@ public class ParsingUtils
 		parser.putConstants( definedConstants );
 		ModuleRecord mainRecord = parser.parse( source );
 
-		ModuleCrawler crawler = new ModuleCrawler( Paths.get(source).getParent(), packagesPaths );
-		ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+		ModuleCrawler crawler = new ModuleCrawler( Paths.get(source).getParent(), packagesPaths, parser );
+		ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
 
 		GlobalSymbolReferenceResolver symbolResolver =
 				new GlobalSymbolReferenceResolver( crawlResult );

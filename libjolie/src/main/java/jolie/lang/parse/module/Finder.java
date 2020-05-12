@@ -80,7 +80,7 @@ public abstract class Finder
         if ( Files.exists( japPath ) ) {
             return japPath.toFile();
         }
-        throw new FileNotFoundException();
+        throw new FileNotFoundException(japPath.toAbsolutePath().toString());
     }
 
     /**
@@ -228,7 +228,7 @@ class AbsolutePathFinder extends Finder
         }
 
         try {
-            // * 3. Try to resolve P from the list of packages directories.
+            // 3. Try to resolve P from the list of packages directories.
             for (Path packagePath : packagesDirectories) {
                 Source moduleFile = super.locateModule( packagePath );
                 return moduleFile;

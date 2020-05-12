@@ -66,6 +66,7 @@ import jolie.lang.parse.SemanticException;
 import jolie.lang.parse.SemanticVerifier;
 import jolie.lang.parse.TypeChecker;
 import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.module.FinderCreator;
 import jolie.lang.parse.module.GlobalSymbolReferenceResolver;
 import jolie.lang.parse.module.ModuleCrawler;
 import jolie.lang.parse.module.ModuleParser;
@@ -308,7 +309,11 @@ public class Interpreter
 	private final String programFilepath;
 	private final File programDirectory;
 	private OutputPort monitor = null;
+
 	private Map<URI, SymbolTable> symbolTables;
+	private final FinderCreator finderCreator;
+	private final ModuleParser parser;
+	private final ModuleCrawler moduleCrawler;
 
 	public void setMonitor( OutputPort monitor )
 	{
@@ -459,7 +464,34 @@ public class Interpreter
 	{
 		return includePaths;
 	}
+	
+	/**
+	 * Returns the finder creator this Interpreter is considering.
+	 * @return the finder creator this Interpreter is considering
+	 */
+	public FinderCreator finderCreator()
+	{
+		return finderCreator;
+	}
 
+	/**
+	 * Returns the parser this Interpreter is considering.
+	 * @return the parser this Interpreter is considering
+	 */
+	public ModuleParser moduleParser()
+	{
+		return parser;
+	}
+
+	/**
+	 * Returns the module crawler this Interpreter is considering.
+	 * @return the module crawler this Interpreter is considering
+	 */
+	public ModuleCrawler moduleCrawler()
+	{
+		return moduleCrawler;
+	}
+	
 	/**
 	 * Registers a session starter on this <code>Interpreter</code>.
 	 * @param guard the input guard for this session starter
@@ -916,7 +948,7 @@ public class Interpreter
 		programFilepath = cmdParser.programFilepath().toString();
 		arguments = cmdParser.arguments();
 		printStackTraces = cmdParser.printStackTraces();
-		
+		finderCreator = new FinderCreator(cmdParser.packagesPaths());
 		responseTimeout = cmdParser.responseTimeout();
 
 		switch( cmdParser.tracerLevel() ) {
@@ -932,6 +964,8 @@ public class Interpreter
 		
         commCore = new CommCore( this, cmdParser.connectionsLimit() /*, cmdParser.connectionsCache() */ );
 		includePaths = cmdParser.includePaths();
+		parser = new ModuleParser( cmdParser.charset(), includePaths, classLoader );
+		moduleCrawler = new ModuleCrawler( cmdParser.packagesPaths(), parser );
 
 		StringBuilder builder = new StringBuilder();
 		builder.append( '[' );
@@ -1340,14 +1374,11 @@ public class Interpreter
 					program = OLParseTreeOptimizer.optimize( program );
 					program = Jolie2Utility.transform(program);
 				} else {
-					final ModuleParser parser =
-							new ModuleParser( cmdParser.charset(), includePaths, classLoader );
 					parser.putConstants( cmdParser.definedConstants() );
 					ModuleRecord mainRecord = parser.parse( new Scanner( cmdParser.programStream(),
 							cmdParser.programFilepath().toURI(), cmdParser.charset() ) );
 
-					ModuleCrawler crawler = new ModuleCrawler( cmdParser.packagesPaths() );
-					ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+					ModuleCrawlerResult crawlResult = moduleCrawler.crawl( mainRecord );
 
 					GlobalSymbolReferenceResolver symbolResolver =
 							new GlobalSymbolReferenceResolver( crawlResult );

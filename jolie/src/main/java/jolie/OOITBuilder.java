@@ -534,18 +534,12 @@ public class OOITBuilder implements OLVisitor
 				n.portId() == null ? null
 				: interpreter.getOutputPort( n.portId() ).locationVariablePath();
 			
-			// should not add new type to environment
-			insideOperationDeclarationOrInstanceOf = true;
-			Type paramType = n.service().parameterType().isPresent()
-					? buildType( n.service().parameterType().get() )
-					: null;
-			insideOperationDeclarationOrInstanceOf = false;
 			Expression passingArgument = buildExpression( n.passingParam() );
 
 			this.interpreter.setServiceNodeArgument(n.serviceName(), passingArgument);
 
 			final EmbeddedServiceConfiguration embeddedServiceConfiguration =
-			new EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration( n.service(), paramType );
+			new EmbeddedServiceLoader.EmbeddedServiceNodeConfiguration( n.service() );
 
 			interpreter.addEmbeddedServiceLoader(
 				EmbeddedServiceLoader.create(

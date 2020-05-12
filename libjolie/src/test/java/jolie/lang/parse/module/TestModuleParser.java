@@ -48,7 +48,7 @@ public class TestModuleParser
     {
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
 
         URI target = Paths.get( baseDir.toURI() ).resolve( "A.ol" ).toUri();
 
@@ -73,7 +73,7 @@ public class TestModuleParser
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
             // crawl dependencies
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
 
             // check symbols
             Set< URI > visitedURI = new HashSet<>();
@@ -113,7 +113,7 @@ public class TestModuleParser
         URI target = Paths.get( baseDir.toURI() ).resolve( "test_wildcard.ol" ).toUri();
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
 
         Map.Entry< URI, Set< String > > expectedSymbolsRoot =
                 TestingObjectsCreator.createURISymbolsMap( target, "date", "number", "foo", "bar",
@@ -152,7 +152,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -189,7 +189,7 @@ public class TestModuleParser
         URI target = Paths.get( baseDir.toURI() ).resolve( "cyclic" ).resolve( "A.ol" ).toUri();
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
 
         Map.Entry< URI, Set< String > > expectedSymbolsRoot =
                 TestingObjectsCreator.createURISymbolsMap( target, "foo", "bar" );
@@ -207,7 +207,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -246,7 +246,7 @@ public class TestModuleParser
         URI target = Paths.get( baseDir.toURI() ).resolve( "test_service.ol" ).toUri();
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
 
         Map.Entry< URI, Set< String > > expectedSymbols = TestingObjectsCreator.createURISymbolsMap(
                 Paths.get( baseDir.toURI() ).toFile().toURI(), "someservice" );
@@ -255,7 +255,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -278,7 +278,7 @@ public class TestModuleParser
         URI target = Paths.get( baseDir.toURI() ).resolve( "test_jap.ol" ).toUri();
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
 
         Map.Entry< String, Set< String > > ifaceEntry =
                 TestingObjectsCreator.createInterfaceStub( "TwiceAPI", "twice" );
@@ -296,7 +296,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -321,7 +321,7 @@ public class TestModuleParser
         URI target = Paths.get( baseDir.toURI() ).resolve( "test_iface.ol" ).toUri();
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), includePaths,
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
 
         Map.Entry< String, Set< String > > ifaceEntry =
                 TestingObjectsCreator.createInterfaceStub( "twiceIface", "twice" );
@@ -345,7 +345,7 @@ public class TestModuleParser
             // parse a program
             ModuleRecord mainRecord = parser.parse( target, includePaths );
 
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolveExternalSymbols();
@@ -370,7 +370,7 @@ public class TestModuleParser
 
         ModuleParser parser = new ModuleParser( StandardCharsets.UTF_8.name(), new String[0],
                 this.getClass().getClassLoader() );
-        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
+        ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
         Scanner s = new Scanner( is, baseDir.toURI(), null );
 
         Map.Entry< URI, Set< String > > expectedSymbolsRoot = TestingObjectsCreator
@@ -391,7 +391,7 @@ public class TestModuleParser
             ModuleRecord mainRecord = parser.parse( s );
 
             // crawl dependencies
-            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mainRecord );
 
             // check symbols
             Set< URI > visitedURI = new HashSet<>();
@@ -437,8 +437,8 @@ public class TestModuleParser
         Throwable ex = assertThrows( Exception.class, () -> {
             Scanner s = new Scanner( is, baseDir.toURI(), null );
             ModuleRecord mr = parser.parse( s );
-            ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths );
-            ModuleCrawlerResult crawlResult = crawler.crawl( mr, parser );
+            ModuleCrawler crawler = new ModuleCrawler( Paths.get( baseDir.toURI() ), includePaths, parser );
+            ModuleCrawlerResult crawlResult = crawler.crawl( mr );
             GlobalSymbolReferenceResolver symbolResolver =
                     new GlobalSymbolReferenceResolver( crawlResult );
             symbolResolver.resolve();
@@ -464,12 +464,12 @@ public class TestModuleParser
                         "someSymbol is not defined" ),
                 Arguments.of( "from twice.some.where import someSymbol", "ModuleNotFoundException",
                         "some/where in" ),
-                Arguments.of( "main{ someProc }", "ModuleNotFoundException",
+                Arguments.of( "main{ someProc }", "SymbolNotFoundException",
                         "someProc is not defined in symbolTable" ),
-                Arguments.of( "outputPort OP { interfaces: iface }", "ModuleNotFoundException",
+                Arguments.of( "outputPort OP { interfaces: iface }", "SymbolNotFoundException",
                         "iface is not defined in symbolTable" ),
                 Arguments.of( "inputPort IP { interfaces: iface location:\"local\" }",
-                        "ModuleNotFoundException", "iface is not defined in symbolTable" ),
+                        "SymbolNotFoundException", "iface is not defined in symbolTable" ),
                 Arguments.of( "main { t = 2 instanceof customType }", "SymbolNotFoundException",
                         "customType is not defined in symbolTable" ),
                 Arguments.of( "interface iface {oneWay: test(customType)}", "SymbolNotFoundException",

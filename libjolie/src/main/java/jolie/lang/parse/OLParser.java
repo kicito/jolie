@@ -1365,7 +1365,7 @@ public class OLParser extends AbstractParser
 					// check if the inputPort is listening to local protocol
 					isLocalLocation = true;
 				}
-				inputPortLocation = parseExpression();
+				inputPortLocation = parseBasicExpression();
 			} else if ( token.isKeyword( "interfaces" ) || token.isKeyword( "Interfaces" ) ) {
 				getToken();
 				eat( Scanner.TokenType.COLON, "expected : after interfaces" );
@@ -1388,7 +1388,7 @@ public class OLParser extends AbstractParser
 					throwException( "Protocol already defined for inputPort " + inputPortName );
 				}
 				getToken();
-				eat( Scanner.TokenType.COLON, "expected :" );
+				eat( Scanner.TokenType.COLON, "expected : after protocol" );
 				checkConstant();
 
 				protocol = parseBasicExpression();
