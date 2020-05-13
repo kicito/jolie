@@ -2495,10 +2495,7 @@ public class OLParser extends AbstractParser
 				getToken();
 				assertToken( Scanner.TokenType.ID, "expected interface name" );
 				checkConstant();
-				iface = interfaces.get( token.content() );
-				if ( iface == null ) {
-					throwException( "undefined interface: " + token.content() );
-				}
+				iface = new InterfaceDefinition( getContext(), token.content() );
 				getToken();
 				inputVariablePath = parseOperationVariablePathParameter();
 				if ( inputVariablePath == null ) {

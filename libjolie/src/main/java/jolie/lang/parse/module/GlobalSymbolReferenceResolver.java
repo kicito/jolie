@@ -737,13 +737,53 @@ public class GlobalSymbolReferenceResolver
         public void visit( CourierChoiceStatement n )
         {
             for (InterfaceOneWayBranch owIfaceBranch : n.interfaceOneWayBranches()) {
-                owIfaceBranch.interfaceDefinition.accept( this );
+                InterfaceDefinition iface = owIfaceBranch.interfaceDefinition;
+
+                Optional< SymbolInfo > symbol = getSymbol( iface.context(), iface.name() );
+                if ( !symbol.isPresent() ) {
+                    this.valid = false;
+                    this.error = new SymbolNotFoundException( iface.name() );
+                    return;
+                }
+                if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
+                    this.valid = false;
+                    this.error = new SymbolTypeMismatchException( iface.name(), "InterfaceDefinition",
+                            symbol.get().node().getClass().getSimpleName() );
+                    return;
+                }
+                InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
+                ifaceDeclFromSymbol.operationsMap().values().forEach( op -> {
+                    iface.addOperation( op );
+                    op.accept( this );
+                } );
+                iface.setDocumentation( ifaceDeclFromSymbol.getDocumentation() );
+                
                 owIfaceBranch.body.accept( this );
             }
 
             for (InterfaceRequestResponseBranch rrIfaceBranch : n
                     .interfaceRequestResponseBranches()) {
-                rrIfaceBranch.interfaceDefinition.accept( this );
+                InterfaceDefinition iface = rrIfaceBranch.interfaceDefinition;
+
+                Optional< SymbolInfo > symbol = getSymbol( iface.context(), iface.name() );
+                if ( !symbol.isPresent() ) {
+                    this.valid = false;
+                    this.error = new SymbolNotFoundException( iface.name() );
+                    return;
+                }
+                if ( !(symbol.get().node() instanceof InterfaceDefinition) ) {
+                    this.valid = false;
+                    this.error = new SymbolTypeMismatchException( iface.name(), "InterfaceDefinition",
+                            symbol.get().node().getClass().getSimpleName() );
+                    return;
+                }
+                InterfaceDefinition ifaceDeclFromSymbol = (InterfaceDefinition) symbol.get().node();
+                ifaceDeclFromSymbol.operationsMap().values().forEach( op -> {
+                    iface.addOperation( op );
+                    op.accept( this );
+                } );
+                iface.setDocumentation( ifaceDeclFromSymbol.getDocumentation() );
+
                 rrIfaceBranch.body.accept( this );
             }
 
