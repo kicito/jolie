@@ -30,6 +30,8 @@ import jolie.lang.parse.ast.AssignStatement;
 import jolie.lang.parse.ast.CompareConditionNode;
 import jolie.lang.parse.ast.CompensateStatement;
 import jolie.lang.parse.ast.CorrelationSetInfo;
+import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationAliasInfo;
+import jolie.lang.parse.ast.CorrelationSetInfo.CorrelationVariableInfo;
 import jolie.lang.parse.ast.CurrentHandlerStatement;
 import jolie.lang.parse.ast.DeepCopyStatement;
 import jolie.lang.parse.ast.DefinitionCallStatement;
@@ -46,7 +48,6 @@ import jolie.lang.parse.ast.IfStatement;
 import jolie.lang.parse.ast.ImportStatement;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InputPortInfo.AggregationItemInfo;
-import jolie.lang.parse.ast.SymbolNode.Privacy;
 import jolie.lang.parse.ast.InstallFixedVariableExpressionNode;
 import jolie.lang.parse.ast.InstallStatement;
 import jolie.lang.parse.ast.InterfaceDefinition;
@@ -77,6 +78,7 @@ import jolie.lang.parse.ast.SequenceStatement;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
+import jolie.lang.parse.ast.SymbolNode.Privacy;
 import jolie.lang.parse.ast.SynchronizedStatement;
 import jolie.lang.parse.ast.ThrowStatement;
 import jolie.lang.parse.ast.TypeCastExpressionNode;
@@ -368,7 +370,13 @@ public class SymbolReferenceResolver {
 		public void visit( ExecutionInfo n ) {}
 
 		@Override
-		public void visit( CorrelationSetInfo n ) {}
+		public void visit( CorrelationSetInfo n ) {
+			for( CorrelationVariableInfo cSetVar : n.variables() ) {
+				for( CorrelationAliasInfo aliases : cSetVar.aliases() ) {
+					aliases.guardName().accept( this );
+				}
+			}
+		}
 
 		@Override
 		public void visit( InputPortInfo n ) {

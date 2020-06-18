@@ -310,7 +310,7 @@ public class SemanticVerifier implements OLVisitor {
 				for( CorrelationAliasInfo alias : csetVar.aliases() ) {
 					checkCorrelationAlias( alias );
 
-					operations = inputTypeNameMap.get( alias.guardName() );
+					operations = inputTypeNameMap.get( alias.guardName().id() );
 					for( String operationName : operations ) {
 						currCorrelatingOperations.add( operationName );
 						correlationFunctionInfo.putCorrelationPair(
@@ -345,7 +345,7 @@ public class SemanticVerifier implements OLVisitor {
 	}
 
 	private void checkCorrelationAlias( CorrelationAliasInfo alias ) {
-		TypeDefinition type = definedTypes.get( alias.guardName() );
+		TypeDefinition type = alias.guardName();
 		if( type == null ) {
 			error( alias.variablePath(), "type " + alias.guardName() + " is undefined" );
 		} else if( type.containsPath( alias.variablePath() ) == false ) {
