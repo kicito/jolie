@@ -38,11 +38,7 @@ public class Main {
 			compiler.compile();
 		} catch( CommandLineException e ) {
 			System.out.println( e.getMessage() );
-		} catch( IOException e ) {
-			e.printStackTrace();
-		} catch( ParserException e ) {
-			e.printStackTrace();
-		} catch( SemanticException e ) {
+		} catch( IOException | SemanticException | ParserException e ) {
 			e.printStackTrace();
 		} catch( ModuleException e ) {
 			e.printStackTrace();

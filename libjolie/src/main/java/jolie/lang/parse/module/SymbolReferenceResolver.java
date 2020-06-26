@@ -21,8 +21,10 @@ package jolie.lang.parse.module;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import jolie.lang.Constants.OperandType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.AddAssignStatement;
@@ -46,6 +48,7 @@ import jolie.lang.parse.ast.ForEachSubNodeStatement;
 import jolie.lang.parse.ast.ForStatement;
 import jolie.lang.parse.ast.IfStatement;
 import jolie.lang.parse.ast.ImportStatement;
+import jolie.lang.parse.ast.ImportableSymbol.AccessModifier;
 import jolie.lang.parse.ast.InputPortInfo;
 import jolie.lang.parse.ast.InputPortInfo.AggregationItemInfo;
 import jolie.lang.parse.ast.InstallFixedVariableExpressionNode;
@@ -78,7 +81,6 @@ import jolie.lang.parse.ast.SequenceStatement;
 import jolie.lang.parse.ast.SolicitResponseOperationStatement;
 import jolie.lang.parse.ast.SpawnStatement;
 import jolie.lang.parse.ast.SubtractAssignStatement;
-import jolie.lang.parse.ast.SymbolNode.Privacy;
 import jolie.lang.parse.ast.SynchronizedStatement;
 import jolie.lang.parse.ast.ThrowStatement;
 import jolie.lang.parse.ast.TypeCastExpressionNode;
@@ -123,20 +125,9 @@ import jolie.lang.parse.module.exceptions.DuplicateSymbolException;
 import jolie.lang.parse.module.exceptions.IllegalAccessSymbolException;
 import jolie.lang.parse.module.exceptions.SymbolNotFoundException;
 import jolie.lang.parse.module.exceptions.SymbolTypeMismatchException;
-import jolie.util.Helpers;
 import jolie.util.Pair;
 
-public class SymbolReferenceResolver {
-	private final Map< URI, ModuleRecord > moduleMap;
-	private final Map< URI, SymbolTable > symbolTables;
-
-	private SymbolReferenceResolver( CrawlerResult moduleMap ) {
-		this.moduleMap = moduleMap.toMap();
-		this.symbolTables = new HashMap<>();
-		for( ModuleRecord mr : this.moduleMap.values() ) {
-			this.symbolTables.put( mr.source(), mr.symbolTable() );
-		}
-	}
+class SymbolReferenceResolver {
 
 	private class SymbolReferenceResolverVisitor implements OLVisitor {
 
@@ -145,7 +136,6 @@ public class SymbolReferenceResolver {
 		private Exception error;
 
 		protected SymbolReferenceResolverVisitor() {}
-
 
 		/**
 		 * Walk through the Jolie AST tree and resolve the call of external Symbols.
@@ -156,7 +146,6 @@ public class SymbolReferenceResolver {
 			if( !this.valid ) {
 				throw new ModuleException( p.context(), this.error );
 			}
-			return;
 		}
 
 		@Override
@@ -663,10 +652,10 @@ public class SymbolReferenceResolver {
 			for( Operation operation : n.operations() ) {
 				if( operation instanceof InlineTreeExpressionNode.AssignmentOperation ) {
 					((InlineTreeExpressionNode.AssignmentOperation) operation).expression()
-						.accept( this );;
+						.accept( this );
 				} else if( operation instanceof InlineTreeExpressionNode.DeepCopyOperation ) {
 					((InlineTreeExpressionNode.DeepCopyOperation) operation).expression()
-						.accept( this );;
+						.accept( this );
 				}
 			}
 		}
@@ -692,46 +681,60 @@ public class SymbolReferenceResolver {
 		public void visit( ImportStatement n ) {}
 
 		private Optional< SymbolInfo > getSymbol( ParsingContext context, String name ) {
-			Optional< SymbolInfo > symbol = Helpers.firstNonNull( () -> {
-				if( !symbolTables.containsKey( currentURI )
-					|| !symbolTables.get( currentURI ).symbol( name ).isPresent() ) {
-					return null;
-				}
-				return symbolTables.get( currentURI ).symbol( name ).get();
-			}, () -> {
-				if( !symbolTables.containsKey( context.source() )
-					|| !symbolTables.get( context.source() ).symbol( name ).isPresent() ) {
-					return null;
-				}
-				return symbolTables.get( context.source() ).symbol( name ).get();
-			} );
-			return symbol;
+			if( symbolTables.containsKey( currentURI )
+				&& symbolTables.get( currentURI ).getSymbol( name ).isPresent() ) {
+				return symbolTables.get( currentURI ).getSymbol( name );
+			} else if( symbolTables.containsKey( context.source() )
+				&& symbolTables.get( context.source() ).getSymbol( name ).isPresent() ) {
+				return symbolTables.get( context.source() ).getSymbol( name );
+			}
+			return Optional.empty();
+		}
+	}
+
+	private final Map< URI, ModuleRecord > moduleMap;
+	private final Map< URI, SymbolTable > symbolTables;
+
+	private SymbolReferenceResolver( CrawlerResult moduleMap ) {
+		this.moduleMap = moduleMap.toMap();
+		this.symbolTables = new HashMap<>();
+		for( ModuleRecord mr : this.moduleMap.values() ) {
+			this.symbolTables.put( mr.source(), mr.symbolTable() );
 		}
 	}
 
 	/**
-	 * perform lookup to external symbol's source of AST node
+	 * perform a lookup in the module record collection for the original symbol of an importing symbol
+	 * 
+	 * @param symbolInfo an importing symbol
+	 * @param lookedSources a set of sources that are already considered
 	 * 
 	 * @throws SymbolNotFoundException
 	 */
-	private SymbolInfo symbolSourceLookup( SymbolInfoExternal symbolInfo )
+	private SymbolInfo symbolSourceLookup( ImportedSymbolInfo symbolInfo, Set< URI > lookedSources )
 		throws SymbolNotFoundException {
 		ModuleRecord externalSourceRecord =
-			this.moduleMap.get( symbolInfo.moduleSource().get().source() );
+			this.moduleMap.get( symbolInfo.moduleSource().get().uri() );
 		Optional< SymbolInfo > externalSourceSymbol =
-			externalSourceRecord.symbol( symbolInfo.moduleSymbol() );
-		if( !externalSourceSymbol.isPresent() ) {
-			throw new SymbolNotFoundException( symbolInfo.name(), symbolInfo.moduleTargets() );
+			externalSourceRecord.symbolTable().getSymbol( symbolInfo.originalSymbolName() );
+		if( !externalSourceSymbol.isPresent() || lookedSources.contains( externalSourceRecord.source() ) ) {
+			throw new SymbolNotFoundException( symbolInfo.name(), symbolInfo.importPath() );
 		}
+		lookedSources.add( externalSourceRecord.source() );
 		if( externalSourceSymbol.get().scope() == Scope.LOCAL ) {
 			return externalSourceSymbol.get();
 		} else {
-			return symbolSourceLookup( (SymbolInfoExternal) externalSourceSymbol.get() );
+			return symbolSourceLookup( (ImportedSymbolInfo) externalSourceSymbol.get(), lookedSources );
 		}
 	}
 
+	private SymbolInfo symbolSourceLookup( ImportedSymbolInfo symbolInfo )
+		throws SymbolNotFoundException {
+		return symbolSourceLookup( symbolInfo, new HashSet<>() );
+	}
+
 	/**
-	 * Find and set a pointer of externalSymbol to it's corresponding AST node by perform lookup at
+	 * resolve externalSymbol by find and set its corresponding AST node by perform lookup at
 	 * ModuleRecord Map, a result from ModuleCrawler.
 	 * 
 	 * @throws DuplicateSymbolException
@@ -742,19 +745,19 @@ public class SymbolReferenceResolver {
 	private void resolveExternalSymbols()
 		throws SymbolNotFoundException, IllegalAccessSymbolException, DuplicateSymbolException {
 		for( ModuleRecord md : moduleMap.values() ) {
-			for( SymbolInfoExternal localSymbol : md.externalSymbols() ) {
-				if( localSymbol instanceof SymbolWildCard ) {
+			for( ImportedSymbolInfo importedSymbol : md.symbolTable().importedSymbolInfos() ) {
+				if( importedSymbol instanceof WildcardImportedSymbolInfo ) {
 					ModuleRecord wildcardImportedRecord =
-						this.moduleMap.get( localSymbol.moduleSource().get().source() );
-					md.putWildcardImportedRecord( (SymbolWildCard) localSymbol,
-						wildcardImportedRecord.symbols() );
+						this.moduleMap.get( importedSymbol.moduleSource().get().uri() );
+					md.symbolTable().resolveWildcardImport( (WildcardImportedSymbolInfo) importedSymbol,
+						wildcardImportedRecord.symbolTable().symbols() );
 				} else {
-					SymbolInfo targetSymbol = symbolSourceLookup( localSymbol );
-					if( targetSymbol.privacy() == Privacy.PRIVATE ) {
-						throw new IllegalAccessSymbolException( localSymbol.name(),
-							localSymbol.moduleTargets() );
+					SymbolInfo targetSymbol = symbolSourceLookup( importedSymbol );
+					if( targetSymbol.accessModifier() == AccessModifier.PRIVATE ) {
+						throw new IllegalAccessSymbolException( importedSymbol.name(),
+							importedSymbol.importPath() );
 					}
-					localSymbol.setPointer( targetSymbol.node() );
+					importedSymbol.resolve( targetSymbol.node() );
 				}
 			}
 		}
@@ -763,9 +766,9 @@ public class SymbolReferenceResolver {
 	/**
 	 * resolve LinkedType of each ModuleRecord AST node in the Map.
 	 * 
-	 * @throws ModuleException if the linked type cannot find it's referencing node
+	 * @throws ModuleException if the linked type cannot find its referencing node
 	 */
-	private void resolveLinkedType() throws ModuleException {
+	private void resolveLinkedTypes() throws ModuleException {
 		SymbolReferenceResolverVisitor resolver = new SymbolReferenceResolverVisitor();
 		for( ModuleRecord md : moduleMap.values() ) {
 			resolver.resolve( md.program() );
@@ -783,8 +786,8 @@ public class SymbolReferenceResolver {
 			resolver.resolveExternalSymbols();
 		} catch( SymbolNotFoundException | IllegalAccessSymbolException
 			| DuplicateSymbolException e ) {
-			throw new ModuleException( e );
+			throw new ModuleException( e.getMessage() );
 		}
-		resolver.resolveLinkedType();
+		resolver.resolveLinkedTypes();
 	}
 }

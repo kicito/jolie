@@ -22,6 +22,7 @@ package jolie.lang.parse.ast.types;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
 import jolie.lang.parse.context.ParsingContext;
@@ -34,7 +35,13 @@ public class TypeChoiceDefinition extends TypeDefinition {
 
 	public TypeChoiceDefinition( ParsingContext context, String id, Range cardinality, TypeDefinition left,
 		TypeDefinition right ) {
-		super( context, id, cardinality );
+		this( context, id, cardinality, AccessModifier.PUBLIC, left, right );
+	}
+
+	public TypeChoiceDefinition( ParsingContext context, String id, Range cardinality, AccessModifier accessModifier,
+		TypeDefinition left,
+		TypeDefinition right ) {
+		super( context, id, cardinality, accessModifier );
 		this.left = left;
 		this.right = right;
 	}
@@ -55,38 +62,25 @@ public class TypeChoiceDefinition extends TypeDefinition {
 	@Override
 	protected boolean containsPath( Iterator< Pair< OLSyntaxNode, OLSyntaxNode > > it ) {
 		final List< Pair< OLSyntaxNode, OLSyntaxNode > > path = new LinkedList<>();
-		it.forEachRemaining( pair -> path.add( pair ) );
+		it.forEachRemaining( path::add );
 		return left.containsPath( path.iterator() ) && right.containsPath( path.iterator() );
 	}
 
 	@Override
-	public int hashCode() {
+	public int hashCode( Set< String > recursiveTypeHashed ) {
+		if( recursiveTypeHashed.contains( this.id() ) ) {
+			return 0;
+		}
+		recursiveTypeHashed.add( this.id() );
 		final int prime = 31;
-		int result = super.hashCode();
-		result = prime * result + ((left == null) ? 0 : left.hashCode());
-		result = prime * result + ((right == null) ? 0 : right.hashCode());
+		int result = 1;
+		result = prime * result + this.id().hashCode();
+		result = prime * result + this.cardinality().hashCode();
+		result = prime * result + this.left.hashCode( recursiveTypeHashed );
+		result = prime * result + recursiveTypeHashed.size();
+		if( right != null ) {
+			result = prime * result + right.hashCode( recursiveTypeHashed );
+		}
 		return result;
-	}
-
-	@Override
-	public boolean equals( Object obj ) {
-		if( this == obj )
-			return true;
-		if( !super.equals( obj ) )
-			return false;
-		if( getClass() != obj.getClass() )
-			return false;
-		TypeChoiceDefinition other = (TypeChoiceDefinition) obj;
-		if( left == null ) {
-			if( other.left != null )
-				return false;
-		} else if( !left.equals( other.left ) )
-			return false;
-		if( right == null ) {
-			if( other.right != null )
-				return false;
-		} else if( !right.equals( other.right ) )
-			return false;
-		return true;
 	}
 }

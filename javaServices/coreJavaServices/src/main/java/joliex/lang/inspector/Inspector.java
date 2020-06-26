@@ -118,8 +118,8 @@ public class Inspector extends JavaService {
 	public Value inspectPorts( Value request ) throws FaultException {
 		try {
 			final ProgramInspector inspector;
-			String includePaths[] =
-				request.getChildren( "includePaths" ).stream().map( v -> v.strValue() ).toArray( String[]::new );
+			String[] includePaths =
+				request.getChildren( "includePaths" ).stream().map( Value::strValue ).toArray( String[]::new );
 			if( request.hasChildren( "source" ) ) {
 				inspector = getInspector( request.getFirstChild( "filename" ).strValue(),
 					Optional.of( request.getFirstChild( "source" ).strValue() ), includePaths );
@@ -133,14 +133,15 @@ public class Inspector extends JavaService {
 		} catch( SemanticException ex ) {
 			throw new FaultException(
 				"SemanticException",
-				ex.getErrorList().stream().map( e -> e.getMessage() ).collect( Collectors.joining( "\n" ) ) );
+				ex.getErrorList().stream().map( SemanticException.SemanticError::getMessage )
+					.collect( Collectors.joining( "\n" ) ) );
 		}
 	}
 
 	@RequestResponse
 	public Value inspectTypes( Value request ) throws FaultException {
-		String includePaths[] =
-			request.getChildren( "includePaths" ).stream().map( v -> v.strValue() ).toArray( String[]::new );
+		String[] includePaths =
+			request.getChildren( "includePaths" ).stream().map( Value::strValue ).toArray( String[]::new );
 		try {
 			ProgramInspector inspector =
 				getInspector( request.getFirstChild( "filename" ).strValue(), Optional.empty(), includePaths );
@@ -150,7 +151,8 @@ public class Inspector extends JavaService {
 		} catch( SemanticException ex ) {
 			throw new FaultException(
 				"SemanticException",
-				ex.getErrorList().stream().map( e -> e.getMessage() ).collect( Collectors.joining( "\n" ) ) );
+				ex.getErrorList().stream().map( SemanticException.SemanticError::getMessage )
+					.collect( Collectors.joining( "\n" ) ) );
 		}
 	}
 
@@ -158,7 +160,7 @@ public class Inspector extends JavaService {
 		throws CommandLineException, IOException, ParserException, SemanticException, ModuleException {
 		SemanticVerifier.Configuration configuration = new SemanticVerifier.Configuration();
 		configuration.setCheckForMain( false );
-		String args[] = { filename };
+		String[] args = { filename };
 		CommandLineParser cmdParser = new CommandLineParser( args, Inspector.class.getClassLoader() );
 		final InputStream sourceIs;
 		if( source.isPresent() ) {
@@ -171,6 +173,7 @@ public class Inspector extends JavaService {
 			cmdParser.getInterpreterParameters().programFilepath().toURI(),
 			cmdParser.getInterpreterParameters().charset(),
 			includePaths,
+			cmdParser.packagePaths(),
 			cmdParser.getInterpreterParameters().jolieClassLoader(),
 			cmdParser.getInterpreterParameters().constants(),
 			configuration,
@@ -190,7 +193,7 @@ public class Inspector extends JavaService {
 		}
 
 		for( OutputPortInfo portInfo : inspector.getOutputPorts() ) {
-			outputPorts.add( buildPortInfo( portInfo, inspector, referredTypes ) );
+			outputPorts.add( buildPortInfo( portInfo, referredTypes ) );
 		}
 
 		Map< String, TypeDefinition > types = new HashMap<>();
@@ -257,18 +260,15 @@ public class Inspector extends JavaService {
 				OutputPortInfo outputPortInfo = Arrays.stream( inspector.getOutputPorts() )
 					.filter( ( outputPort ) -> outputPort.id().equals( outputPortName ) )
 					.findFirst().get();
-				outputPortInfo.getInterfaceList().forEach( ( aggregatedInterfaceInfo ) -> {
-					returnList.add(
-						Interfaces.extend( aggregatedInterfaceInfo, aggregationItemInfo.interfaceExtender(),
-							portInfo.id() ) );
-				} );
+				outputPortInfo.getInterfaceList().forEach( ( aggregatedInterfaceInfo ) -> returnList.add(
+					Interfaces.extend( aggregatedInterfaceInfo, aggregationItemInfo.interfaceExtender(),
+						portInfo.id() ) ) );
 			}
 		}
 		return returnList;
 	}
 
-	private static Value buildPortInfo( OutputPortInfo portInfo, ProgramInspector inspector,
-		Set< String > referredTypesSet ) {
+	private static Value buildPortInfo( OutputPortInfo portInfo, Set< String > referredTypesSet ) {
 		Value result = Value.create();
 		result.setFirstChild( PortInfoType.NAME, portInfo.id() );
 

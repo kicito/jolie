@@ -29,9 +29,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
+
 import jolie.lang.Constants.ExecutionMode;
 import jolie.lang.Constants.OperandType;
 import jolie.lang.Constants.OperationType;
@@ -124,7 +124,6 @@ import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
 import jolie.lang.parse.module.SymbolTable;
 import jolie.util.ArrayListMultiMap;
-import jolie.util.Helpers;
 import jolie.util.MultiMap;
 import jolie.util.Pair;
 
@@ -172,23 +171,23 @@ public class SemanticVerifier implements OLVisitor {
 	private boolean insideInputPort = false;
 	private boolean insideInit = false;
 	private boolean mainDefined = false;
-	private CorrelationFunctionInfo correlationFunctionInfo = new CorrelationFunctionInfo();
+	private final CorrelationFunctionInfo correlationFunctionInfo = new CorrelationFunctionInfo();
 	private final MultiMap< String, String > inputTypeNameMap =
 		new ArrayListMultiMap<>(); // Maps type names to the input operations that use them
 
 	private ExecutionMode executionMode = ExecutionMode.SINGLE;
 
-	private static final Logger logger = Logger.getLogger( "JOLIE" );
+	private static final Logger LOGGER = Logger.getLogger( "JOLIE" );
 
 	private final Map< String, TypeDefinition > definedTypes;
 	// private TypeDefinition rootType; // the type representing the whole session state
-	private final Map< String, Boolean > isConstantMap = new HashMap<>();
+	private final Map< String, Boolean > constantFlags = new HashMap<>();
 
 	private OperationType insideCourierOperationType = null;
 	private InputPortInfo courierInputPort = null;
 	private final Map< URI, SymbolTable > symbolTables;
 
-	private Deque< String > inScopes = new ArrayDeque<>();
+	private final Deque< String > inScopes = new ArrayDeque<>();
 
 	public SemanticVerifier( Program program, Map< URI, SymbolTable > symbolTables,
 		Configuration configuration ) {
@@ -211,38 +210,27 @@ public class SemanticVerifier implements OLVisitor {
 	}
 
 	private void encounteredAssignment( String varName ) {
-		if( isConstantMap.containsKey( varName ) ) {
-			isConstantMap.put( varName, false );
+		if( constantFlags.containsKey( varName ) ) {
+			constantFlags.put( varName, false );
 		} else {
-			isConstantMap.put( varName, true );
+			constantFlags.put( varName, true );
 		}
 	}
 
 	private void addTypeEqualnessCheck( TypeDefinition key, TypeDefinition type ) {
-		List< TypeDefinition > toBeEqualList = typesToBeEqual.get( key );
-		if( toBeEqualList == null ) {
-			toBeEqualList = new LinkedList<>();
-			typesToBeEqual.put( key, toBeEqualList );
-		}
+		List< TypeDefinition > toBeEqualList = typesToBeEqual.computeIfAbsent( key, k -> new LinkedList<>() );
 		toBeEqualList.add( type );
 	}
 
 	private void addOneWayEqualnessCheck( OneWayOperationDeclaration key, OneWayOperationDeclaration oneWay ) {
-		List< OneWayOperationDeclaration > toBeEqualList = owToBeEqual.get( key );
-		if( toBeEqualList == null ) {
-			toBeEqualList = new LinkedList<>();
-			owToBeEqual.put( key, toBeEqualList );
-		}
+		List< OneWayOperationDeclaration > toBeEqualList = owToBeEqual.computeIfAbsent( key, k -> new LinkedList<>() );
 		toBeEqualList.add( oneWay );
 	}
 
 	private void addRequestResponseEqualnessCheck( RequestResponseOperationDeclaration key,
 		RequestResponseOperationDeclaration requestResponse ) {
-		List< RequestResponseOperationDeclaration > toBeEqualList = rrToBeEqual.get( key );
-		if( toBeEqualList == null ) {
-			toBeEqualList = new LinkedList<>();
-			rrToBeEqual.put( key, toBeEqualList );
-		}
+		List< RequestResponseOperationDeclaration > toBeEqualList =
+			rrToBeEqual.computeIfAbsent( key, k -> new LinkedList<>() );
 		toBeEqualList.add( requestResponse );
 	}
 
@@ -259,15 +247,15 @@ public class SemanticVerifier implements OLVisitor {
 		}
 	}
 
-	public Map< String, Boolean > isConstantMap() {
-		return isConstantMap;
+	public Map< String, Boolean > constantFlags() {
+		return constantFlags;
 	}
 
 	private void warning( OLSyntaxNode node, String message ) {
 		if( node == null ) {
-			logger.warning( message );
+			LOGGER.warning( message );
 		} else {
-			logger.warning( node.context().sourceName() + ":" + node.context().line() + ": " + message );
+			LOGGER.warning( node.context().sourceName() + ":" + node.context().line() + ": " + message );
 		}
 	}
 
@@ -363,24 +351,10 @@ public class SemanticVerifier implements OLVisitor {
 	 * @return
 	 */
 	private boolean hasSymbolDefined( String name, ParsingContext context ) {
-		Optional< Boolean > hasSymbol = Helpers.firstNonNull( () -> {
-			if( symbolTables.get( program.context().source() ) == null ) {
-				return null;
-			}
-			if( !symbolTables.get( program.context().source() ).symbol( name ).isPresent() ) {
-				return null;
-			}
-			return Boolean.TRUE;
-		}, () -> {
-			if( symbolTables.get( context.source() ) == null ) {
-				return null;
-			}
-			if( !symbolTables.get( context.source() ).symbol( name ).isPresent() ) {
-				return null;
-			}
-			return Boolean.TRUE;
-		} );
-		return hasSymbol.isPresent();
+		return (symbolTables.get( program.context().source() ) != null
+			&& symbolTables.get( program.context().source() ).getSymbol( name ).isPresent())
+			|| (symbolTables.get( context.source() ) != null
+				&& symbolTables.get( context.source() ).getSymbol( name ).isPresent());
 	}
 
 	public void validate()
@@ -394,7 +368,7 @@ public class SemanticVerifier implements OLVisitor {
 		}
 
 		if( !valid ) {
-			logger.severe( "Aborting: input file semantically invalid." );
+			LOGGER.severe( "Aborting: input file semantically invalid." );
 			/*
 			 * for( SemanticException.SemanticError e : semanticException.getErrorList() ){ logger.severe(
 			 * e.getMessage() ); }

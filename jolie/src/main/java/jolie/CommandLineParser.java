@@ -51,7 +51,6 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
-
 import jolie.jap.JapURLConnection;
 import jolie.lang.Constants;
 import jolie.lang.parse.Scanner;
@@ -67,10 +66,9 @@ public class CommandLineParser implements Closeable {
 	private final static String OPTION_SEPARATOR = " ";
 
 	private final int connectionsLimit;
-	private final int connectionsCache;
 	private final CorrelationEngine.Type correlationAlgorithmType;
 	private final String[] includePaths;
-	private final String[] packagesPaths;
+	private final String[] packagePaths;
 	private final String[] optionArgs;
 	private final URL[] libURLs;
 	private final InputStream programStream;
@@ -89,13 +87,14 @@ public class CommandLineParser implements Closeable {
 	private final boolean printStackTraces;
 	private final Level logLevel;
 	private File programDirectory = null;
+	private int cellId = 0;
 
 	/**
 	 * Returns the arguments passed to the JOLIE program.
 	 * 
 	 * @return the arguments passed to the JOLIE program.
 	 */
-	private final String[] arguments() {
+	private String[] arguments() {
 		return arguments;
 	}
 
@@ -210,10 +209,10 @@ public class CommandLineParser implements Closeable {
 	/**
 	 * Returns the paths passed by command line with the -p option.
 	 * 
-	 * @return the packagesPaths
+	 * @return the packagePaths
 	 */
-	public String[] packagesPaths() {
-		return packagesPaths;
+	public String[] packagePaths() {
+		return packagePaths;
 	}
 
 	/**
@@ -234,15 +233,6 @@ public class CommandLineParser implements Closeable {
 		return responseTimeout;
 	}
 
-	/**
-	 * Returns the connection cache parameter passed by command line with the --conncache option.
-	 * 
-	 * @return the connection cache parameter passed by command line
-	 */
-	private int connectionsCache() {
-		return connectionsCache;
-	}
-
 	private static String getOptionString( String option, String description ) {
 		return ('\t' + option + "\t\t" + description + '\n');
 	}
@@ -260,55 +250,63 @@ public class CommandLineParser implements Closeable {
 		return constants;
 	}
 
+	public int cellId() {
+		return cellId;
+	}
+
 	/**
 	 * Returns the usage help message of Jolie.
 	 * 
 	 * @return the usage help message of Jolie.
 	 */
 	protected String getHelpString() {
-		StringBuilder helpBuilder = new StringBuilder();
-		helpBuilder.append( getVersionString() );
-		helpBuilder.append( "\n\nUsage: jolie [options] program_file [program arguments]\n\n" );
-		helpBuilder.append( "Available options:\n" );
-		helpBuilder.append(
-			getOptionString( "-h, --help", "Display this help information" ) );
-		// TODO include doc for -l and -i
-		helpBuilder.append( getOptionString( "-C ConstantIdentifier=ConstantValue",
-			"Sets constant ConstantIdentifier to ConstantValue before starting execution \n"
-				+ "-C ConstantIdentifier=ConstantValue".replaceAll( "(.)", " " ) + "\t\t\t"
-				+ "(under Windows use quotes or double-quotes, e.g., -C \"ConstantIdentifier=ConstantValue\" )" ) );
-		helpBuilder.append(
-			getOptionString( "--connlimit [number]", "Set the maximum number of active connection threads" ) );
-		helpBuilder.append(
-			getOptionString( "--conncache [number]",
-				"Set the maximum number of cached persistent output connections" ) );
-		helpBuilder.append(
-			getOptionString( "--responseTimeout [number]",
-				"Set the timeout for request-response invocations (in milliseconds)" ) );
-		helpBuilder.append(
-			getOptionString( "--correlationAlgorithm [simple|hash]",
-				"Set the algorithm to use for message correlation" ) );
-		helpBuilder.append(
-			getOptionString( "--log [severe|warning|info|fine]", "Set the logging level (default: info)" ) );
-		helpBuilder.append(
-			getOptionString( "--stackTraces", "Activate the printing of Java stack traces (default: false)" ) );
-		helpBuilder.append(
-			getOptionString( "--typecheck [true|false]",
-				"Check for correlation and other data related typing errors (default: false)" ) );
-		helpBuilder.append(
-			getOptionString( "--check", "Check for syntactic and semantic errors." ) );
-		helpBuilder.append(
-			getOptionString( "--trace [console|file]",
-				"Activate tracer. console prints out in the console, file creates a json file" ) );
-		helpBuilder.append(
-			getOptionString( "--traceLevel [all|comm|comp]",
-				"Defines tracer level: all - all the traces; comm - only communication traces; comp - only computation traces. Default is all. " ) );
-		helpBuilder.append(
-			getOptionString( "--charset [character encoding, e.g., UTF-8]",
-				"Character encoding of the source *.ol/*.iol (default: system-dependent, on GNU/Linux UTF-8)" ) );
-		helpBuilder.append(
-			getOptionString( "--version", "Display this program version information" ) );
-		return helpBuilder.toString();
+		return new StringBuilder()
+			.append( getVersionString() )
+			.append( "\n\nUsage: jolie [options] program_file [program arguments]\n\n" )
+			.append( "Available options:\n" )
+			.append(
+				getOptionString( "-h, --help", "Display this help information" ) )
+			// TODO include doc for -l and -i
+			.append( getOptionString( "-C ConstantIdentifier=ConstantValue",
+				"Sets constant ConstantIdentifier to ConstantValue before starting execution \n"
+					+ "-C ConstantIdentifier=ConstantValue".replaceAll( "(.)", " " ) + "\t\t\t"
+					+ "(under Windows use quotes or double-quotes, e.g., -C \"ConstantIdentifier=ConstantValue\" )" ) )
+			.append(
+				getOptionString( "--connlimit [number]", "Set the maximum number of active connection threads" ) )
+			.append(
+				getOptionString( "--conncache [number]",
+					"Set the maximum number of cached persistent output connections" ) )
+			.append(
+				getOptionString( "--responseTimeout [number]",
+					"Set the timeout for request-response invocations (in milliseconds)" ) )
+			.append(
+				getOptionString( "--correlationAlgorithm [simple|hash]",
+					"Set the algorithm to use for message correlation" ) )
+			.append(
+				getOptionString( "--log [severe|warning|info|fine]", "Set the logging level (default: info)" ) )
+			.append(
+				getOptionString( "--stackTraces", "Activate the printing of Java stack traces (default: false)" ) )
+			.append(
+				getOptionString( "--typecheck [true|false]",
+					"Check for correlation and other data related typing errors (default: false)" ) )
+			.append(
+				getOptionString( "--check", "Check for syntactic and semantic errors." ) )
+			.append(
+				getOptionString( "--trace [console|file]",
+					"Activate tracer. console prints out in the console, file creates a json file" ) )
+			.append(
+				getOptionString( "--traceLevel [all|comm|comp]",
+					"Defines tracer level: all - all the traces; comm - only communication traces; comp - only computation traces. Default is all. " ) )
+			.append(
+				getOptionString( "--charset [character encoding, e.g., UTF-8]",
+					"Character encoding of the source *.ol/*.iol (default: system-dependent, on GNU/Linux UTF-8)" ) )
+			.append(
+				getOptionString( "--version", "Display this program version information" ) )
+			.append(
+				getOptionString( "--cellId",
+					"set an integer as cell identifier, used for creating message ids. (max: "
+						+ Integer.MAX_VALUE + ")" ) )
+			.toString();
 	}
 
 	private void parseCommandLineConstant( String input )
@@ -429,7 +427,6 @@ public class CommandLineParser implements Closeable {
 		List< String > libList = new ArrayList<>();
 		List< String > packagesList = new ArrayList<>();
 		int cLimit = -1;
-		int cCache = 100;
 		long rTimeout = 36000 * 1000; // 10 minutes
 		String pwd = UriUtils.normalizeWindowsPath( new File( "" ).getCanonicalPath() );
 		includeList.add( pwd );
@@ -459,7 +456,7 @@ public class CommandLineParser implements Closeable {
 				if( japUrl != null ) {
 					argsList.set( i, argsList.get( i ).replace( "$JAP$", japUrl ) );
 				}
-				Collections.addAll( includeList, argsList.get( i ).split( jolie.lang.Constants.pathSeparator ) );
+				Collections.addAll( includeList, argsList.get( i ).split( jolie.lang.Constants.PATH_SEPARATOR ) );
 				optionsList.add( argsList.get( i ) );
 			} else if( "-l".equals( argsList.get( i ) ) ) {
 				optionsList.add( argsList.get( i ) );
@@ -467,7 +464,7 @@ public class CommandLineParser implements Closeable {
 				if( japUrl != null ) {
 					argsList.set( i, argsList.get( i ).replace( "$JAP$", japUrl ) );
 				}
-				String[] tmp = argsList.get( i ).split( jolie.lang.Constants.pathSeparator );
+				String[] tmp = argsList.get( i ).split( jolie.lang.Constants.PATH_SEPARATOR );
 				for( String libPath : tmp ) {
 					Optional< String > path = findLibPath( libPath, includeList, parentClassLoader );
 					path.ifPresent( libList::add );
@@ -479,17 +476,12 @@ public class CommandLineParser implements Closeable {
 			} else if( "-p".equals( argsList.get( i ) ) ) {
 				optionsList.add( argsList.get( i ) );
 				i++;
-				Collections.addAll( packagesList, argsList.get( i ).split( jolie.lang.Constants.pathSeparator ) );
+				Collections.addAll( packagesList, argsList.get( i ).split( jolie.lang.Constants.PATH_SEPARATOR ) );
 				optionsList.add( argsList.get( i ) );
 			} else if( "--connlimit".equals( argsList.get( i ) ) ) {
 				optionsList.add( argsList.get( i ) );
 				i++;
 				cLimit = Integer.parseInt( argsList.get( i ) );
-				optionsList.add( argsList.get( i ) );
-			} else if( "--conncache".equals( argsList.get( i ) ) ) {
-				optionsList.add( argsList.get( i ) );
-				i++;
-				cCache = Integer.parseInt( argsList.get( i ) );
 				optionsList.add( argsList.get( i ) );
 			} else if( "--responseTimeout".equals( argsList.get( i ) ) ) {
 				optionsList.add( argsList.get( i ) );
@@ -575,9 +567,21 @@ public class CommandLineParser implements Closeable {
 				i++;
 				charset = argsList.get( i );
 				optionsList.add( argsList.get( i ) );
+			} else if( "--cellId".equals( argsList.get( i ) ) ) {
+				optionsList.add( argsList.get( i ) );
+				i++;
+				try {
+					cellId = Integer.parseInt( argsList.get( i ) );
+				} catch( Exception e ) {
+					System.out
+						.println(
+							"The number specified for cellId (" + argsList.get( i ) + ") is not allowed. Set to 0" );
+				}
+				optionsList.add( argsList.get( i ) );
 			} else if( "--version".equals( argsList.get( i ) ) ) {
 				throw new CommandLineException( getVersionString() );
-			} else if( olFilepath == null ) {
+			} else if( (olFilepath == null) && (argsList.get( i ).endsWith( ".jap" )
+				|| argsList.get( i ).endsWith( ".ol" ) || argsList.get( i ).endsWith( ".olc" )) ) {
 				final String path = argsList.get( i );
 				if( path.endsWith( ".jap" ) ) {
 					for( String includePath : prepend( "", includeList ) ) {
@@ -632,7 +636,7 @@ public class CommandLineParser implements Closeable {
 		if( correlationAlgorithmType == null ) {
 			throw new CommandLineException( "Unrecognized correlation algorithm: " + csetAlgorithmName );
 		}
-		arguments = programArgumentsList.toArray( new String[ programArgumentsList.size() ] );
+		arguments = programArgumentsList.toArray( new String[ 0 ] );
 		// whitepages = whitepageList.toArray( new String[ whitepageList.size() ] );
 
 		if( olFilepath == null ) {
@@ -640,11 +644,11 @@ public class CommandLineParser implements Closeable {
 		}
 
 		connectionsLimit = cLimit;
-		connectionsCache = cCache;
 		responseTimeout = rTimeout;
 
 		List< URL > urls = new ArrayList<>();
-		for( String path : libList ) {
+		for( String pathInList : libList ) {
+			String path = pathInList;
 			if( path.contains( "!/" ) && !path.startsWith( "jap:" ) && !path.startsWith( "jar:" ) ) {
 				path = "jap:file:" + path;
 			}
@@ -663,7 +667,7 @@ public class CommandLineParser implements Closeable {
 					List< String > archives = Files.list( dir ).map( Path::toString )
 						.filter( p -> p.endsWith( ".jar" ) || p.endsWith( ".jap" ) ).collect( Collectors.toList() );
 					for( String archive : archives ) {
-						String scheme = archive.substring( archive.length() - 3, archive.length() ); // "jap" or "jar"
+						String scheme = archive.substring( archive.length() - 3 ); // "jap" or "jar"
 						urls.add( new URL( scheme + ":" + Paths.get( archive ).toUri().toString() + "!/" ) );
 					}
 				}
@@ -676,7 +680,7 @@ public class CommandLineParser implements Closeable {
 			}
 		}
 		urls.add( new URL( "file:/" ) );
-		libURLs = urls.toArray( new URL[ urls.size() ] );
+		libURLs = urls.toArray( new URL[ 0 ] );
 		jolieClassLoader = new JolieClassLoader( libURLs, parentClassLoader );
 
 		for( URL url : libURLs ) {
@@ -709,9 +713,9 @@ public class CommandLineParser implements Closeable {
 		programFilepath = new File( olResult.source );
 		programStream = olResult.stream;
 
-		includePaths = new LinkedHashSet<>( includeList ).toArray( new String[] {} );
-		packagesPaths = new LinkedHashSet<>( packagesList ).toArray( new String[] {} );
-		optionArgs = optionsList.toArray( new String[ optionsList.size() ] );
+		includePaths = new LinkedHashSet<>( includeList ).toArray( new String[ 0 ] );
+		packagePaths = new LinkedHashSet<>( packagesList ).toArray( new String[ 0 ] );
+		optionArgs = optionsList.toArray( new String[ 0 ] );
 	}
 
 	/**
@@ -724,10 +728,6 @@ public class CommandLineParser implements Closeable {
 	 * parent.getAbsolutePath(); includeList.add( parentPath ); includeList.add( parentPath + "/include"
 	 * ); libList.add( parentPath ); libList.add( parentPath + "/lib" ); } } }
 	 */
-
-	private boolean printStackTraces() {
-		return printStackTraces;
-	}
 
 	/**
 	 * Returns the directory in which the main program is located.
@@ -820,7 +820,7 @@ public class CommandLineParser implements Closeable {
 
 	private GetOLStreamResult getOLStream( boolean ignoreFile, String olFilepath, Deque< String > includePaths,
 		Deque< String > optionsList, ClassLoader classLoader )
-		throws FileNotFoundException, IOException {
+		throws IOException {
 		GetOLStreamResult result = new GetOLStreamResult();
 		if( ignoreFile ) {
 			return result;
@@ -846,7 +846,7 @@ public class CommandLineParser implements Closeable {
 				} else {
 					f = new File(
 						includePath +
-							jolie.lang.Constants.fileSeparator +
+							jolie.lang.Constants.FILE_SEPARATOR +
 							olFilepath );
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
@@ -876,7 +876,7 @@ public class CommandLineParser implements Closeable {
 				if( programDirectory == null && olURL != null && olURL.getPath() != null ) {
 					// Try to extract the parent directory of the JAP/JAR library file
 					try {
-						File urlFile = new File( JapURLConnection.nestingSeparatorPattern
+						File urlFile = new File( JapURLConnection.NESTING_SEPARATION_PATTERN
 							.split( new URI( olURL.getPath() ).getSchemeSpecificPart() )[ 0 ] ).getAbsoluteFile();
 						if( urlFile.exists() ) {
 							programDirectory = urlFile.getParentFile();
@@ -944,9 +944,9 @@ public class CommandLineParser implements Closeable {
 	}
 
 	public InterpreterParameters getInterpreterParameters() throws CommandLineException, IOException {
-		InterpreterParameters interpreterParameters = new InterpreterParameters(
+
+		return new InterpreterParameters(
 			connectionsLimit(),
-			connectionsCache(),
 			correlationAlgorithmType(),
 			includePaths(),
 			optionArgs(),
@@ -963,12 +963,11 @@ public class CommandLineParser implements Closeable {
 			tracerLevel(),
 			tracerMode(),
 			check(),
+			printStackTraces,
 			responseTimeout(),
 			logLevel(),
 			programDirectory(),
-			packagesPaths() );
-
-		return interpreterParameters;
+			packagePaths() );
 
 	}
 

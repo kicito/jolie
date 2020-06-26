@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import jolie.lang.NativeType;
 import jolie.lang.parse.OLVisitor;
 import jolie.lang.parse.ast.OLSyntaxNode;
@@ -40,9 +41,14 @@ public class TypeInlineDefinition extends TypeDefinition {
 	private Map< String, TypeDefinition > subTypes = null;
 	private boolean untypedSubTypes = false;
 
-	public TypeInlineDefinition( ParsingContext context, String id, NativeType nativeType, Range cardinality ) {
-		super( context, id, cardinality );
+	public TypeInlineDefinition( ParsingContext context, String id, NativeType nativeType, Range cardinality,
+		AccessModifier accessModifier ) {
+		super( context, id, cardinality, accessModifier );
 		this.nativeType = nativeType;
+	}
+
+	public TypeInlineDefinition( ParsingContext context, String id, NativeType nativeType, Range cardinality ) {
+		this( context, id, nativeType, cardinality, AccessModifier.PUBLIC );
 	}
 
 	public NativeType nativeType() {
@@ -120,33 +126,23 @@ public class TypeInlineDefinition extends TypeDefinition {
 	}
 
 	@Override
-	public int hashCode() {
+	protected int hashCode( Set< String > recursiveTypeHashed ) {
+		if( recursiveTypeHashed.contains( this.id() ) ) {
+			return 0;
+		}
+		recursiveTypeHashed.add( this.id() );
 		final int prime = 31;
-		int result = super.hashCode();
-		result = prime * result + ((nativeType == null) ? 0 : nativeType.hashCode());
-		result = prime * result + ((subTypes == null) ? 0 : subTypes.hashCode());
+		int result = 1;
+		result = prime * result + this.id().hashCode();
+		result = prime * result + this.cardinality().hashCode();
+		result = prime * result + this.nativeType.hashCode();
+		result = prime * result + recursiveTypeHashed.size();
+		if( this.hasSubTypes() ) {
+			for( TypeDefinition typeDef : subTypes.values() ) {
+				result = prime * result + typeDef.hashCode( recursiveTypeHashed );
+			}
+		}
 		result = prime * result + (untypedSubTypes ? 1231 : 1237);
 		return result;
-	}
-
-	@Override
-	public boolean equals( Object obj ) {
-		if( this == obj )
-			return true;
-		if( !super.equals( obj ) )
-			return false;
-		if( getClass() != obj.getClass() )
-			return false;
-		TypeInlineDefinition other = (TypeInlineDefinition) obj;
-		if( nativeType != other.nativeType )
-			return false;
-		if( subTypes == null ) {
-			if( other.subTypes != null )
-				return false;
-		} else if( !subTypes.equals( other.subTypes ) )
-			return false;
-		if( untypedSubTypes != other.untypedSubTypes )
-			return false;
-		return true;
 	}
 }

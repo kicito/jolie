@@ -19,53 +19,6 @@
 
 package jolie;
 
-import jolie.lang.Constants;
-import jolie.lang.parse.OLParseTreeOptimizer;
-import jolie.lang.parse.ParserException;
-import jolie.lang.parse.Scanner;
-import jolie.lang.parse.SemanticException;
-import jolie.lang.parse.SemanticVerifier;
-import jolie.lang.parse.TypeChecker;
-import jolie.lang.parse.ast.Program;
-import jolie.lang.parse.module.ModuleCrawler;
-import jolie.lang.parse.module.ModuleCrawlerComponent;
-import jolie.lang.parse.module.ModuleException;
-import jolie.lang.parse.module.ModuleParser;
-import jolie.lang.parse.module.ModuleRecord;
-import jolie.lang.parse.module.SymbolReferenceResolver;
-import jolie.lang.parse.module.SymbolTable;
-import jolie.monitoring.MonitoringEvent;
-import jolie.monitoring.events.MonitorAttachedEvent;
-import jolie.monitoring.events.OperationStartedEvent;
-import jolie.monitoring.events.SessionEndedEvent;
-import jolie.monitoring.events.SessionStartedEvent;
-import jolie.net.CommChannel;
-import jolie.net.CommCore;
-import jolie.net.CommMessage;
-import jolie.net.SessionMessage;
-import jolie.net.ports.OutputPort;
-import jolie.process.DefinitionProcess;
-import jolie.process.InputOperationProcess;
-import jolie.process.SequentialProcess;
-import jolie.runtime.FaultException;
-import jolie.runtime.InputOperation;
-import jolie.runtime.InvalidIdException;
-import jolie.runtime.OneWayOperation;
-import jolie.runtime.RequestResponseOperation;
-import jolie.runtime.TimeoutHandler;
-import jolie.runtime.Value;
-import jolie.runtime.ValuePrettyPrinter;
-import jolie.runtime.ValueVector;
-import jolie.runtime.correlation.CorrelationEngine;
-import jolie.runtime.correlation.CorrelationError;
-import jolie.runtime.correlation.CorrelationSet;
-import jolie.runtime.embedding.EmbeddedServiceLoader;
-import jolie.runtime.embedding.EmbeddedServiceLoaderFactory;
-import jolie.tracer.DummyTracer;
-import jolie.tracer.FileTracer;
-import jolie.tracer.PrintingTracer;
-import jolie.tracer.Tracer;
-import jolie.tracer.TracerUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -104,6 +57,49 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import jolie.lang.Constants;
+import jolie.lang.parse.OLParseTreeOptimizer;
+import jolie.lang.parse.ParserException;
+import jolie.lang.parse.SemanticException;
+import jolie.lang.parse.SemanticVerifier;
+import jolie.lang.parse.TypeChecker;
+import jolie.lang.parse.ast.Program;
+import jolie.lang.parse.module.ModuleException;
+import jolie.lang.parse.module.Modules;
+import jolie.lang.parse.module.ModuleParsingConfiguration;
+import jolie.lang.parse.module.SymbolTable;
+import jolie.monitoring.MonitoringEvent;
+import jolie.monitoring.events.MonitorAttachedEvent;
+import jolie.monitoring.events.OperationStartedEvent;
+import jolie.monitoring.events.SessionEndedEvent;
+import jolie.monitoring.events.SessionStartedEvent;
+import jolie.net.CommChannel;
+import jolie.net.CommCore;
+import jolie.net.CommMessage;
+import jolie.net.SessionMessage;
+import jolie.net.ports.OutputPort;
+import jolie.process.DefinitionProcess;
+import jolie.process.InputOperationProcess;
+import jolie.process.SequentialProcess;
+import jolie.runtime.FaultException;
+import jolie.runtime.InputOperation;
+import jolie.runtime.InvalidIdException;
+import jolie.runtime.OneWayOperation;
+import jolie.runtime.RequestResponseOperation;
+import jolie.runtime.TimeoutHandler;
+import jolie.runtime.Value;
+import jolie.runtime.ValuePrettyPrinter;
+import jolie.runtime.ValueVector;
+import jolie.runtime.correlation.CorrelationEngine;
+import jolie.runtime.correlation.CorrelationError;
+import jolie.runtime.correlation.CorrelationSet;
+import jolie.runtime.embedding.EmbeddedServiceLoader;
+import jolie.runtime.embedding.EmbeddedServiceLoaderFactory;
+import jolie.tracer.DummyTracer;
+import jolie.tracer.FileTracer;
+import jolie.tracer.PrintingTracer;
+import jolie.tracer.Tracer;
+import jolie.tracer.TracerUtils;
 
 /**
  * The Jolie interpreter engine. Multiple Interpreter instances can be run in the same JavaVM; this
@@ -243,7 +239,7 @@ public class Interpreter {
 		}
 	}
 
-	private static final Logger logger = Logger.getLogger( Constants.JOLIE_LOGGER_NAME );
+	private static final Logger LOGGER = Logger.getLogger( Constants.JOLIE_LOGGER_NAME );
 
 	private CommCore commCore;
 	private Program internalServiceProgram = null;
@@ -271,6 +267,7 @@ public class Interpreter {
 
 	private final String logPrefix;
 	private final Tracer tracer;
+
 	private boolean check = false;
 	private Timer timer;
 	// private long inputMessageTimeout = 24 * 60 * 60 * 1000; // 1 day
@@ -279,7 +276,8 @@ public class Interpreter {
 
 	private Map< URI, SymbolTable > symbolTables;
 
-	private InterpreterParameters interpreterParameters;
+	private final InterpreterParameters interpreterParameters;
+
 	// private long persistentConnectionTimeout = 2 * 60 * 1000; // 4 minutes
 	// private long persistentConnectionTimeout = 1;
 
@@ -691,7 +689,7 @@ public class Interpreter {
 	 * @param message the message to logLevel
 	 */
 	public void logInfo( String message ) {
-		logger.log( buildLogRecord( Level.INFO, buildLogMessage( message ) ) );
+		LOGGER.log( buildLogRecord( Level.INFO, buildLogMessage( message ) ) );
 	}
 
 	/**
@@ -700,7 +698,7 @@ public class Interpreter {
 	 * @param message the message to logLevel
 	 */
 	public void logFine( String message ) {
-		logger.log( buildLogRecord( Level.FINE, buildLogMessage( message ) ) );
+		LOGGER.log( buildLogRecord( Level.FINE, buildLogMessage( message ) ) );
 	}
 
 	private String buildLogMessage( Throwable t ) {
@@ -727,7 +725,7 @@ public class Interpreter {
 	 * @param t the <code>Throwable</code> object whose stack trace has to be logged
 	 */
 	public void logFine( Throwable t ) {
-		logger.log( buildLogRecord( Level.FINE, buildLogMessage( t ) ) );
+		LOGGER.log( buildLogRecord( Level.FINE, buildLogMessage( t ) ) );
 	}
 
 	/**
@@ -736,7 +734,7 @@ public class Interpreter {
 	 * @param message the message to logLevel
 	 */
 	public void logSevere( String message ) {
-		logger.log( buildLogRecord( Level.SEVERE, buildLogMessage( message ) ) );
+		LOGGER.log( buildLogRecord( Level.SEVERE, buildLogMessage( message ) ) );
 	}
 
 	/**
@@ -745,7 +743,7 @@ public class Interpreter {
 	 * @param message the message to logLevel
 	 */
 	public void logWarning( String message ) {
-		logger.log( buildLogRecord( Level.WARNING, buildLogMessage( message ) ) );
+		LOGGER.log( buildLogRecord( Level.WARNING, buildLogMessage( message ) ) );
 	}
 
 	/**
@@ -755,7 +753,7 @@ public class Interpreter {
 	 * @param t the <code>Throwable</code> object whose stack trace has to be logged
 	 */
 	public void logSevere( Throwable t ) {
-		logger.log( buildLogRecord( Level.SEVERE, buildLogMessage( t ) ) );
+		LOGGER.log( buildLogRecord( Level.SEVERE, buildLogMessage( t ) ) );
 	}
 
 	/**
@@ -765,7 +763,7 @@ public class Interpreter {
 	 * @param t the <code>Throwable</code> object whose stack trace has to be logged
 	 */
 	public void logWarning( Throwable t ) {
-		logger.log( buildLogRecord( Level.WARNING, buildLogMessage( t ) ) );
+		LOGGER.log( buildLogRecord( Level.WARNING, buildLogMessage( t ) ) );
 	}
 
 	/**
@@ -855,18 +853,11 @@ public class Interpreter {
 	public Interpreter( ClassLoader parentClassLoader, InterpreterParameters interpreterParameters,
 		File programDirectory )
 		throws IOException {
-		this( parentClassLoader, interpreterParameters, programDirectory, false );
-	}
-
-	public Interpreter( ClassLoader parentClassLoader, InterpreterParameters interpreterParameters,
-		File programDirectory, boolean ignoreFile )
-		throws IOException {
 		TracerUtils.TracerLevels tracerLevel = TracerUtils.TracerLevels.ALL;
 		this.parentClassLoader = parentClassLoader;
 		this.interpreterParameters = interpreterParameters;
 
 		this.symbolTables = new HashMap<>();
-
 
 		switch( interpreterParameters.tracerLevel() ) {
 		case "comm":
@@ -882,11 +873,11 @@ public class Interpreter {
 		commCore = new CommCore( this, interpreterParameters.connectionsLimit() /* , cmdParser.connectionsCache() */ );
 		includePaths = interpreterParameters.includePaths();
 
-		StringBuilder builder = new StringBuilder();
-		builder.append( '[' );
-		builder.append( interpreterParameters.programFilepath().getName() );
-		builder.append( "] " );
-		logPrefix = builder.toString();
+		logPrefix = new StringBuilder()
+			.append( '[' )
+			.append( interpreterParameters.programFilepath().getName() )
+			.append( "] " )
+			.toString();
 
 		if( interpreterParameters.tracer() ) {
 			if( interpreterParameters.tracerMode().equals( "file" ) ) {
@@ -898,7 +889,7 @@ public class Interpreter {
 			tracer = new DummyTracer();
 		}
 
-		logger.setLevel( interpreterParameters.logLevel() );
+		LOGGER.setLevel( interpreterParameters.logLevel() );
 
 		exitingLock = new ReentrantLock();
 		exitingCondition = exitingLock.newCondition();
@@ -930,7 +921,7 @@ public class Interpreter {
 	public Interpreter( InterpreterParameters interpreterParameters, ClassLoader parentClassLoader,
 		File programDirectory, Interpreter parentInterpreter, Program internalServiceProgram )
 		throws FileNotFoundException, IOException {
-		this( parentClassLoader, interpreterParameters, programDirectory, true );
+		this( parentClassLoader, interpreterParameters, programDirectory );
 
 		this.parentInterpreter = parentInterpreter;
 		this.internalServiceProgram = internalServiceProgram;
@@ -985,12 +976,7 @@ public class Interpreter {
 	 * @return the global lock registered on this interpreter with the specified identifier
 	 */
 	public synchronized Object getLock( String id ) {
-		Object l = locksMap.get( id );
-		if( l == null ) {
-			l = new Object();
-			locksMap.put( id, l );
-		}
-		return l;
+		return locksMap.computeIfAbsent( id, k -> new Object() );
 	}
 
 	public SessionStarter getSessionStarter( String operationName ) {
@@ -1150,10 +1136,10 @@ public class Interpreter {
 		return processExecutorService.submit( task );
 	}
 
-	private static final AtomicInteger starterThreadCounter = new AtomicInteger();
+	private static final AtomicInteger STARTER_THREAD_COUNTER = new AtomicInteger();
 
 	private static String createStarterThreadName( String programFilename ) {
-		return programFilename + "-StarterThread-" + starterThreadCounter.incrementAndGet();
+		return programFilename + "-StarterThread-" + STARTER_THREAD_COUNTER.incrementAndGet();
 	}
 
 	private class StarterThread extends Thread {
@@ -1226,22 +1212,18 @@ public class Interpreter {
 					program = this.internalServiceProgram;
 					program = OLParseTreeOptimizer.optimize( program );
 				} else {
-					ModuleParser parser =
-						new ModuleParser( interpreterParameters.charset(), includePaths,
-							interpreterParameters.jolieClassLoader() );
-
-					parser.putConstants( getInterpreterParameters().constants() );
-					ModuleRecord mainRecord = parser.parse( new Scanner( getInterpreterParameters().inputStream(),
-						getInterpreterParameters().programFilepath().toURI(), getInterpreterParameters().charset() ) );
-
-
-					ModuleCrawlerComponent crawlerComponent =
-						new ModuleCrawlerComponent( getInterpreterParameters().packagePaths(), parser );
-					ModuleCrawler.CrawlerResult crawlResult = ModuleCrawler.crawl( mainRecord, crawlerComponent );
-
-					SymbolReferenceResolver.resolve( crawlResult );
-					symbolTables.putAll( crawlResult.symbolTables() );
-					program = mainRecord.program();
+					ModuleParsingConfiguration configuration = new ModuleParsingConfiguration(
+						getInterpreterParameters().charset(),
+						getInterpreterParameters().includePaths(),
+						getInterpreterParameters().packagePaths(),
+						getInterpreterParameters().jolieClassLoader(),
+						getInterpreterParameters().constants(),
+						false );
+					Modules.ModuleParsedResult parsesResult =
+						Modules.parseModule( configuration, getInterpreterParameters().inputStream(),
+							getInterpreterParameters().programFilepath().toURI() );
+					symbolTables.putAll( parsesResult.symbolTables() );
+					program = parsesResult.mainProgram();
 				}
 			}
 
@@ -1262,7 +1244,7 @@ public class Interpreter {
 			try {
 				semanticVerifier.validate();
 			} catch( SemanticException e ) {
-				logger.severe( e.getErrorMessages() );
+				LOGGER.severe( e.getErrorMessages() );
 				throw new InterpreterException( "Exiting" );
 			}
 
@@ -1282,7 +1264,7 @@ public class Interpreter {
 				return (new OOITBuilder(
 					this,
 					program,
-					semanticVerifier.isConstantMap(),
+					semanticVerifier.constantFlags(),
 					semanticVerifier.correlationFunctionInfo() ))
 						.build();
 			}
