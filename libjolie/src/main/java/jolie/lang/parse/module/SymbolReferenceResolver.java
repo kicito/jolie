@@ -575,7 +575,7 @@ public class SymbolReferenceResolver {
 				if( linkedType == null ) {
 					error( buildSymbolNotFoundError( n, n.linkedTypeName() ) );
 					return;
-				} else if( linkedType.equals( n ) ) {
+				} else if( linkedType.equals( n ) && linkedType.context().equals( n.context() ) ) {
 					error( buildInfiniteTypeDefinitionLinkLoop( n, n.linkedTypeName() ) );
 					return;
 				}

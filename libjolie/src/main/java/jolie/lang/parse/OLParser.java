@@ -65,7 +65,6 @@ public class OLParser extends AbstractParser {
 		void parse() throws IOException, ParserException;
 	}
 
-	private long faultIdCounter = 0;
 	private final ProgramBuilder programBuilder;
 	private final Map< String, Scanner.Token > constantsMap =
 		new HashMap<>();
@@ -1985,14 +1984,11 @@ public class OLParser extends AbstractParser {
 							nextToken();
 							eat( Scanner.TokenType.RPAREN, "expected )" );
 						}
-						TypeDefinition faultType =
-							new TypeDefinitionLink( getContext(), faultIdCounter++ + "#" + faultTypeName,
-								Constants.RANGE_ONE_TO_ONE, faultTypeName );
-						if( definedTypes.containsKey( faultTypeName ) ) {
-							faultType = definedTypes.get( faultTypeName );
-						} else {
-							definedTypes.put( faultTypeName, faultType );
-						}
+
+						TypeDefinition faultType = definedTypes.getOrDefault( faultTypeName,
+							new TypeDefinitionLink( getContext(), faultTypeName,
+								Constants.RANGE_ONE_TO_ONE, faultTypeName ) );
+
 						faultTypesMap.put( faultName, faultType );
 					}
 				}
