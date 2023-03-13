@@ -23,7 +23,7 @@ define doTest {
 	exec@Exec(req)(res)
 	;
 	valueToPrettyString@StringUtils(res)(s);
-
+	println@Console("triple_scope_myfault target prints -> " + s)()
 	undef(req);
 	req = s;
 	req.substring="Thrown unhandled fault: MyErr";

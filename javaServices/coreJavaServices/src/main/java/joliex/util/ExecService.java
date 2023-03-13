@@ -74,7 +74,10 @@ public class ExecService extends JavaService {
 							new BufferedReader( new InputStreamReader( p.getInputStream() ) ) ) {
 							reader.read( buffer, 0, len );
 						}
-						response.setValue( new String( buffer ) );
+						String inputStreamString = new String( buffer );
+						System.out.println(Arrays.toString( command.toArray() ) + "inputStreamString = "
+							+ inputStreamString );
+						response.setValue( inputStreamString );
 					}
 				}
 				if( p.getErrorStream() != null ) {
@@ -85,6 +88,9 @@ public class ExecService extends JavaService {
 							new BufferedReader( new InputStreamReader( p.getErrorStream() ) ) ) {
 							reader.read( buffer, 0, len );
 						}
+						String errorStreamString = new String( buffer );
+						System.out.println( Arrays.toString( command.toArray() ) + " errorStreamString = "
+							+ errorStreamString );
 						response.getFirstChild( "stderr" ).setValue( new String( buffer ) );
 					}
 				}

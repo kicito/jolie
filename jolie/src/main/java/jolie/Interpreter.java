@@ -31,6 +31,7 @@ import java.lang.ref.Cleaner;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -796,7 +797,9 @@ public class Interpreter {
 		throws IOException {
 		TracerUtils.TracerLevels tracerLevel = TracerUtils.TracerLevels.ALL;
 		this.configuration = configuration;
-
+		System.out.println(
+			"[Interpreter] programFilepath: " + configuration.programFilepath().getName() + ", Default charset: "
+				+ Charset.defaultCharset() + ", configuration charset: " + configuration.charset );
 		this.symbolTables = new HashMap<>();
 
 		switch( configuration.tracerLevel() ) {

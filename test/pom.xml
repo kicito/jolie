@@ -79,7 +79,7 @@
 						<argument>${project.build.sourceEncoding}</argument>
 						<argument>test.ol</argument>
 						<!-- Edit the next line with your desired target if you want a specific test -->
-						<!-- <argument>.*values.*</argument> -->
+						<argument>.*triple_scope.*</argument>
 					</arguments>
 				</configuration>
 			</plugin>
