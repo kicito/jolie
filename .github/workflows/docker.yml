@@ -37,7 +37,7 @@ jobs:
         id: meta_rt
         uses: docker/metadata-action@v4
         with:
-          images: jolielang/jolie
+          images: kicito/jolie
           tags: |
             type=edge
             type=semver,pattern={{version}}

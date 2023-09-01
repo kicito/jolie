@@ -37,7 +37,7 @@ jobs:
         id: meta_alpine
         uses: docker/metadata-action@v4
         with:
-          images: jolielang/jolie
+          images: kicito/jolie
           tags: |
             type=edge,suffix=-alpine
             type=semver,pattern={{version}},suffix=-alpine

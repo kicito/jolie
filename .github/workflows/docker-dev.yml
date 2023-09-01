@@ -37,7 +37,7 @@ jobs:
         id: meta_dev
         uses: docker/metadata-action@v4
         with:
-          images: jolielang/jolie
+          images: kicito/jolie
           tags: |
             type=edge,suffix=-dev
             type=semver,pattern={{version}},suffix=-dev
