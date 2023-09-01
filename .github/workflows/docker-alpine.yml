@@ -38,6 +38,8 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: kicito/jolie
+          flavor: |
+            latest=false
           tags: |
             type=edge,suffix=-alpine
             type=semver,pattern={{version}},suffix=-alpine
