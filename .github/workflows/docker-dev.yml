@@ -26,21 +26,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  dockerhub-runtime:
+  dockerhub-dev:
     if: github.repository == 'kicito/jolie'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Docker meta (runtime images)
-        id: meta_rt
+      - name: Docker meta (development images)
+        id: meta_dev
         uses: docker/metadata-action@v4
         with:
           images: jolielang/jolie
           tags: |
-            type=edge
-            type=semver,pattern={{version}}
+            type=edge,suffix=-dev
+            type=semver,pattern={{version}},suffix=-dev
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -54,13 +54,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push (runtime images)
+      - name: Build and push (dev images)
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: docker/Dockerfile
+          file: docker/Dockerfile.dev
           #platforms: linux/amd64,linux/arm64
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta_rt.outputs.tags }}
-          labels: ${{ steps.meta_rt.outputs.labels }}
+          tags: ${{ steps.meta_dev.outputs.tags }}
+          labels: ${{ steps.meta_dev.outputs.labels }}
