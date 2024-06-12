@@ -1,0 +1,82 @@
+# Copyright (C) 2019-2022 Fabrizio Montesi <famontesi@gmail.com>
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301 USA
+
+name: Build documentation
+
+on:
+  push:
+    branches: [master]
+    tags:
+      - "v*"
+
+env:
+  JOLIE_HOME: dist/jolie
+
+jobs:
+  check-current-branch-and-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      SOURCE_NAME: ${{ steps.branch_name.outputs.SOURCE_NAME }}
+      SOURCE_BRANCH: ${{ steps.branch_name.outputs.SOURCE_BRANCH }}
+      SOURCE_TAG: ${{ steps.branch_name.outputs.SOURCE_TAG }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Get current branch
+        id: branch_name
+        run: |
+          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
+          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
+          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+
+  standard-lib:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+        # os: [ubuntu-latest, windows-latest, macos-latest]
+    needs: [check-current-branch-and-tag]
+    # if: contains(${{ needs.check.outputs.branch }}, 'main')
+    steps:
+      - name: Build base image
+        run: |
+          echo $SOURCE_NAME
+          echo $SOURCE_BRANCH
+          echo $SOURCE_TAG
+        env:
+          SOURCE_NAME: ${{ needs.check-current-branch-and-tag.outputs.SOURCE_NAME }}
+          SOURCE_BRANCH: ${{ needs.check-current-branch-and-tag.outputs.SOURCE_BRANCH }}
+          SOURCE_TAG: ${{ needs.check-current-branch-and-tag.outputs.SOURCE_TAG }}
+      # - name: Checkout Jolie
+      #   uses: actions/checkout@v4
+      # - run: echo ${{ outputs.branch }}
+      # - name: Set up JDK
+      #   uses: actions/setup-java@v3
+      #   with:
+      #     distribution: "temurin" # See 'Supported distributions' for available options
+      #     java-version: "11"
+      #     # cache: "maven"
+      # - name: Build with Maven
+      #   run: mvn install --file pom.xml
+      # - name: Run joliedoc
+      #   run: find ${JOLIE_HOME}/packages -maxdepth 1 -type f -exec bash -c \
+      #     'dest=standard-lib/$(basename "$1" .ol); java -ea:jolie... -ea:joliex... -Djava.rmi.server.codebase=file:/${JOLIE_HOME}/extensions/rmi.jar -cp ${JOLIE_HOME}/lib/libjolie.jar:${JOLIE_HOME}/lib/automaton.jar:${JOLIE_HOME}/lib/commons-text.jar:${JOLIE_HOME}/lib/jolie-js.jar:${JOLIE_HOME}/lib/json-simple.jar:${JOLIE_HOME}/jolie.jar:${JOLIE_HOME}/jolie-cli.jar jolie.Jolie -l ./lib/*:${JOLIE_HOME}/lib:${JOLIE_HOME}/javaServices/*:${JOLIE_HOME}/extensions/* -i ${JOLIE_HOME}/include -p ${JOLIE_HOME}/packages -C JOLIEDOC_FOLDER=\"${dest}\" ${JOLIE_HOME}/tools/joliedoc.ol "$1" --internals'\; _ {} \;
+      # - name: ls doc dir
+      #   run: ls -al standard-lib
+ 
