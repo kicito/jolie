@@ -48,9 +48,24 @@ jobs:
   standard-lib:
     runs-on: ubuntu-latest
     needs: [check-current-branch-and-tag]
-    # if: contains(${{ needs.check.outputs.branch }}, 'main')
     steps:
-      - name: Build base image
+      - name: Checkout Jolie
+        uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin" # See 'Supported distributions' for available options
+          java-version: "11"
+          # cache: "maven"
+      - name: Build with Maven
+        run: mvn install --file pom.xml
+      - name: Run joliedoc
+        run: find ${JOLIE_HOME}/packages -maxdepth 1 -type f -exec bash -c \
+          'dest=standard-lib/$(basename "$1" .ol); java -ea:jolie... -ea:joliex... -Djava.rmi.server.codebase=file:/${JOLIE_HOME}/extensions/rmi.jar -cp ${JOLIE_HOME}/lib/libjolie.jar:${JOLIE_HOME}/lib/automaton.jar:${JOLIE_HOME}/lib/commons-text.jar:${JOLIE_HOME}/lib/jolie-js.jar:${JOLIE_HOME}/lib/json-simple.jar:${JOLIE_HOME}/jolie.jar:${JOLIE_HOME}/jolie-cli.jar jolie.Jolie -l ./lib/*:${JOLIE_HOME}/lib:${JOLIE_HOME}/javaServices/*:${JOLIE_HOME}/extensions/* -i ${JOLIE_HOME}/include -p ${JOLIE_HOME}/packages -C JOLIEDOC_FOLDER=\"${dest}\" ${JOLIE_HOME}/tools/joliedoc.ol "$1" --internals'\; _ {} \;
+      - name: ls doc dir
+        run: ls -al standard-lib
+
+      - name: check version
         run: |
           echo $SOURCE_NAME
           echo $SOURCE_BRANCH
@@ -59,20 +74,3 @@ jobs:
           SOURCE_NAME: ${{ needs.check-current-branch-and-tag.outputs.SOURCE_NAME }}
           SOURCE_BRANCH: ${{ needs.check-current-branch-and-tag.outputs.SOURCE_BRANCH }}
           SOURCE_TAG: ${{ needs.check-current-branch-and-tag.outputs.SOURCE_TAG }}
-      # - name: Checkout Jolie
-      #   uses: actions/checkout@v4
-      # - run: echo ${{ outputs.branch }}
-      # - name: Set up JDK
-      #   uses: actions/setup-java@v3
-      #   with:
-      #     distribution: "temurin" # See 'Supported distributions' for available options
-      #     java-version: "11"
-      #     # cache: "maven"
-      # - name: Build with Maven
-      #   run: mvn install --file pom.xml
-      # - name: Run joliedoc
-      #   run: find ${JOLIE_HOME}/packages -maxdepth 1 -type f -exec bash -c \
-      #     'dest=standard-lib/$(basename "$1" .ol); java -ea:jolie... -ea:joliex... -Djava.rmi.server.codebase=file:/${JOLIE_HOME}/extensions/rmi.jar -cp ${JOLIE_HOME}/lib/libjolie.jar:${JOLIE_HOME}/lib/automaton.jar:${JOLIE_HOME}/lib/commons-text.jar:${JOLIE_HOME}/lib/jolie-js.jar:${JOLIE_HOME}/lib/json-simple.jar:${JOLIE_HOME}/jolie.jar:${JOLIE_HOME}/jolie-cli.jar jolie.Jolie -l ./lib/*:${JOLIE_HOME}/lib:${JOLIE_HOME}/javaServices/*:${JOLIE_HOME}/extensions/* -i ${JOLIE_HOME}/include -p ${JOLIE_HOME}/packages -C JOLIEDOC_FOLDER=\"${dest}\" ${JOLIE_HOME}/tools/joliedoc.ol "$1" --internals'\; _ {} \;
-      # - name: ls doc dir
-      #   run: ls -al standard-lib
- 

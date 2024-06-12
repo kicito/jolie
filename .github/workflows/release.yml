@@ -18,77 +18,76 @@
 name: Publish Release
 
 on:
-  # push:
-  #   tags:
-  #     - 'v*'
+  push:
+    tags:
+      - "v*"
   workflow_dispatch:
 
 jobs:
   release:
-
+    if: ${{github.repository == 'jolie/jolie'}}
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
     steps:
-    - name: Checkout Jolie
-      uses: actions/checkout@v3
-      with:
-        path: jolie-git
+      - name: Checkout Jolie
+        uses: actions/checkout@v3
+        with:
+          path: jolie-git
 
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        java-version: 11
-        distribution: 'temurin'
-        cache: 'maven'
-        server-id: ossrh
-        server-username: MAVEN_USERNAME
-        server-password: MAVEN_PASSWORD
-        gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
-        gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: 11
+          distribution: "temurin"
+          cache: "maven"
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE # env variable for GPG private key passphrase
 
-    - name: Build prerequisites
-      run: mvn -f jolie-git/pom.xml -DskipTests install -pl build-tools
+      - name: Build prerequisites
+        run: mvn -f jolie-git/pom.xml -DskipTests install -pl build-tools
 
-    - name: Compile Jolie
-      run: mvn -f jolie-git/pom.xml -DskipTests install -Dmaven.test.skip
+      - name: Compile Jolie
+        run: mvn -f jolie-git/pom.xml -DskipTests install -Dmaven.test.skip
 
-    - name: Compile Jolie installer
-      run: |
-        mvn -f jolie-git/release-tools/installer/pom.xml install
-    
-#    - name: Install zip (for the installer)
-#      run: sudo apt-get install zip
+      - name: Compile Jolie installer
+        run: |
+          mvn -f jolie-git/release-tools/installer/pom.xml install
 
-    - name: Package the installer
-      run: |
-        mkdir jolie-bin \
-        && export JOLIE_HOME=$(pwd)/jolie-bin/jolie-dist \
-        && cd jolie-git \
-        && sh scripts/dev-setup.sh ../jolie-bin \
-        && cd release-tools \
-        && export JOLIE_VERSION=$(git --git-dir ../.git describe --abbrev=0 --tags) \
-        && ../../jolie-bin/jolie release.ol .. \
-        && mv release/jolie-installer.jar ../../jolie-${JOLIE_VERSION:1}.jar \
-        && cd ../..
-    
-    - name: Release Jolie on GitHub
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-      with:
-        files: jolie-*.jar
+      #    - name: Install zip (for the installer)
+      #      run: sudo apt-get install zip
 
-    - name: Publish on Maven Central
-      env:
-        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
-        MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
-      run: |
-        mvn -f jolie-git/pom.xml \
-        --no-transfer-progress --batch-mode \
-        deploy \
-        -pl libjolie,jolie,lib/jolie-js,jolie-cli \
-        -P ossrh
-   
+      - name: Package the installer
+        run: |
+          mkdir jolie-bin \
+          && export JOLIE_HOME=$(pwd)/jolie-bin/jolie-dist \
+          && cd jolie-git \
+          && sh scripts/dev-setup.sh ../jolie-bin \
+          && cd release-tools \
+          && export JOLIE_VERSION=$(git --git-dir ../.git describe --abbrev=0 --tags) \
+          && ../../jolie-bin/jolie release.ol .. \
+          && mv release/jolie-installer.jar ../../jolie-${JOLIE_VERSION:1}.jar \
+          && cd ../..
+
+      - name: Release Jolie on GitHub
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          files: jolie-*.jar
+
+      - name: Publish on Maven Central
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+        run: |
+          mvn -f jolie-git/pom.xml \
+          --no-transfer-progress --batch-mode \
+          deploy \
+          -pl libjolie,jolie,lib/jolie-js,jolie-cli \
+          -P ossrh
