@@ -37,9 +37,9 @@ import jolie.util.Helpers;
  * @author Fabrizio Montesi
  */
 public abstract class SelectableStreamingCommChannel extends StreamingCommChannel {
-	private static final long LIFETIME = 5000; // 5 secs
+	// private static final long LIFETIME = 5000; // 5 secs
 
-	private final long creationTime = System.currentTimeMillis();
+	// private final long creationTime = System.currentTimeMillis();
 	private int selectorIndex;
 
 	public int selectorIndex() {
@@ -79,9 +79,9 @@ public abstract class SelectableStreamingCommChannel extends StreamingCommChanne
 		final CommCore commCore = Interpreter.getInstance().commCore();
 		if( commCore.isSelecting( this ) ) {
 			commCore.unregisterForSelection( this );
-			if( System.currentTimeMillis() - creationTime > LIFETIME ) {
-				setToBeClosed( true );
-			}
+			// if( System.currentTimeMillis() - creationTime > LIFETIME ) {
+			// setToBeClosed( true );
+			// }
 			sendImpl( message );
 			commCore.registerForSelection( this );
 		} else {
