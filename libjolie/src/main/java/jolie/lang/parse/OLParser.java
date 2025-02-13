@@ -1558,6 +1558,41 @@ public class OLParser extends AbstractParser {
 	}
 
 	/**
+	 * A functional interface for parsing the internals of a Node. Identical to Supplier except with
+	 * some needed exceptions.
+	 *
+	 * @see java.util.function.Supplier
+	 * @param <T> Class containing the results of the parsing
+	 */
+	@FunctionalInterface
+	private interface ParsingLambda< T > {
+		/**
+		 * Performs the parsing
+		 *
+		 * @return The result of the parsing
+		 */
+		T get() throws IOException, ParserException;
+	}
+	private record InternalParseResult< I >(I internals, ParsingContext context) {
+	}
+
+	/**
+	 * Parses the internals for the creation of a Node and creates an appropriate ParsingContext
+	 *
+	 * @param internalsParser A lambda that parses the internals of a Node.
+	 * @param <I> Type for the internals required to create the Node in question.
+	 */
+	private < I > InternalParseResult< I > parseInternals( ParsingLambda< I > internalsParser )
+		throws IOException, ParserException {
+		ParsingContext earlyContext = getContext();
+		I internals = internalsParser.get();
+		ParsingContext finalContext = new URIParsingContext( scanner().source(), earlyContext.startLine(), line(),
+			earlyContext.startColumn(), errorColumn(),
+			earlyContext.enclosingCode() );
+		return new InternalParseResult<>( internals, finalContext );
+	}
+
+	/**
 	 * Parses a service node, i.e. service service_name ( varpath : type ) {}
 	 */
 	private void parseService()
