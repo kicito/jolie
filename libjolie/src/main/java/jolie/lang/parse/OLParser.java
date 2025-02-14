@@ -1003,42 +1003,46 @@ public class OLParser extends AbstractParser {
 
 	private ExecutionInfo _parseExecutionInfo()
 		throws IOException, ParserException {
-		Constants.ExecutionMode mode = Constants.ExecutionMode.SEQUENTIAL;
-		setStartLine(); // remember line we started parsing execution info
-		nextToken();
-		boolean inCurlyBrackets = false;
-		if( token.is( Scanner.TokenType.COLON ) ) {
+		InternalParseResult< Constants.ExecutionMode > parseResult = parseInternals( () -> {
+			Constants.ExecutionMode mode = Constants.ExecutionMode.SEQUENTIAL;
+			setStartLine(); // remember line we started parsing execution info
 			nextToken();
-		} else if( token.is( Scanner.TokenType.LCURLY ) ) {
-			inCurlyBrackets = true;
-			nextToken();
-		} else {
+			boolean inCurlyBrackets = false;
+			if( token.is( Scanner.TokenType.COLON ) ) {
+				nextToken();
+			} else if( token.is( Scanner.TokenType.LCURLY ) ) {
+				inCurlyBrackets = true;
+				nextToken();
+			} else {
+				setEndLine(); // remember ending line of parsing execution for error
+				throwException( "expected : or { after execution" );
+			}
 			setEndLine(); // remember ending line of parsing execution for error
-			throwException( "expected : or { after execution" );
-		}
-		setEndLine(); // remember ending line of parsing execution for error
-		// assert token, set scope for eventual error
-		assertToken( Scanner.TokenType.ID, "expected execution modality", null, Keywords.EXECUTION );
-		switch( token.content() ) {
-		case "sequential":
-			mode = Constants.ExecutionMode.SEQUENTIAL;
-			break;
-		case "concurrent":
-			mode = Constants.ExecutionMode.CONCURRENT;
-			break;
-		case "single":
-			mode = Constants.ExecutionMode.SINGLE;
-			break;
-		default:
-			// throw error with scope set
-			throwExceptionWithScope( "Expected execution mode", null, Keywords.EXECUTION );
-			break;
-		}
-		nextToken();
-		if( inCurlyBrackets ) {
-			eat( Scanner.TokenType.RCURLY, "} expected" );
-		}
-		return new ExecutionInfo( getContext(), mode );
+			// assert token, set scope for eventual error
+			assertToken( Scanner.TokenType.ID, "expected execution modality", null, Keywords.EXECUTION );
+			switch( token.content() ) {
+			case "sequential":
+				mode = Constants.ExecutionMode.SEQUENTIAL;
+				break;
+			case "concurrent":
+				mode = Constants.ExecutionMode.CONCURRENT;
+				break;
+			case "single":
+				mode = Constants.ExecutionMode.SINGLE;
+				break;
+			default:
+				// throw error with scope set
+				throwExceptionWithScope( "Expected execution mode", null, Keywords.EXECUTION );
+				break;
+			}
+			nextToken();
+			if( inCurlyBrackets ) {
+				eat( Scanner.TokenType.RCURLY, "} expected" );
+			}
+			return mode;
+		} );
+
+		return new ExecutionInfo( parseResult.context(), parseResult.internals() );
 	}
 
 	private void parseConstants()
