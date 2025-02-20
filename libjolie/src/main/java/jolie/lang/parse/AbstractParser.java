@@ -50,6 +50,8 @@ public abstract class AbstractParser {
 	private boolean backup = false;
 	private final List< Scanner.Token > backupTokens = new ArrayList<>();
 	private boolean metNewline = false;
+	private int previousTokenEndLine; // The line the previous non-newline token ended on
+	private int previousTokenEndColumn;
 
 	protected final String build( String... args ) {
 		stringBuilder.setLength( 0 );
@@ -99,6 +101,18 @@ public abstract class AbstractParser {
 		throws IOException {
 		metNewline = false;
 		boolean run;
+
+		int tempPreviousTokenLine = scanner().line() - 1;
+		int tempPreviousTokenEndColumn = scanner().previousNewlineColumn();
+		if( token != null && token.is( Scanner.TokenType.NEWLINE ) ) {
+			// if token was newLine, the line was already incremented
+			tempPreviousTokenLine--;
+			// if token was newLine the currentColumn was reset, so use the saved value instead
+			tempPreviousTokenEndColumn = scanner().previousNewlineColumn();
+		}
+		previousTokenEndLine = tempPreviousTokenLine;
+		previousTokenEndColumn = tempPreviousTokenEndColumn;
+
 		do {
 			readToken();
 			run = token.is( Scanner.TokenType.NEWLINE );
@@ -293,6 +307,22 @@ public abstract class AbstractParser {
 	 */
 	public final List< String > codeLine() {
 		return scanner.codeLine();
+	}
+
+	/**
+	 *
+	 * @return The line the scanner was at before reading the current non-newline token.
+	 */
+	public final int previousTokenEndLine() {
+		return previousTokenEndLine;
+	}
+
+	/**
+	 *
+	 * @return The column the scanner was at before reading the current non-newline token.
+	 */
+	public final int previousTokenEndColumn() {
+		return previousTokenEndColumn;
 	}
 
 	/**

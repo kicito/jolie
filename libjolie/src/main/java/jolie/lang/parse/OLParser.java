@@ -1612,9 +1612,10 @@ public class OLParser extends AbstractParser {
 		throws IOException, ParserException {
 		ParsingContext earlyContext = getContext();
 		I internals = internalsParser.get();
-		ParsingContext finalContext = new URIParsingContext( scanner().source(), earlyContext.startLine(), line(),
-			earlyContext.startColumn(), errorColumn(),
-			earlyContext.enclosingCode() );
+		ParsingContext finalContext =
+			new URIParsingContext( scanner().source(), earlyContext.startLine(), previousTokenEndLine(),
+				earlyContext.startColumn(), previousTokenEndColumn(),
+				earlyContext.enclosingCode() );
 		return new InternalParseResult<>( internals, finalContext );
 	}
 

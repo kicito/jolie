@@ -376,7 +376,12 @@ public class Scanner implements AutoCloseable {
 	private final boolean includeDocumentation;	// include documentation tokens
 	private final ArrayList<String> readCodeLines = new ArrayList<>();
 	private int currColumn;					// column of the current character
+	private int currOffset = -1;			// 0-indexed line offset of the current character without multi-increment on '\t'
 	private int errorColumn;				// column of the error character (first character of the current token or line)
+	private int tokenStartLine;				// Line the last returned token started on.
+	private int tokenStartOffset;			// Offset that the last returned token started on
+	private int tokenEndLine;				// Line the last returned token ended on
+	private int tokenEndOffset; 			// Offset the last returned token ended on
 
 	/**
 	 * Constructor for arbitrary streams, used for CommandLineParser parsing constants
@@ -627,6 +632,43 @@ public class Scanner implements AutoCloseable {
 		this.endLine = endLine;
 	}
 
+	public int tokenStartLine(){
+		return tokenStartLine;
+	}
+
+	public int tokenStartOffset() {
+		return tokenStartOffset;
+	}
+
+	public int tokenEndLine(){
+		return tokenEndLine;
+	}
+
+	public int tokenEndOffset() {
+		return tokenEndOffset;
+	}
+
+
+
+	/**
+	 * Saves the start line and offset of a token
+	 */
+	private void recordTokenStart() {
+		tokenStartOffset = currOffset;
+		tokenStartLine = line;
+	}
+
+	/**
+	 * Saves the end line and offset of a token, sets tokenEndOffset and tokenEndLine correctly if run before readChar()
+	 * moves the Scanner past the last character of the Token.
+	 */
+	private void recordTokenEnd() {
+		tokenEndOffset = currOffset;
+		tokenEndLine = line; //Only necessary if tokens can span multiple lines
+	}
+
+
+
 	/*
 	 * used in AbstractParser getContextDuringError()
 	 * returns 1 when startline == 0, endline == 0 and line >= 0
@@ -749,6 +791,8 @@ public class Scanner implements AutoCloseable {
 				readCodeLines.add( line(), temp );
 			}
 		}
+
+		currOffset++;
 		if(ch == '\t'){
 			currColumn += Constants.TAB_SIZE; // column has to have the tabSize added to be correct for the error context
 		} else{
@@ -757,6 +801,7 @@ public class Scanner implements AutoCloseable {
 		if ( ch == '\n' ) {
 			line++;
 			currColumn = 0;
+			currOffset = -1;
 		}
 	}
 
@@ -868,6 +913,7 @@ public class Scanner implements AutoCloseable {
 			errorColumn = currColumn-1;
 			return new Token( TokenType.EOF );
 		}
+		recordTokenStart();
 
 		boolean stopOneChar = false;
 		Token retval = null;
@@ -913,6 +959,10 @@ public class Scanner implements AutoCloseable {
 					} else if ( ch == '.' ) { // DOT or REAL
 						state = State.DOT;
 					} else { // ONE CHARACTER TOKEN
+
+						//The ending column of One Character Tokens is the position of the character the Token is made of.
+						recordTokenEnd();
+
 						if ( ch == '(' ) {
 							retval = new Token( TokenType.LPAREN );
 						} else if ( ch == ')' ) {
@@ -1268,6 +1318,7 @@ public class Scanner implements AutoCloseable {
 					stopOneChar = false;
 				} else {
 					tokenBuilder.append( ch );
+					recordTokenEnd();
 					readChar();
 				}
 			} else {
