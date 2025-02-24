@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Narongrit Unwerawattana <narongrit.kie@gmail.com>
+ * Copyright (C) 2025 Narongrit Unwerawattana <narongrit.kie@gmail.com>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,36 +19,28 @@
 
 package jolie.lang.parse.module;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Optional;
 
-/**
- * An implementation of Source for internal Jolie, which can be initiate directly from InputStream
- */
-public class InputStreamSource implements ModuleSource {
+public class PathSource implements ModuleSource {
 
-	private final InputStream is;
-	private final URI uri;
-	private final String name;
+	private final Path path;
 
-	public InputStreamSource( InputStream is, URI uri, String name ) {
-		this.is = is;
-		this.uri = uri;
-		this.name = name;
+	public PathSource( Path p ) throws FileNotFoundException {
+		if( !p.toFile().exists() ) {
+			throw new FileNotFoundException( p.toString() );
+		}
+		this.path = p;
 	}
-
-	public InputStreamSource( InputStream is, URI uri ) {
-		this.is = is;
-		this.uri = uri;
-		this.name = uri.toString();
-	}
-
 
 	@Override
 	public URI uri() {
-		return this.uri;
+		return this.path.toUri();
 	}
 
 	/**
@@ -60,25 +52,20 @@ public class InputStreamSource implements ModuleSource {
 	}
 
 	@Override
-	public InputStream openStream() {
-		return this.is;
+	public InputStream openStream() throws FileNotFoundException {
+		InputStream is = new FileInputStream( this.path.toFile() );
+		// wrap with BufferInputStream for improve performance
+		return new BufferedInputStream( is );
 	}
 
 	@Override
 	public String name() {
-		return this.name;
+		return this.path.getFileName().toString();
 	}
 
 	@Override
 	public Optional< URI > parentURI() {
-		if( this.uri.getScheme() != null && this.uri.getScheme().equals( "jap" ) ) {
-			return Optional.empty();
-		}
-		if( Paths.get( this.uri ).toFile().exists() ) {
-			return Optional.of( Paths.get( this.uri ).getParent().toUri() );
-		} else {
-			return Optional.empty();
-		}
+		return Optional.of( this.path.getParent().toUri() );
 	}
 
 }

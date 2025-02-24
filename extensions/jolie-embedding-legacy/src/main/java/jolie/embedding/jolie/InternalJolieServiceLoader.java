@@ -18,20 +18,15 @@
  */
 package jolie.embedding.jolie;
 
-import jolie.cli.CommandLineException;
-import jolie.cli.CommandLineParser;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import jolie.Interpreter;
+import jolie.cli.CommandLineException;
 import jolie.lang.parse.ast.Program;
 import jolie.runtime.embedding.EmbeddedServiceLoader;
 import jolie.runtime.embedding.EmbeddedServiceLoadingException;
 import jolie.runtime.expression.Expression;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 
 public class InternalJolieServiceLoader extends EmbeddedServiceLoader {
@@ -42,17 +37,13 @@ public class InternalJolieServiceLoader extends EmbeddedServiceLoader {
 		throws IOException, CommandLineException {
 		super( channelDest );
 
-		List< String > newArgs = new ArrayList<>();
-		newArgs.add( "-i" );
-		newArgs.add( currInterpreter.programDirectory().getAbsolutePath() );
-
-		String[] options = currInterpreter.optionArgs();
-		newArgs.addAll( Arrays.asList( options ) );
-		newArgs.add( "#" + serviceName + ".ol" );
-		CommandLineParser commandLineParser =
-			new CommandLineParser( newArgs.toArray( new String[] {} ), currInterpreter.getClassLoader(), true );
+		// Interpreter.Configuration configuration = Interpreter.Configuration.create(
+		// currInterpreter.configuration(),
+		// new InputStreamSource(new ByteArrayInputStream( new byte[] {} ), URI.create( "file://" +
+		// currInterpreter.configuration().source().uri() + "#" + serviceName + ".ol") )
+		// );
 		interpreter = new Interpreter(
-			commandLineParser.getInterpreterConfiguration(),
+			currInterpreter.configuration(),
 			currInterpreter,
 			program );
 	}

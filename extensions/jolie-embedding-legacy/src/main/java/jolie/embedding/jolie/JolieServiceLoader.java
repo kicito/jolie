@@ -21,14 +21,6 @@
 
 package jolie.embedding.jolie;
 
-import jolie.cli.CommandLineException;
-import jolie.cli.CommandLineParser;
-import jolie.Interpreter;
-import jolie.runtime.Value;
-import jolie.runtime.embedding.EmbeddedServiceLoader;
-import jolie.runtime.embedding.EmbeddedServiceLoadingException;
-import jolie.runtime.expression.Expression;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +29,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
+import jolie.Interpreter;
+import jolie.cli.CommandLineException;
+import jolie.cli.CommandLineParser;
+import jolie.lang.parse.module.InputStreamSource;
+import jolie.runtime.Value;
+import jolie.runtime.embedding.EmbeddedServiceLoader;
+import jolie.runtime.embedding.EmbeddedServiceLoadingException;
+import jolie.runtime.expression.Expression;
 
 public class JolieServiceLoader extends EmbeddedServiceLoader {
 	private final static Pattern SERVICE_PATH_SPLIT_PATTERN = Pattern.compile( " " );
@@ -55,25 +55,30 @@ public class JolieServiceLoader extends EmbeddedServiceLoader {
 
 		System.arraycopy( options, 0, newArgs, 2, options.length );
 		System.arraycopy( ss, 0, newArgs, 2 + options.length, ss.length );
-		CommandLineParser commandLineParser = new CommandLineParser( newArgs, currInterpreter.getClassLoader(), false );
+		try( CommandLineParser commandLineParser = new CommandLineParser( newArgs,
+			currInterpreter.getClassLoader(), false ) ) {
+			Interpreter.Configuration cmdConfig = commandLineParser.getInterpreterConfiguration();
+			Interpreter.Configuration config = Interpreter.Configuration
+				.create(
+					cmdConfig,
+					serviceName.orElse( cmdConfig.executionTarget() ) );
 
-		Interpreter.Configuration cmdConfig = commandLineParser.getInterpreterConfiguration();
-		Interpreter.Configuration config = Interpreter.Configuration.create(
-			cmdConfig,
-			serviceName.orElse( cmdConfig.executionTarget() ) );
-
-		interpreter = new Interpreter(
-			config,
-			params,
-			Optional.of( currInterpreter.logPrefix() ) );
+			interpreter = new Interpreter(
+				config,
+				params,
+				Optional.of( currInterpreter.logPrefix() ) );
+		}
 	}
 
 	public JolieServiceLoader( String code, Expression channelDest, Interpreter currInterpreter )
 		throws IOException {
 		super( channelDest );
 		Interpreter.Configuration configuration =
-			Interpreter.Configuration.create( currInterpreter.configuration(), new File( "#native_code_" +
-				SERVICE_LOADER_COUNTER.getAndIncrement() ), new ByteArrayInputStream( code.getBytes() ) );
+			Interpreter.Configuration.create(
+				currInterpreter.configuration(),
+				new InputStreamSource(
+					new ByteArrayInputStream( code.getBytes() ),
+					new File( "#native_code_" + SERVICE_LOADER_COUNTER.getAndIncrement() ).toURI() ) );
 		interpreter = new Interpreter( configuration,
 			Optional.empty(), Optional.of( currInterpreter.logPrefix() ) );
 	}

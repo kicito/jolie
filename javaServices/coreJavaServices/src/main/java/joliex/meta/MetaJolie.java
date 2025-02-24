@@ -948,8 +948,7 @@ public class MetaJolie extends JavaService {
 			configuration.setCheckForMain( false );
 
 			Program program = ParsingUtils.parseProgram(
-				cmdParser.getInterpreterConfiguration().inputStream(),
-				cmdParser.getInterpreterConfiguration().programFilepath().toURI(),
+				cmdParser.getInterpreterConfiguration().source(),
 				cmdParser.getInterpreterConfiguration().charset(),
 				cmdParser.getInterpreterConfiguration().includePaths(),
 				interpreter().configuration().packagePaths(),
@@ -1017,8 +1016,7 @@ public class MetaJolie extends JavaService {
 				new SemanticVerifier.Configuration( cmdParser.getInterpreterConfiguration().executionTarget() );
 			configuration.setCheckForMain( false );
 			Program program = ParsingUtils.parseProgram(
-				cmdParser.getInterpreterConfiguration().inputStream(),
-				cmdParser.getInterpreterConfiguration().programFilepath().toURI(),
+				cmdParser.getInterpreterConfiguration().source(),
 				cmdParser.getInterpreterConfiguration().charset(),
 				cmdParser.getInterpreterConfiguration().includePaths(),
 				interpreter().configuration().packagePaths(),
@@ -1114,8 +1112,7 @@ public class MetaJolie extends JavaService {
 			configuration.setCheckForMain( false );
 
 			Program program = ParsingUtils.parseProgram(
-				cmdParser.getInterpreterConfiguration().inputStream(),
-				cmdParser.getInterpreterConfiguration().programFilepath().toURI(),
+				cmdParser.getInterpreterConfiguration().source(),
 				cmdParser.getInterpreterConfiguration().charset(),
 				cmdParser.getInterpreterConfiguration().includePaths(),
 				interpreter().configuration().packagePaths(),

@@ -21,26 +21,27 @@ package jolie.lang.parse.module;
 
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Optional;
+import jolie.lang.parse.ast.Program;
 
 /**
  * An implementation of Source for internal Jolie, which can be initiate directly from InputStream
  */
-public class InputStreamSource implements ModuleSource {
+public class ProgramSource implements ModuleSource {
 
-	private final InputStream is;
+	@SuppressWarnings( "PMD" )
+	private final Program program;
 	private final URI uri;
 	private final String name;
 
-	public InputStreamSource( InputStream is, URI uri, String name ) {
-		this.is = is;
+	public ProgramSource( Program program, URI uri, String name ) {
+		this.program = program;
 		this.uri = uri;
 		this.name = name;
 	}
 
-	public InputStreamSource( InputStream is, URI uri ) {
-		this.is = is;
+	public ProgramSource( Program program, URI uri ) {
+		this.program = program;
 		this.uri = uri;
 		this.name = uri.toString();
 	}
@@ -61,7 +62,7 @@ public class InputStreamSource implements ModuleSource {
 
 	@Override
 	public InputStream openStream() {
-		return this.is;
+		throw new UnsupportedOperationException( "This method should not be called on ProgramSource" );
 	}
 
 	@Override
@@ -71,14 +72,7 @@ public class InputStreamSource implements ModuleSource {
 
 	@Override
 	public Optional< URI > parentURI() {
-		if( this.uri.getScheme() != null && this.uri.getScheme().equals( "jap" ) ) {
-			return Optional.empty();
-		}
-		if( Paths.get( this.uri ).toFile().exists() ) {
-			return Optional.of( Paths.get( this.uri ).getParent().toUri() );
-		} else {
-			return Optional.empty();
-		}
+		return Optional.empty();
 	}
 
 }

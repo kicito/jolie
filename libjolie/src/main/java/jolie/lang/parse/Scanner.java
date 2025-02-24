@@ -31,6 +31,7 @@ import java.util.Map;
 
 import jolie.lang.Constants;
 import jolie.lang.NativeType;
+import jolie.lang.parse.module.ModuleSource;
 
 /**
  * Scanner implementation for the Jolie language parser.
@@ -38,7 +39,7 @@ import jolie.lang.NativeType;
  * @author Fabrizio Montesi
  *
  */
-public class Scanner {
+public class Scanner implements AutoCloseable {
 	// @formatter:off
 	/** Token types */
 	public enum TokenType {
@@ -378,6 +379,27 @@ public class Scanner {
 	private int errorColumn;				// column of the error character (first character of the current token or line)
 
 	/**
+	 * Constructor for arbitrary streams, used for CommandLineParser parsing constants
+	 *
+	 * @param stream the <code>InputStream</code> to use for input reading
+	 * @param source the source URI of the stream
+	 * @throws java.io.IOException if the input reading initialization fails
+	 */
+	public Scanner( InputStream stream, URI source )
+		throws IOException
+	{
+		this.stream = stream;
+		this.reader = new InputStreamReader( stream );
+		this.source = source;
+		this.includeDocumentation = false;
+		line = 0;
+		startLine = 0;
+		endLine = 0;
+		currColumn = 0;
+		readChar();
+	}
+
+	/**
 	 * Constructor
 	 *
 	 * @param stream the <code>InputStream</code> to use for input reading
@@ -386,12 +408,12 @@ public class Scanner {
 	 * @param includeDocumentation if true, emit documentation tokens
 	 * @throws java.io.IOException if the input reading initialization fails
 	 */
-	public Scanner( InputStream stream, URI source, String charset, boolean includeDocumentation )
+	public Scanner( ModuleSource source, String charset, boolean includeDocumentation )
 		throws IOException
 	{
-		this.stream = stream;
+		this.stream = source.openStream();
 		this.reader = charset != null ? new InputStreamReader( stream, charset ) : new InputStreamReader( stream );
-		this.source = source;
+		this.source = source.uri();
 		this.includeDocumentation = includeDocumentation;
 		line = 0;
 		startLine = 0;
@@ -408,9 +430,9 @@ public class Scanner {
 	 * @param charset the character encoding
 	 * @throws java.io.IOException if the input reading initialization fails
 	 */
-	public Scanner( InputStream stream, URI source, String charset ) throws IOException
+	public Scanner( ModuleSource source, String charset ) throws IOException
 	{
-		this( stream, source, charset, false );
+		this( source, charset, false );
 	}
 
 	public boolean includeDocumentation()
@@ -1260,5 +1282,11 @@ public class Scanner {
 		}
 		errorColumn = currColumn-retval.content.length();
 		return retval;
+	}
+
+	@Override
+	public void close() throws IOException {
+		stream.close();
+		reader.close();
 	}
 }

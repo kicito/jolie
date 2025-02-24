@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import jolie.Interpreter;
 import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.module.InputStreamSource;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.runtime.Value;
 import jolie.runtime.expression.Expression;
@@ -44,8 +45,8 @@ public class JolieServiceNodeLoader extends ServiceNodeLoader {
 		Path servicePath = Paths.get( serviceNode().context().source() );
 		Interpreter.Configuration configuration = Interpreter.Configuration.create(
 			super.interpreter().configuration(),
-			servicePath.toFile(),
-			new ByteArrayInputStream( "".getBytes() ),
+			new InputStreamSource( new ByteArrayInputStream( "".getBytes() ), servicePath.toUri(),
+				serviceNode().name() ),
 			serviceNode().name() );
 
 		Interpreter interpreter;

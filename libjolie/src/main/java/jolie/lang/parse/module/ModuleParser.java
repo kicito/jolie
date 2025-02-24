@@ -51,9 +51,10 @@ public class ModuleParser {
 		} else {
 			additionalPath = new String[ 0 ];
 		}
-		return this.parse( new Scanner( module.openStream().get(), module.uri(),
-			parserConfiguration.charset(), parserConfiguration.includeDocumentation() ), additionalPath );
-
+		try( Scanner scanner =
+			new Scanner( module, parserConfiguration.charset(), parserConfiguration.includeDocumentation() ) ) {
+			return this.parse( scanner, additionalPath );
+		}
 	}
 
 	public ModuleRecord parse( Scanner scanner, String[] additionalIncludePaths )

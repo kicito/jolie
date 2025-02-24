@@ -134,6 +134,8 @@ import jolie.lang.parse.ast.types.refinements.BasicTypeRefinementStringList;
 import jolie.lang.parse.ast.types.refinements.BasicTypeRefinementStringRegex;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
+import jolie.lang.parse.module.InputStreamSource;
+import jolie.lang.parse.module.ModuleSource;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
 import jolie.util.Pair;
@@ -1150,7 +1152,8 @@ public class OLParser extends AbstractParser {
 				}
 				try {
 					return new IncludeFile( new BufferedInputStream( url.openStream() ), Helpers.parentFromURL( url ),
-						url.toURI() );
+						url.toURI(),
+						url.getPath().substring( url.getPath().lastIndexOf( Constants.FILE_SEPARATOR ) ) + 1 );
 				} catch( IOException | URISyntaxException e ) {
 					return null;
 				}
@@ -1159,7 +1162,7 @@ public class OLParser extends AbstractParser {
 				try {
 					Path path = Paths.get( includeStr );
 					return new IncludeFile( new BufferedInputStream( Files.newInputStream( path ) ),
-						path.getParent().toString(), path.toUri() );
+						path.getParent().toString(), path.toUri(), path.getFileName().toString() );
 				} catch( FileSystemNotFoundException | IOException | InvalidPathException e ) {
 					return null;
 				}
@@ -1168,7 +1171,8 @@ public class OLParser extends AbstractParser {
 				try {
 					final URL url = new URL( includeStr );
 					final InputStream is = url.openStream();
-					return new IncludeFile( new BufferedInputStream( is ), Helpers.parentFromURL( url ), url.toURI() );
+					return new IncludeFile( new BufferedInputStream( is ), Helpers.parentFromURL( url ), url.toURI(),
+						url.getPath().substring( url.getPath().lastIndexOf( Constants.FILE_SEPARATOR ) ) + 1 );
 				} catch( IOException | URISyntaxException e ) {
 					return null;
 				}
@@ -1181,7 +1185,8 @@ public class OLParser extends AbstractParser {
 
 				try {
 					return new IncludeFile( new BufferedInputStream( url.openStream() ), Helpers.parentFromURL( url ),
-						url.toURI() );
+						url.toURI(),
+						url.getPath().substring( url.getPath().lastIndexOf( Constants.FILE_SEPARATOR ) ) + 1 );
 				} catch( IOException | URISyntaxException e ) {
 					return null;
 				}
@@ -1224,23 +1229,28 @@ public class OLParser extends AbstractParser {
 					throwException( "File not found: " + includeStr );
 				}
 			}
-
+			ModuleSource source =
+				new InputStreamSource( includeFile.getInputStream(), includeFile.getURI(), includeFile.getName() );
 			origIncludePaths = includePaths;
 			// includes are explicitly parsed in ASCII to be independent of program's encoding
-			setScanner( new Scanner( includeFile.getInputStream(), includeFile.getURI(), "US-ASCII",
-				oldScanner.includeDocumentation() ) );
+			try( Scanner newScanner =
+				new Scanner( source, "US-ASCII",
+					oldScanner.includeDocumentation() ) ) {
+				setScanner( newScanner );
 
-			if( includeFile.getParentPath() == null ) {
-				includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length );
-			} else {
-				includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length + 1 );
-				includePaths[ origIncludePaths.length ] = includeFile.getParentPath();
+
+				if( includeFile.getParentPath() == null ) {
+					includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length );
+				} else {
+					includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length + 1 );
+					includePaths[ origIncludePaths.length ] = includeFile.getParentPath();
+				}
+				_parse();
+				includePaths = origIncludePaths;
+				includeFile.getInputStream().close();
+				setScanner( oldScanner );
+				nextToken();
 			}
-			_parse();
-			includePaths = origIncludePaths;
-			includeFile.getInputStream().close();
-			setScanner( oldScanner );
-			nextToken();
 		}
 	}
 
@@ -3791,11 +3801,14 @@ public class OLParser extends AbstractParser {
 		private final InputStream inputStream;
 		private final String parentPath;
 		private final URI uri;
+		private final String name;
 
-		private IncludeFile( InputStream inputStream, String parentPath, URI uri ) {
+
+		private IncludeFile( InputStream inputStream, String parentPath, URI uri, String name ) {
 			this.inputStream = inputStream;
 			this.parentPath = parentPath;
 			this.uri = uri;
+			this.name = name;
 		}
 
 		private InputStream getInputStream() {
@@ -3808,6 +3821,10 @@ public class OLParser extends AbstractParser {
 
 		private URI getURI() {
 			return uri;
+		}
+
+		private String getName() {
+			return name;
 		}
 	}
 }

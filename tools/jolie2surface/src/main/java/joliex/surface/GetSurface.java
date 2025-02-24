@@ -52,8 +52,7 @@ public class GetSurface {
 				JolieToSurfaceCommandLineParser.create( args, GetSurface.class.getClassLoader() );
 			Interpreter.Configuration interpreterConfiguration = cmdParser.getInterpreterConfiguration();
 			Program program = ParsingUtils.parseProgram(
-				interpreterConfiguration.inputStream(),
-				interpreterConfiguration.programFilepath().toURI(),
+				interpreterConfiguration.source(),
 				interpreterConfiguration.charset(),
 				interpreterConfiguration.includePaths(),
 				interpreterConfiguration.packagePaths(),
