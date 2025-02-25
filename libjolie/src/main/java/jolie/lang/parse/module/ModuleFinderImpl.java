@@ -21,13 +21,17 @@ package jolie.lang.parse.module;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.JarURLConnection;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import jolie.lang.Constants;
 import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
@@ -54,17 +58,14 @@ public class ModuleFinderImpl implements ModuleFinder {
 	 */
 	private final Path workingDirectoryPath;
 
-	public ModuleFinderImpl( URI workingDirectoryPath, String[] packagePaths ) {
-		this.workingDirectoryPath =
-			Files.isRegularFile( Paths.get( workingDirectoryPath ) ) ? Paths.get( workingDirectoryPath ).getParent()
-				: Paths.get( workingDirectoryPath );
+	public ModuleFinderImpl( String[] packagePaths ) {
+		this.workingDirectoryPath = Paths.get( System.getProperty( "user.dir" ) );
 		this.packagePaths = Arrays.stream( packagePaths )
 			.map( Paths::get )
 			.toArray( Path[]::new );
 	}
 
-	@Override
-	public ModuleSource find( URI source, ImportPath importPath ) throws ModuleNotFoundException {
+	private ModuleSource findFileScheme( URI source, ImportPath importPath ) throws ModuleNotFoundException {
 		Path parentPath =
 			Files.isRegularFile( Paths.get( source ) ) ? Paths.get( source ).getParent()
 				: Paths.get( source );
@@ -80,6 +81,42 @@ public class ModuleFinderImpl implements ModuleFinder {
 			throw e;
 		} catch( FileNotFoundException e ) {
 			throw new ModuleNotFoundException( importPath, Paths.get( e.getMessage() ) );
+		}
+	}
+
+	private ModuleSource findJapScheme( URI source, ImportPath importPath ) throws ModuleNotFoundException {
+
+		try {
+			URI jarURI = URI.create( "jar:" + source.getSchemeSpecificPart() );
+			if( importPath.isRelativeImport() ) {
+				// create jar uri to separate jap file and start entry
+
+				JarURLConnection jarURLConnection =
+					(JarURLConnection) jarURI.toURL().openConnection();
+				URL japUrl = jarURLConnection.getJarFileURL();
+				Path entryPath = Paths.get( jarURLConnection.getEntryName() );
+
+				// get the start directory to perform an relative lookup
+				Path entryDir = entryPath.endsWith( Constants.FILE_SEPARATOR ) ? entryPath : entryPath.getParent();
+				var importPathEntry = entryDir.resolve( Paths.get( importPath.toRelativePathString() ) );
+				return new JapSource( japUrl.toURI(), new JarFile( Paths.get( japUrl.toURI() ).toFile() ),
+					importPathEntry );
+			} else {
+				return this.findAbsoluteImport( importPath, Paths.get( jarURI ) );
+			}
+		} catch( ModuleNotFoundException e ) {
+			throw e;
+		} catch( URISyntaxException | IOException e ) {
+			throw new ModuleNotFoundException( importPath, Paths.get( source.getSchemeSpecificPart() ) );
+		}
+	}
+
+	@Override
+	public ModuleSource find( URI source, ImportPath importPath ) throws ModuleNotFoundException {
+		if( source.getScheme().equals( "jap" ) ) {
+			return this.findJapScheme( source, importPath );
+		} else {
+			return this.findFileScheme( source, importPath );
 		}
 	}
 
@@ -104,7 +141,11 @@ public class ModuleFinderImpl implements ModuleFinder {
 				ModuleFinder.japLookup( this.workingDirectoryPath.resolve( "lib" ),
 					importPath.pathParts().get( 0 ) );
 			List< String > rest = importPath.pathParts().subList( 1, importPath.pathParts().size() );
-			return new JapSource( japPath, rest );
+			if( !rest.isEmpty() ) {
+				return new JapSource( japPath, rest );
+			} else {
+				return new JapSource( japPath );
+			}
 		} catch( IOException e ) {
 			errPathList.add( Paths.get( e.getMessage() ) );
 		}
@@ -197,22 +238,26 @@ public class ModuleFinderImpl implements ModuleFinder {
 	 * resolve path from source, each dot prefix means 1 level higher from the caller path directory
 	 */
 	private ModuleLookUpTarget resolveDotPrefix( ImportPath importPath, Path sourcePath ) {
-		Path basePath;
 		List< String > pathParts = importPath.pathParts();
+		Path basePath = sourcePath;
 		if( !sourcePath.toFile().isDirectory() ) {
 			basePath = sourcePath.getParent();
 		} else {
 			basePath = sourcePath;
 		}
-		int i = 1;
-		for( ; i < pathParts.size() - 1; i++ ) {
-			if( pathParts.get( i ).isEmpty() ) {
-				basePath = basePath.getParent();
-			} else {
+		int packagesTokenStartIndex = 1;
+		for( int i = 1; i < pathParts.size(); i++ ) {
+			if( !pathParts.get( i ).isEmpty() ) {
+				packagesTokenStartIndex = i;
 				break;
+			} else {
+				basePath = basePath.getParent();
 			}
 		}
-		int packagesTokenStartIndex = i;
+		// org.opentest4j.AssertionFailedError: Unexpected exception thrown:
+		// jolie.lang.parse.module.exceptions.ModuleNotFoundException: Module "..service" not found. I
+		// looked for modules in the following paths:
+		// /home/nau/sdu/jolie/libjolie/src/test/resources/tmp/service.ol
 		ImportPath resolvedImportPath =
 			new ImportPath( pathParts.subList( packagesTokenStartIndex, pathParts.size() ) );
 		return new ModuleLookUpTarget( basePath, resolvedImportPath );

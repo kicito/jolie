@@ -108,20 +108,33 @@ class JapSource implements ModuleSource {
 			Attributes attrs = manifest.getMainAttributes();
 			this.filePath = attrs.getValue( Constants.Manifest.MAIN_PROGRAM );
 			this.parentPath = Paths.get( this.filePath ).getParent();
-			moduleEntry = japFile.getEntry( this.filePath );
-			if( moduleEntry == null ) {
-				throw new IOException();
+			this.moduleEntry = japFile.getEntry( this.filePath );
+			if( this.moduleEntry == null ) {
+				throw new IOException( "Unable to find import module in " + f.toString() );
 			}
 		} else {
-			throw new IOException();
+			throw new IOException( "Unable to find import module in " + f.toString() );
 		}
 	}
 
 	public JapSource( Path f, List< String > path ) throws IOException {
 		this.japFile = new JarFile( f.toFile() );
 		this.uri = f.toUri();
-		this.filePath = String.join( "/", path );
+		this.filePath = String.join( jolie.lang.Constants.PATH_SEPARATOR, path );
 		moduleEntry = japFile.getEntry( this.filePath + ".ol" );
+		if( moduleEntry == null ) {
+			throw new FileNotFoundException(
+				this.filePath + " in " + f.toString() );
+		}
+		this.parentPath = Paths.get( this.filePath ).getParent();
+	}
+
+	public JapSource( URI uri, JarFile f, Path path ) throws IOException {
+		this.japFile = f;
+		this.uri = uri;
+		this.filePath = uri.toString() + "!" + path.toString();
+
+		moduleEntry = japFile.getEntry( path.toString() + ".ol" );
 		if( moduleEntry == null ) {
 			throw new FileNotFoundException(
 				this.filePath + " in " + f.toString() );
@@ -136,7 +149,8 @@ class JapSource implements ModuleSource {
 	@Override
 	public Optional< String > includePath() {
 		return Optional
-			.of( "jap:" + this.uri.toString() + "!/" + (this.parentPath != null ? this.parentPath.toString() : "") );
+			.of( "jap:" + this.uri.toString() + "!" + jolie.lang.Constants.PATH_SEPARATOR
+				+ (this.parentPath != null ? this.parentPath.toString() : "") );
 	}
 
 	@Override
@@ -145,11 +159,7 @@ class JapSource implements ModuleSource {
 	}
 
 	@Override
-	public Optional< InputStream > openStream() {
-		try {
-			return Optional.of( this.japFile.getInputStream( this.moduleEntry ) );
-		} catch( IOException e ) {
-			return Optional.empty();
-		}
+	public InputStream openStream() throws IOException {
+		return this.japFile.getInputStream( this.moduleEntry );
 	}
 }

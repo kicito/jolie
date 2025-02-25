@@ -53,12 +53,19 @@ public class JapURLConnection extends URLConnection {
 
 	private static final Map< URL, JarFile > JAP_CACHE = new ConcurrentHashMap<>();
 
+	private final URL japFileURL;
+	private final String entryName;
+
 	private InputStream inputStream;
 	private long entrySize = 0L;
 
 	public JapURLConnection( URL url )
 		throws IOException {
 		super( url );
+		final JarURLConnection jarURLConnection =
+			(JarURLConnection) URI.create( "jar:" + url.getFile() ).toURL().openConnection();
+		japFileURL = jarURLConnection.getJarFileURL();
+		entryName = jarURLConnection.getEntryName();
 	}
 
 	private static void putInCache( URL url, JarFile jar ) {
@@ -157,5 +164,19 @@ public class JapURLConnection extends URLConnection {
 		throws IOException {
 		connect();
 		return inputStream;
+	}
+
+	/**
+	 * @return the japFileURL
+	 */
+	public URL getJapFileURL() {
+		return japFileURL;
+	}
+
+	/**
+	 * @return the entryName
+	 */
+	public String getEntryName() {
+		return entryName;
 	}
 }

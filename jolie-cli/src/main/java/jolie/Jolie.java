@@ -26,7 +26,6 @@ import java.io.PrintStream;
 import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Optional;
 import jolie.cli.CommandLineException;
 import jolie.cli.CommandLineParser;
@@ -68,7 +67,8 @@ public class Jolie {
 	public static void main( String[] args ) {
 		int exitCode = 0;
 		// TODO: remove this hack by extracting CommandLineParser here
-		boolean printStackTraces = Arrays.asList( args ).contains( "--stackTraces" );
+		boolean printStackTraces = true;
+		// boolean printStackTraces = Arrays.asList( args ).contains( "--stackTraces" );
 
 		try( CommandLineParser commandLineParser =
 			new CommandLineParser( args, Jolie.class.getClassLoader(), false ) ) {
