@@ -1132,10 +1132,15 @@ public class OLParser extends AbstractParser {
 		}
 	}
 
-	private ModuleSource retrieveIncludeFile( final String context, final String target )
+	private ModuleSource retrieveIncludeFile( String context, String target )
 		throws URISyntaxException {
 		ModuleSource ret;
-
+		if( context.startsWith( "file:" ) || context.startsWith( "jap:" ) ) {
+			context = context.substring( context.indexOf(":")+1 );
+		}
+		if( target.startsWith( "file:" ) || target.startsWith( "jap:" ) ) {
+			target = target.substring( target.indexOf(":")+1 );
+		}
 		String urlStr =
 			UriUtils.normalizeJolieUri( UriUtils.normalizeWindowsPath( UriUtils.resolve( context, target ) ) );
 		ret = tryAccessIncludeFile( urlStr );

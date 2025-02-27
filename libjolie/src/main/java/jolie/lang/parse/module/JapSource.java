@@ -84,7 +84,7 @@ class JapSource implements ModuleSource {
 					this.moduleEntry = japFile.getEntry( this.filePath );
 				} else {
 					// guess by name
-					this.filePath = this.japFile.getName() + ".ol";
+					this.filePath = Paths.get( this.japFile.getName() ).toUri().toString() + ".ol";
 					this.moduleEntry = this.japFile.getEntry( this.filePath );
 				}
 			}
@@ -95,7 +95,7 @@ class JapSource implements ModuleSource {
 			throw new FileNotFoundException( uri.toString() );
 		}
 		this.uri = URI.create(
-			"jap:file:" + this.japFile.getName() + "!/"
+			"jap:" + Paths.get( this.japFile.getName() ).toUri().toString() + "!/"
 				+ this.moduleEntry.getName() );
 		this.parentPath = Paths.get( this.filePath ).getParent();
 	}
@@ -121,7 +121,7 @@ class JapSource implements ModuleSource {
 			}
 			this.parentPath = Paths.get( this.filePath ).getParent();
 			this.uri = URI.create(
-				"jap:file:" + this.japFile.getName() + "!/"
+				"jap:" + Paths.get( this.japFile.getName() ).toUri().toString() + "!/"
 					+ this.moduleEntry.getName() );
 		} catch( IOException e ) {
 			throw new FileNotFoundException( path.toString() );
@@ -156,7 +156,8 @@ class JapSource implements ModuleSource {
 	public Optional< URI > parentURI() {
 		return Optional
 			.of( URI.create(
-				"jap:file:" + this.japFile.getName() + "!/"
-					+ (this.parentPath != null ? this.parentPath.toString() : "") ) );
+				"jap:" + Paths.get( this.japFile.getName() ).toUri().toString() + "!/"
+					+ (this.parentPath != null ? this.parentPath.toString().replace( "\\", "/" ) : "") ) );
 	}
 }
+
