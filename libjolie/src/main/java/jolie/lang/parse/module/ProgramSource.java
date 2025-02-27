@@ -23,21 +23,28 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Optional;
-import jolie.lang.parse.ast.ServiceNode;
+import jolie.lang.parse.ast.Program;
 
 /**
  * An implementation of Source for internal Jolie, which can be initiate directly from InputStream
  */
-class InputStreamSource implements ModuleSource {
+class ProgramSource implements ModuleSource {
 
-	private final InputStream is;
+	@SuppressWarnings( "PMD" )
+	private final Program program;
 	private final URI uri;
 	private final String name;
 
-	public InputStreamSource( InputStream is, URI uri ) {
-		this.is = is;
+	public ProgramSource( Program program, URI uri, String name ) {
+		this.program = program;
 		this.uri = uri;
-		this.name = ServiceNode.DEFAULT_MAIN_SERVICE_NAME;
+		this.name = name;
+	}
+
+	public ProgramSource( Program program, URI uri ) {
+		this.program = program;
+		this.uri = uri;
+		this.name = null;
 	}
 
 
@@ -56,7 +63,7 @@ class InputStreamSource implements ModuleSource {
 
 	@Override
 	public InputStream openStream() {
-		return this.is;
+		throw new UnsupportedOperationException( "This method should not be called on ProgramSource" );
 	}
 
 	@Override
@@ -66,12 +73,13 @@ class InputStreamSource implements ModuleSource {
 
 	@Override
 	public Optional< URI > parentURI() {
-		switch( this.uri.getScheme() ) {
-		case "file":
-			return Optional.of( Paths.get( this.uri ).getParent().toUri() );
-		default:
-			return Optional.empty();
+		if( this.uri.getScheme() != null && this.uri.getScheme().equals( "jap" ) ) {
+			return Optional
+				.of( URI.create( this.uri.toString().substring( 0, this.uri.toString().lastIndexOf( "/" ) ) ) );
 		}
+		if( Paths.get( this.uri ).toFile().exists() ) {
+			return Optional.of( Paths.get( this.uri ).getParent().toUri() );
+		}
+		return Optional.empty();
 	}
-
 }

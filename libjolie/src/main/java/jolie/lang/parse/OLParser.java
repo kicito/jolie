@@ -22,17 +22,13 @@ package jolie.lang.parse;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,11 +39,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 //import jolie.lang.CodeCheckMessage;
 import jolie.lang.Constants;
-import jolie.lang.Keywords;
 import jolie.lang.Constants.EmbeddedServiceType;
+import jolie.lang.Keywords;
 import jolie.lang.NativeType;
 import jolie.lang.parse.Scanner.TokenType;
 import jolie.lang.parse.ast.AddAssignStatement;
@@ -118,7 +113,24 @@ import jolie.lang.parse.ast.courier.CourierChoiceStatement;
 import jolie.lang.parse.ast.courier.CourierDefinitionNode;
 import jolie.lang.parse.ast.courier.NotificationForwardStatement;
 import jolie.lang.parse.ast.courier.SolicitResponseForwardStatement;
-import jolie.lang.parse.ast.expression.*;
+import jolie.lang.parse.ast.expression.AndConditionNode;
+import jolie.lang.parse.ast.expression.ConstantBoolExpression;
+import jolie.lang.parse.ast.expression.ConstantDoubleExpression;
+import jolie.lang.parse.ast.expression.ConstantIntegerExpression;
+import jolie.lang.parse.ast.expression.ConstantLongExpression;
+import jolie.lang.parse.ast.expression.ConstantStringExpression;
+import jolie.lang.parse.ast.expression.FreshValueExpressionNode;
+import jolie.lang.parse.ast.expression.IfExpressionNode;
+import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
+import jolie.lang.parse.ast.expression.InstanceOfExpressionNode;
+import jolie.lang.parse.ast.expression.IsTypeExpressionNode;
+import jolie.lang.parse.ast.expression.NotExpressionNode;
+import jolie.lang.parse.ast.expression.OrConditionNode;
+import jolie.lang.parse.ast.expression.ProductExpressionNode;
+import jolie.lang.parse.ast.expression.SolicitResponseExpressionNode;
+import jolie.lang.parse.ast.expression.SumExpressionNode;
+import jolie.lang.parse.ast.expression.VariableExpressionNode;
+import jolie.lang.parse.ast.expression.VoidExpressionNode;
 import jolie.lang.parse.ast.types.BasicTypeDefinition;
 import jolie.lang.parse.ast.types.TypeChoiceDefinition;
 import jolie.lang.parse.ast.types.TypeDefinition;
@@ -134,6 +146,7 @@ import jolie.lang.parse.ast.types.refinements.BasicTypeRefinementStringList;
 import jolie.lang.parse.ast.types.refinements.BasicTypeRefinementStringRegex;
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
+import jolie.lang.parse.module.ModuleSource;
 import jolie.lang.parse.util.ProgramBuilder;
 import jolie.util.Helpers;
 import jolie.util.Pair;
@@ -1119,9 +1132,9 @@ public class OLParser extends AbstractParser {
 		}
 	}
 
-	private IncludeFile retrieveIncludeFile( final String context, final String target )
+	private ModuleSource retrieveIncludeFile( final String context, final String target )
 		throws URISyntaxException {
-		IncludeFile ret;
+		ModuleSource ret;
 
 		String urlStr =
 			UriUtils.normalizeJolieUri( UriUtils.normalizeWindowsPath( UriUtils.resolve( context, target ) ) );
@@ -1139,37 +1152,45 @@ public class OLParser extends AbstractParser {
 
 	private final Map< String, URL > resourceCache = new HashMap<>();
 
-	private IncludeFile tryAccessIncludeFile( String origIncludeStr ) {
+	private ModuleSource tryAccessIncludeFile( String origIncludeStr ) {
 		final String includeStr = UriUtils.normalizeWindowsPath( origIncludeStr );
 
-		final Optional< IncludeFile > optIncludeFile = Helpers.firstNonNull(
+		final Optional< ModuleSource > optIncludeFile = Helpers.firstNonNull(
 			() -> {
 				final URL url = resourceCache.get( includeStr );
 				if( url == null ) {
 					return null;
 				}
 				try {
-					return new IncludeFile( new BufferedInputStream( url.openStream() ), Helpers.parentFromURL( url ),
-						url.toURI() );
+					return ModuleSource.create( url.toURI() );
 				} catch( IOException | URISyntaxException e ) {
 					return null;
 				}
 			},
 			() -> {
 				try {
-					Path path = Paths.get( includeStr );
-					return new IncludeFile( new BufferedInputStream( Files.newInputStream( path ) ),
-						path.getParent().toString(), path.toUri() );
-				} catch( FileSystemNotFoundException | IOException | InvalidPathException e ) {
+					final URI uri = includeStr.startsWith( "file:" ) ? URI.create( includeStr )
+						: URI.create( "file:" + includeStr );
+					return ModuleSource.create( uri );
+				} catch( FileNotFoundException | IllegalArgumentException e ) {
 					return null;
 				}
 			},
 			() -> {
 				try {
-					final URL url = new URL( includeStr );
-					final InputStream is = url.openStream();
-					return new IncludeFile( new BufferedInputStream( is ), Helpers.parentFromURL( url ), url.toURI() );
-				} catch( IOException | URISyntaxException e ) {
+					final URI uri = includeStr.startsWith( "jap:file:" ) ? URI.create( includeStr )
+						: URI.create( "jap:file:" + includeStr );
+					return ModuleSource.create( uri );
+				} catch( FileNotFoundException | IllegalArgumentException e ) {
+					return null;
+				}
+			},
+			() -> {
+				try {
+					final URI uri = URI.create( includeStr );
+					final InputStream is = uri.toURL().openStream();
+					return ModuleSource.create( uri, Optional.of( new BufferedInputStream( is ) ) );
+				} catch( IOException | IllegalArgumentException e ) {
 					return null;
 				}
 			},
@@ -1178,10 +1199,8 @@ public class OLParser extends AbstractParser {
 				if( url == null ) {
 					return null;
 				}
-
 				try {
-					return new IncludeFile( new BufferedInputStream( url.openStream() ), Helpers.parentFromURL( url ),
-						url.toURI() );
+					return ModuleSource.create( url.toURI() );
 				} catch( IOException | URISyntaxException e ) {
 					return null;
 				}
@@ -1189,7 +1208,7 @@ public class OLParser extends AbstractParser {
 
 		optIncludeFile.ifPresent( includeFile -> {
 			try {
-				resourceCache.putIfAbsent( includeStr, includeFile.uri.toURL() );
+				resourceCache.putIfAbsent( includeStr, includeFile.uri().toURL() );
 			} catch( MalformedURLException e ) {
 				e.printStackTrace();
 			}
@@ -1201,7 +1220,7 @@ public class OLParser extends AbstractParser {
 	private void parseInclude()
 		throws IOException, ParserException {
 		String[] origIncludePaths;
-		IncludeFile includeFile;
+		ModuleSource includeFile;
 		while( token.is( Scanner.TokenType.INCLUDE ) ) {
 			nextToken();
 			hasIncludeDirective = true;
@@ -1224,23 +1243,25 @@ public class OLParser extends AbstractParser {
 					throwException( "File not found: " + includeStr );
 				}
 			}
-
 			origIncludePaths = includePaths;
 			// includes are explicitly parsed in ASCII to be independent of program's encoding
-			setScanner( new Scanner( includeFile.getInputStream(), includeFile.getURI(), "US-ASCII",
-				oldScanner.includeDocumentation() ) );
+			try( Scanner newScanner =
+				new Scanner( includeFile, "US-ASCII",
+					oldScanner.includeDocumentation() ) ) {
+				setScanner( newScanner );
 
-			if( includeFile.getParentPath() == null ) {
-				includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length );
-			} else {
-				includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length + 1 );
-				includePaths[ origIncludePaths.length ] = includeFile.getParentPath();
+
+				if( includeFile.parentURI().isEmpty() ) {
+					includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length );
+				} else {
+					includePaths = Arrays.copyOf( origIncludePaths, origIncludePaths.length + 1 );
+					includePaths[ origIncludePaths.length ] = includeFile.parentURI().get().toString();
+				}
+				_parse();
+				includePaths = origIncludePaths;
+				setScanner( oldScanner );
+				nextToken();
 			}
-			_parse();
-			includePaths = origIncludePaths;
-			includeFile.getInputStream().close();
-			setScanner( oldScanner );
-			nextToken();
 		}
 	}
 
@@ -3787,27 +3808,4 @@ public class OLParser extends AbstractParser {
 		return;
 	}
 
-	private static class IncludeFile {
-		private final InputStream inputStream;
-		private final String parentPath;
-		private final URI uri;
-
-		private IncludeFile( InputStream inputStream, String parentPath, URI uri ) {
-			this.inputStream = inputStream;
-			this.parentPath = parentPath;
-			this.uri = uri;
-		}
-
-		private InputStream getInputStream() {
-			return inputStream;
-		}
-
-		private String getParentPath() {
-			return parentPath;
-		}
-
-		private URI getURI() {
-			return uri;
-		}
-	}
 }

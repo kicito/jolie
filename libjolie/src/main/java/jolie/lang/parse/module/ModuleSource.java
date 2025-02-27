@@ -19,21 +19,13 @@
 
 package jolie.lang.parse.module;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Optional;
-import java.util.jar.Attributes;
-import java.util.jar.JarFile;
-import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
-import jolie.lang.Constants;
+import jolie.lang.parse.ast.ServiceNode;
 
 /**
  * an Interface of Joile module Source
@@ -48,108 +40,42 @@ public interface ModuleSource {
 	/**
 	 * @return an optional include path for parsing this module
 	 */
-	Optional< String > includePath();
+	Optional< URI > includePath();
 
 	/**
 	 * @return an InputStream of source
 	 */
-	Optional< InputStream > openStream();
-}
-
-
-class PathSource implements ModuleSource {
-
-	private final Path path;
-
-	public PathSource( Path p ) {
-		this.path = p;
-	}
-
-	@Override
-	public URI uri() {
-		return this.path.toUri();
-	}
+	InputStream openStream() throws IOException;
 
 	/**
-	 * the include path of ol file should be empty
+	 * @return name of module
 	 */
-	@Override
-	public Optional< String > includePath() {
-		return Optional.empty();
-	}
-
-	@Override
-	public Optional< InputStream > openStream() {
-		try {
-			InputStream is = new FileInputStream( this.path.toFile() );
-			// wrap with BufferInputStream for improve performance
-			return Optional.of( new BufferedInputStream( is ) );
-		} catch( FileNotFoundException e ) {
-			return Optional.empty();
-		}
-	}
-}
-
-
-class JapSource implements ModuleSource {
-
-	private final JarFile japFile;
-	private final URI uri;
-	private final String filePath;
-	private final Path parentPath;
-	private final ZipEntry moduleEntry;
-
-	public JapSource( Path f ) throws IOException {
-		this.japFile = new JarFile( f.toFile() );
-		this.uri = f.toUri();
-		Manifest manifest = this.japFile.getManifest();
-
-		if( manifest != null ) { // See if a main program is defined through a Manifest attribute
-			Attributes attrs = manifest.getMainAttributes();
-			this.filePath = attrs.getValue( Constants.Manifest.MAIN_PROGRAM );
-			this.parentPath = Paths.get( this.filePath ).getParent();
-			moduleEntry = japFile.getEntry( this.filePath );
-			if( moduleEntry == null ) {
-				throw new IOException();
-			}
-		} else {
-			throw new IOException();
-		}
-	}
-
-	public JapSource( Path f, List< String > path ) throws IOException {
-		this.japFile = new JarFile( f.toFile() );
-		this.uri = f.toUri();
-		this.filePath = String.join( "/", path );
-		moduleEntry = japFile.getEntry( this.filePath + ".ol" );
-		if( moduleEntry == null ) {
-			throw new FileNotFoundException(
-				this.filePath + " in " + f.toString() );
-		}
-		this.parentPath = Paths.get( this.filePath ).getParent();
-	}
+	String name();
 
 	/**
-	 * additional includePath of JAP source is a parent path of the main execution file defined at main
-	 * program
+	 * @return name of module
 	 */
-	@Override
-	public Optional< String > includePath() {
-		return Optional
-			.of( "jap:" + this.uri.toString() + "!/" + (this.parentPath != null ? this.parentPath.toString() : "") );
+	Optional< URI > parentURI();
+
+	public static ModuleSource create( ServiceNode node ) {
+		return new ProgramSource( node.program(), node.context().source(), node.name() );
 	}
 
-	@Override
-	public URI uri() {
-		return this.uri;
-	}
-
-	@Override
-	public Optional< InputStream > openStream() {
-		try {
-			return Optional.of( this.japFile.getInputStream( this.moduleEntry ) );
-		} catch( IOException e ) {
-			return Optional.empty();
+	public static ModuleSource create( URI uri, Optional< InputStream > is ) throws FileNotFoundException {
+		if( is.isPresent() ) {
+			return new InputStreamSource( is.get(), uri );
 		}
+		switch( uri.getScheme() ) {
+		case "jap":
+			return new JapSource( uri );
+		case "file":
+			return new PathSource( Paths.get( uri ) );
+		default:
+			return new ProgramSource( null, uri );
+		}
+	}
+
+	public static ModuleSource create( URI uri ) throws FileNotFoundException {
+		return ModuleSource.create( uri, Optional.empty() );
 	}
 }
