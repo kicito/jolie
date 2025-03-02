@@ -586,11 +586,7 @@ public class CommandLineParser implements AutoCloseable {
 
 		if( olResult.stream == null ) {
 			if( ignoreFile ) {
-				try {
-					olResult.source = new URI( olFilepath );
-				} catch( URISyntaxException e ) {
-					throw new CommandLineException( e.getMessage() );
-				}
+				olResult.source = olFilepath;
 				olResult.stream = new ByteArrayInputStream( new byte[] {} );
 			} else if( olFilepath.endsWith( ".ol" ) ) {
 				// try to read the compiled version of the ol file
@@ -662,6 +658,7 @@ public class CommandLineParser implements AutoCloseable {
 				.append( "jap:file:" )
 				.append( UriUtils.normalizeWindowsPath( japFile.getName() ) )
 				.append( "!" )
+				.append( filepath.startsWith( "/" ) ? "" : "/" )
 				.append( filepath )
 				.toString();
 		}
@@ -683,7 +680,7 @@ public class CommandLineParser implements AutoCloseable {
 	}
 
 	private static class GetOLStreamResult {
-		private URI source;
+		private String source;
 		private InputStream stream;
 	}
 
@@ -712,7 +709,7 @@ public class CommandLineParser implements AutoCloseable {
 						olURL = new URI( UriUtils.normalizeJolieUri(
 							UriUtils.normalizeWindowsPath( UriUtils.resolve( includePath, olFilepath ) ) ) ).toURL();
 						result.stream = olURL.openStream();
-						result.source = olURL.toURI();
+						result.source = olURL.toString();
 						break;
 					} catch( URISyntaxException | IOException e ) {
 					}
@@ -724,7 +721,7 @@ public class CommandLineParser implements AutoCloseable {
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
 						result.stream = new FileInputStream( f );
-						result.source = f.toURI();
+						result.source = f.toURI().getSchemeSpecificPart();
 						break;
 					}
 				}
@@ -734,20 +731,16 @@ public class CommandLineParser implements AutoCloseable {
 				try {
 					olURL = new URI( olFilepath ).toURL();
 					result.stream = olURL.openStream();
-					result.source = olURL.toURI();
+					result.source = olFilepath;
 					if( result.stream == null ) {
 						throw new MalformedURLException();
 					}
-				} catch( MalformedURLException e ) {
+				} catch( MalformedURLException | URISyntaxException e ) {
 					olURL = classLoader.getResource( olFilepath );
 					if( olURL != null ) {
 						result.stream = olURL.openStream();
-						try {
-							result.source = olURL.toURI();
-						} catch( URISyntaxException e1 ) {
-						}
+						result.source = olURL.toString();
 					}
-				} catch( URISyntaxException e ) {
 				}
 			}
 		}

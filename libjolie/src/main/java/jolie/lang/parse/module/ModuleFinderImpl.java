@@ -21,17 +21,14 @@ package jolie.lang.parse.module;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import jolie.lang.Constants;
 import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
@@ -87,22 +84,20 @@ public class ModuleFinderImpl implements ModuleFinder {
 	private ModuleSource findJapScheme( URI source, ImportPath importPath ) throws ModuleNotFoundException {
 
 		try {
-			URI jarURI = URI.create( "jar:" + source.getSchemeSpecificPart() );
 			if( importPath.isRelativeImport() ) {
-				// create jar uri to separate jap file and start entry
-
-				JarURLConnection jarURLConnection =
-					(JarURLConnection) jarURI.toURL().openConnection();
-				URL japUrl = jarURLConnection.getJarFileURL();
-				Path entryPath = Paths.get( jarURLConnection.getEntryName() );
-
-				// get the start directory to perform an relative lookup
-				Path entryDir = entryPath.endsWith( Constants.FILE_SEPARATOR ) ? entryPath : entryPath.getParent();
-				var importPathEntry = entryDir.resolve( Paths.get( importPath.toRelativePathString() ) );
-				return new JapSource( japUrl.toURI(), new JarFile( Paths.get( japUrl.toURI() ).toFile() ),
-					importPathEntry );
+				if( source.getScheme() != null && source.getScheme().equals( "jap" ) ) {
+					JapSource jSource = new JapSource( source );
+					String entryPath = jSource.name();
+					Path entryDir = Paths.get( entryPath ).getParent() == null ? Paths.get( "/" )
+						: Paths.get( entryPath ).getParent();
+					var importPathEntry = entryDir.resolve( Paths.get( importPath.toRelativePathString() ) );
+					return new JapSource(
+						new URI( jSource.japURI().toString() + "!" + importPathEntry.toAbsolutePath() ) );
+				} else {
+					throw new ModuleNotFoundException( importPath, Paths.get( source ) );
+				}
 			} else {
-				return this.findAbsoluteImport( importPath, Paths.get( jarURI ) );
+				return this.findAbsoluteImport( importPath, Paths.get( source.getSchemeSpecificPart() ) );
 			}
 		} catch( ModuleNotFoundException e ) {
 			throw e;
@@ -143,13 +138,13 @@ public class ModuleFinderImpl implements ModuleFinder {
 			if( !rest.isEmpty() ) {
 				return new JapSource( japPath, rest );
 			} else {
-				return new JapSource( japPath );
+				return new JapSource( japPath.toUri() );
 			}
 		} catch( IOException e ) {
 			errPathList.add( Paths.get( e.getMessage() ) );
 		}
 		try {
-			// 1. ./lib/FIRST.jap with entry of REST.ol
+			// 2. ./lib/FIRST.jap with entry of REST.ol
 			// where importPath[0] = FIRST
 			// and importPath[1...] = REST
 			Path japPath =
@@ -161,7 +156,7 @@ public class ModuleFinderImpl implements ModuleFinder {
 			errPathList.add( Paths.get( e.getMessage() ) );
 		}
 
-		// 2. Try to resolve P from the packages directory from self to parent, until system root is
+		// 3. Try to resolve P from the packages directory from self to parent, until system root is
 		// reached.
 		try {
 			return this.moduleLookupFromPackages( parentPath, importPath );
@@ -170,7 +165,7 @@ public class ModuleFinderImpl implements ModuleFinder {
 				.collect( Collectors.toList() ) );
 		}
 
-		// 3. Try to resolve P from the list of packages directories.
+		// 4. Try to resolve P from the list of packages directories.
 		for( Path packagePath : this.packagePaths ) {
 			try {
 				ModuleSource moduleFile = this.moduleLookup( packagePath, importPath );

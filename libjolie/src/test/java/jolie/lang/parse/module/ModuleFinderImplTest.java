@@ -1,6 +1,7 @@
 package jolie.lang.parse.module;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.InputStream;
 import java.net.URI;
@@ -98,12 +99,14 @@ public class ModuleFinderImplTest {
 		final ModuleFinder finder = new ModuleFinderImpl( packagesPath );
 
 		var importPath = new ImportPath( Arrays.asList( "twice" ) ); // from .. import ... translates to ["", ""]
-		var originURI = Paths.get( "src/test/resources/main.ol" ).toUri();
-		var expectSourceURI = Paths.get( "src/test/resources/lib/twice.jap" ).toUri();
+		var originURI = Paths.get( "src/test/resources/main.ol" ).toAbsolutePath().toUri();
 
 		assertDoesNotThrow( () -> {
+			var expectSourceURI =
+				new URI( "jap:" + Paths.get( "src/test/resources/lib/twice.jap" ).toAbsolutePath().toUri().toString()
+					+ "!/twice/main.ol" );
 			ModuleSource source = finder.find( originURI, importPath );
-			assertTrue( expectSourceURI.equals( source.uri() ),
+			assertEquals( expectSourceURI, source.uri(),
 				"expected " + expectSourceURI + " but found " + source.uri() );
 			InputStream is = source.openStream();
 			is.close();
