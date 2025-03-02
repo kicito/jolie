@@ -55,6 +55,7 @@ import jolie.Interpreter;
 import jolie.JolieClassLoader;
 import jolie.lang.Constants;
 import jolie.lang.parse.Scanner;
+import jolie.lang.parse.module.ModuleSource;
 import jolie.runtime.correlation.CorrelationEngine;
 import jolie.util.UriUtils;
 
@@ -179,6 +180,8 @@ public class CommandLineParser implements AutoCloseable {
 				getOptionString( "--cellId",
 					"set an integer as cell identifier, used for creating message ids. (max: "
 						+ Integer.MAX_VALUE + ")" ) )
+			.append(
+				getOptionString( "--stackTraces", "Print stack traces (default: false)" ) )
 			.toString();
 	}
 
@@ -605,7 +608,15 @@ public class CommandLineParser implements AutoCloseable {
 		isProgramCompiled = olFilepath.endsWith( ".olc" );
 		tracer = bTracer && !isProgramCompiled;
 		check = bCheck && !isProgramCompiled;
-		programURI = olResult.source;
+		try {
+			if( olResult.source.startsWith( "jap" ) || olResult.source.startsWith( "file" ) ) {
+				programURI = new URI( olResult.source );
+			} else {
+				programURI = URI.create( "file:" + olResult.source );
+			}
+		} catch( URISyntaxException e ) {
+			throw new CommandLineException( e.getMessage() );
+		}
 		programStream = olResult.stream;
 
 		includePaths = new LinkedHashSet<>( includeList ).toArray( new String[ 0 ] );
@@ -689,7 +700,11 @@ public class CommandLineParser implements AutoCloseable {
 		File f = new File( olFilepath ).getAbsoluteFile();
 		if( f.exists() ) {
 			result.stream = new FileInputStream( f );
-			result.source = f.toURI();
+			result.source = f.toURI().getSchemeSpecificPart();
+		} else if( olFilepath.startsWith( "jap" ) ) {
+			olURL = new URL( olFilepath );
+			result.stream = olURL.openStream();
+			result.source = olURL.toString();
 		} else {
 			for( String includePath : includePaths ) {
 				if( includePath.startsWith( "jap:" ) ) {
@@ -795,6 +810,9 @@ public class CommandLineParser implements AutoCloseable {
 	}
 
 	public Interpreter.Configuration getInterpreterConfiguration() throws CommandLineException, IOException {
+
+		ModuleSource source = ModuleSource.create( programURI );
+
 		return Interpreter.Configuration.create(
 			connectionsLimit,
 			cellId,
@@ -802,9 +820,8 @@ public class CommandLineParser implements AutoCloseable {
 			includePaths,
 			optionArgs,
 			libURLs,
-			programStream,
+			source,
 			charset,
-			programURI,
 			arguments,
 			constants,
 			jolieClassLoader,

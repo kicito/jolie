@@ -66,9 +66,7 @@ public class Jolie {
 	 */
 	public static void main( String[] args ) {
 		int exitCode = 0;
-		// TODO: remove this hack by extracting CommandLineParser here
-		boolean printStackTraces = true;
-		// boolean printStackTraces = Arrays.asList( args ).contains( "--stackTraces" );
+		boolean printStackTraces = false;
 
 		try( CommandLineParser commandLineParser =
 			new CommandLineParser( args, Jolie.class.getClassLoader(), false ) ) {
@@ -80,6 +78,7 @@ public class Jolie {
 					JsUtils.parseJsonIntoValue( fileReader, params.get(), true );
 				}
 			}
+			printStackTraces = config.printStackTraces();
 			final Interpreter interpreter = new Interpreter( config, params, Optional.empty() );
 			Thread.currentThread().setContextClassLoader( interpreter.getClassLoader() );
 			Runtime.getRuntime().addShutdownHook( new Thread( () -> interpreter.exit( TERMINATION_TIMEOUT ) ) );

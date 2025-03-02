@@ -132,12 +132,11 @@ public class ModuleFinderImpl implements ModuleFinder {
 
 		List< Path > errPathList = new ArrayList<>();
 
-		Path japPath;
 		try {
 			// 1. WDIR/lib/FIRST.jap with entry of REST.ol
 			// where importPath[0] = FIRST
 			// and importPath[1...] = REST
-			japPath =
+			Path japPath =
 				ModuleFinder.japLookup( this.workingDirectoryPath.resolve( "lib" ),
 					importPath.pathParts().get( 0 ) );
 			List< String > rest = importPath.pathParts().subList( 1, importPath.pathParts().size() );
@@ -146,6 +145,18 @@ public class ModuleFinderImpl implements ModuleFinder {
 			} else {
 				return new JapSource( japPath );
 			}
+		} catch( IOException e ) {
+			errPathList.add( Paths.get( e.getMessage() ) );
+		}
+		try {
+			// 1. ./lib/FIRST.jap with entry of REST.ol
+			// where importPath[0] = FIRST
+			// and importPath[1...] = REST
+			Path japPath =
+				ModuleFinder.japLookup( parentPath.resolve( "lib" ),
+					importPath.pathParts().get( 0 ) );
+			List< String > rest = importPath.pathParts().subList( 1, importPath.pathParts().size() );
+			return new JapSource( japPath, rest );
 		} catch( IOException e ) {
 			errPathList.add( Paths.get( e.getMessage() ) );
 		}
