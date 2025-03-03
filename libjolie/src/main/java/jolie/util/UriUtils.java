@@ -96,10 +96,10 @@ public class UriUtils {
 		return Helpers.ifWindowsOrElse(
 			() -> {
 				String result = path.replace( "\\", "/" );
-				if( result.charAt( 1 ) == ':' ) {
-					// Remove the drive name if present
-					result = result.substring( 2 );
-				}
+				// if( result.charAt( 1 ) == ':' ) {
+				// 	// Remove the drive name if present
+				// 	result = result.substring( 2 );
+				// }
 				return result;
 			},
 			() -> path );
