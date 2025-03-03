@@ -66,7 +66,7 @@ service Main {
 		if( is_defined( args[0] ) ) {
 			listRequest.regex = args[0]
 		} else {
-			listRequest.regex = ".*\\.ol"
+			listRequest.regex = ".*jap.ol"
 		}
 		calcMaxLength
 		exitCode = 0 // Successful exit code

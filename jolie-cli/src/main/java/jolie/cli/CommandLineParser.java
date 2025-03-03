@@ -714,6 +714,7 @@ public class CommandLineParser implements AutoCloseable {
 					} catch( URISyntaxException | IOException e ) {
 					}
 				} else {
+					System.out.println(includePath +olFilepath);
 					f = new File( UriUtils.resolve(includePath ,olFilepath) );
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
