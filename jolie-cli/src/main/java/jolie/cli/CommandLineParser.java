@@ -707,17 +707,14 @@ public class CommandLineParser implements AutoCloseable {
 				if( includePath.startsWith( "jap:" ) ) {
 					try {
 						olURL = new URI( UriUtils.normalizeJolieUri(
-							UriUtils.normalizeWindowsPath( UriUtils.resolve( includePath, olFilepath ) ) ) ).toURL();
+							 UriUtils.resolve( includePath, olFilepath ) ) ).toURL();
 						result.stream = olURL.openStream();
 						result.source = olURL.toString();
 						break;
 					} catch( URISyntaxException | IOException e ) {
 					}
 				} else {
-					f = new File(
-						includePath +
-							jolie.lang.Constants.FILE_SEPARATOR +
-							olFilepath );
+					f = new File( UriUtils.resolve(includePath ,olFilepath) );
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
 						result.stream = new FileInputStream( f );
