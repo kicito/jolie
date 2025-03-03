@@ -541,7 +541,9 @@ public class CommandLineParser implements AutoCloseable {
 			if( path.endsWith( ".jar" ) || path.endsWith( ".jap" ) ) {
 				if( path.startsWith( "jap:" ) ) {
 					urls.add( new URL( path + "!/" ) );
-				} else {
+				} else if( path.startsWith( "file:" ) ) {
+					urls.add( new URL( "jap:" + path + "!/" ) );
+				} {
 					urls.add( new URL( "jap:file:" + path + "!/" ) );
 				}
 			} else if( new File( path ).isDirectory() ) {
@@ -704,18 +706,18 @@ public class CommandLineParser implements AutoCloseable {
 			result.source = olURL.toString();
 		} else {
 			for( String includePath : includePaths ) {
+				System.out.println( includePath + " " + olFilepath );
 				if( includePath.startsWith( "jap:" ) ) {
 					try {
 						olURL = new URI( UriUtils.normalizeJolieUri(
-							 UriUtils.resolve( includePath, olFilepath ) ) ).toURL();
+							UriUtils.resolve( includePath, olFilepath ) ) ).toURL();
 						result.stream = olURL.openStream();
 						result.source = olURL.toString();
 						break;
 					} catch( URISyntaxException | IOException e ) {
 					}
 				} else {
-					System.out.println(includePath +olFilepath);
-					f = new File( UriUtils.resolve(includePath ,olFilepath) );
+					f = new File( UriUtils.resolve( includePath, olFilepath ) );
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
 						result.stream = new FileInputStream( f );
@@ -779,11 +781,11 @@ public class CommandLineParser implements AutoCloseable {
 							libPath ) ) );
 
 				if( Files.exists( Paths.get( path ) ) ) {
-					return Optional.of( path );
+					return Optional.of( Paths.get( path ).toUri().toString() );
 				} else {
 					URL url = classLoader.getResource( path );
 					if( url != null ) {
-						return Optional.of( url.toString() );
+						return Optional.of( url.toURI().toString() );
 					}
 				}
 			} catch( URISyntaxException | InvalidPathException e ) {
