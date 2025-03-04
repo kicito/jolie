@@ -155,6 +155,18 @@ public class ModuleFinderImpl implements ModuleFinder {
 		} catch( IOException e ) {
 			errPathList.add( Paths.get( e.getMessage() ) );
 		}
+		try {
+			// 1. ./lib/FIRST.jap with entry of REST.ol
+			// where importPath[0] = FIRST
+			// and importPath[1...] = REST
+			Path japPath =
+				ModuleFinder.japLookup( parentPath.resolve( "lib" ),
+					importPath.pathParts().get( 0 ) );
+			List< String > rest = importPath.pathParts().subList( 1, importPath.pathParts().size() );
+			return new JapSource( japPath, rest );
+		} catch( IOException e ) {
+			errPathList.add( Paths.get( e.getMessage() ) );
+		}
 
 		// 3. Try to resolve P from the packages directory from self to parent, until system root is
 		// reached.

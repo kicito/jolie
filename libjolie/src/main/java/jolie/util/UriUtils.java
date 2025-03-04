@@ -25,7 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
+import java.util.Optional;
 import jolie.lang.Constants;
 
 /** Utilities to handle paths to locate files. */
@@ -54,7 +54,7 @@ public class UriUtils {
 		return normalizedUrl;
 	}
 
-	public static String resolve( String context, String target ) {
+	public static String resolve( final String context, String target ) {
 		if( context.isEmpty() ) {
 			return target;
 		}
@@ -65,28 +65,43 @@ public class UriUtils {
 			if( context.startsWith( JAP_FILE_PREFIX ) ) {
 				result = context + "/" + target.substring( JAP_FILE_PREFIX.length() );
 			} else {
-				Path path = null;
-				try {
-					path = Paths.get( context );
-				} catch( InvalidPathException e ) {
-					// try convert string to uri before continue
-					try {
-						URI uri = new URI( context );
-						path = Paths.get( uri );
-					} catch( URISyntaxException e1 ) {
-					}
-				}
-				if( Files.exists( path ) ) {
-					result = JAP_FILE_PREFIX + context + "/" + target.substring( JAP_FILE_PREFIX.length() );
+				final Optional< URI > uri = Helpers.firstNonNull(
+					() -> {
+						try {
+							return new URI( context );
+						} catch( URISyntaxException e ) {
+							return null;
+						}
+					},
+
+					() -> {
+						try {
+							Path p = Paths.get( context );
+							return p.toFile().exists() ? p.toUri() : null;
+						} catch( InvalidPathException e ) {
+							return null;
+						}
+					} );
+				if( uri.isPresent() && Files.exists( Paths.get( uri.get() ) ) ) {
+					result = new StringBuilder( "jap:" )
+						.append( context )
+						.append( context.endsWith( "/" ) ? "" : "/" )
+						.append( target.substring( JAP_FILE_PREFIX.length() ) )
+						.toString();
 				}
 			}
 		}
 
 		if( result == null ) {
-			if( !context.endsWith( Constants.FILE_SEPARATOR ) ) {
-				context += Constants.FILE_SEPARATOR;
+			result = context;
+			if( context.startsWith( JAP_FILE_PREFIX ) ) {
+				if( !context.endsWith( "!/" ) ) {
+					result += "/";
+				}
+			} else if( !context.endsWith( Constants.FILE_SEPARATOR ) ) {
+				result += Constants.FILE_SEPARATOR;
 			}
-			result = context + target;
+			result += target;
 		}
 
 		return result;
@@ -96,10 +111,6 @@ public class UriUtils {
 		return Helpers.ifWindowsOrElse(
 			() -> {
 				String result = path.replace( "\\", "/" );
-				if( result.charAt( 1 ) == ':' ) {
-					// Remove the drive name if present
-					result = result.substring( 2 );
-				}
 				return result;
 			},
 			() -> path );

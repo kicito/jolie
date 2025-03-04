@@ -57,6 +57,7 @@ import jolie.lang.Constants;
 import jolie.lang.parse.Scanner;
 import jolie.lang.parse.module.ModuleSource;
 import jolie.runtime.correlation.CorrelationEngine;
+import jolie.util.Helpers;
 import jolie.util.UriUtils;
 
 /**
@@ -266,7 +267,7 @@ public class CommandLineParser implements AutoCloseable {
 	 */
 	public CommandLineParser( String[] args, ClassLoader parentClassLoader, ArgumentHandler argHandler,
 		boolean ignoreFile )
-		throws CommandLineException, IOException {
+		throws CommandLineException, IOException, IllegalArgumentException {
 		List< String > argsList = Arrays.asList( args );
 
 		String csetAlgorithmName = "simple";
@@ -535,24 +536,36 @@ public class CommandLineParser implements AutoCloseable {
 		List< URL > urls = new ArrayList<>();
 		for( String pathInList : libList ) {
 			String path = pathInList;
+
 			if( path.contains( "!/" ) && !path.startsWith( "jap:" ) && !path.startsWith( "jar:" ) ) {
 				path = "jap:file:" + path;
 			}
 			if( path.endsWith( ".jar" ) || path.endsWith( ".jap" ) ) {
 				if( path.startsWith( "jap:" ) ) {
 					urls.add( new URL( path + "!/" ) );
+				} else if( path.startsWith( "file:" ) ) {
+					urls.add( new URL( "jap:" + path + "!/" ) );
 				} else {
 					urls.add( new URL( "jap:file:" + path + "!/" ) );
 				}
 			} else if( new File( path ).isDirectory() ) {
 				urls.add( new URL( "file:" + path + "/" ) );
 			} else if( path.endsWith( "/*" ) ) {
-				Path dir;
-				if( path.startsWith( "file:" ) ) {
-					dir = Paths.get( path.substring( 5, path.length() - 2 ) );
-				} else {
-					dir = Paths.get( path.substring( 0, path.length() - 2 ) );
-				}
+				final String pp = path;
+				String dirStr = Helpers.ifWindowsOrElse( () -> {
+					if( pp.startsWith( "file:" ) ) {
+						return pp.substring( 5, pp.length() - 2 ).replaceAll( "^/*", "" );
+					} else {
+						return pp.substring( 0, pp.length() - 2 );
+					}
+				}, () -> {
+					if( pp.startsWith( "file:" ) ) {
+						return pp.substring( 5, pp.length() - 2 );
+					} else {
+						return pp.substring( 0, pp.length() - 2 );
+					}
+				} );
+				Path dir = Paths.get( dirStr );
 
 				if( Files.isDirectory( dir ) ) {
 					dir = dir.toRealPath();
@@ -655,8 +668,8 @@ public class CommandLineParser implements AutoCloseable {
 
 		if( filepath != null ) {
 			filepath = new StringBuilder()
-				.append( "jap:file:" )
-				.append( UriUtils.normalizeWindowsPath( japFile.getName() ) )
+				.append( "jap:" )
+				.append( Paths.get( japFile.getName() ).toUri() )
 				.append( "!" )
 				.append( filepath.startsWith( "/" ) ? "" : "/" )
 				.append( filepath )
@@ -707,17 +720,14 @@ public class CommandLineParser implements AutoCloseable {
 				if( includePath.startsWith( "jap:" ) ) {
 					try {
 						olURL = new URI( UriUtils.normalizeJolieUri(
-							UriUtils.normalizeWindowsPath( UriUtils.resolve( includePath, olFilepath ) ) ) ).toURL();
+							UriUtils.resolve( includePath, olFilepath ) ) ).toURL();
 						result.stream = olURL.openStream();
 						result.source = olURL.toString();
 						break;
 					} catch( URISyntaxException | IOException e ) {
 					}
 				} else {
-					f = new File(
-						includePath +
-							jolie.lang.Constants.FILE_SEPARATOR +
-							olFilepath );
+					f = new File( UriUtils.resolve( includePath, olFilepath ) );
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
 						result.stream = new FileInputStream( f );
@@ -781,11 +791,11 @@ public class CommandLineParser implements AutoCloseable {
 							libPath ) ) );
 
 				if( Files.exists( Paths.get( path ) ) ) {
-					return Optional.of( path );
+					return Optional.of( Paths.get( path ).toUri().toString() );
 				} else {
 					URL url = classLoader.getResource( path );
 					if( url != null ) {
-						return Optional.of( url.toString() );
+						return Optional.of( url.toURI().toString() );
 					}
 				}
 			} catch( URISyntaxException | InvalidPathException e ) {
