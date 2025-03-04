@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import jolie.lang.Constants;
 import jolie.lang.parse.module.exceptions.ModuleNotFoundException;
+import jolie.util.UriUtils;
 
 public class ModuleFinderImpl implements ModuleFinder {
 
@@ -92,7 +93,7 @@ public class ModuleFinderImpl implements ModuleFinder {
 						: Paths.get( entryPath ).getParent();
 					var importPathEntry = entryDir.resolve( Paths.get( importPath.toRelativePathString() ) );
 					return new JapSource(
-						new URI( jSource.japURI().toString() + "!" + importPathEntry.toAbsolutePath() ) );
+						new URI( jSource.japURI().toString() + "!" + UriUtils.normalizeWindowsPath(importPathEntry.toString()) ) );
 				} else {
 					throw new ModuleNotFoundException( importPath, Paths.get( source ) );
 				}
