@@ -77,13 +77,17 @@ public class UriUtils {
 					}
 				}
 				if( Files.exists( path ) ) {
-					result = JAP_FILE_PREFIX + context + "/" + target.substring( JAP_FILE_PREFIX.length() );
+					result = "jap:" + context + "/" + target.substring( JAP_FILE_PREFIX.length() );
 				}
 			}
 		}
 
 		if( result == null ) {
-			if( !context.endsWith( Constants.FILE_SEPARATOR ) ) {
+			if  (context.startsWith(JAP_FILE_PREFIX)){
+				if (!context.endsWith("!/")){
+					context += "/";
+				}
+			} else if( !context.endsWith( Constants.FILE_SEPARATOR ) ) {
 				context += Constants.FILE_SEPARATOR;
 			}
 			result = context + target;
@@ -97,8 +101,8 @@ public class UriUtils {
 			() -> {
 				String result = path.replace( "\\", "/" );
 				// if( result.charAt( 1 ) == ':' ) {
-				// 	// Remove the drive name if present
-				// 	result = result.substring( 2 );
+				// // Remove the drive name if present
+				// result = result.substring( 2 );
 				// }
 				return result;
 			},

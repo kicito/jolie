@@ -536,7 +536,6 @@ public class CommandLineParser implements AutoCloseable {
 		List< URL > urls = new ArrayList<>();
 		for( String pathInList : libList ) {
 			String path = pathInList;
-			System.out.println("538: " + path);
 
 			if( path.contains( "!/" ) && !path.startsWith( "jap:" ) && !path.startsWith( "jar:" ) ) {
 				path = "jap:file:" + path;
@@ -550,26 +549,23 @@ public class CommandLineParser implements AutoCloseable {
 					urls.add( new URL( "jap:file:" + path + "!/" ) );
 				}
 			} else if( new File( path ).isDirectory() ) {
-			System.out.println("552: " + "file:" + path + "/");
-			urls.add( new URL( "file:" + path + "/" ) );
+				urls.add( new URL( "file:" + path + "/" ) );
 			} else if( path.endsWith( "/*" ) ) {
-				System.out.println( "556: " + "dir:" );
 				final String pp = path;
-				String dirStr = Helpers.ifWindowsOrElse(()->{
+				String dirStr = Helpers.ifWindowsOrElse( () -> {
 					if( pp.startsWith( "file:" ) ) {
-						return pp.substring( 5, pp.length() - 2 ).replaceAll("^/*", "") ;
+						return pp.substring( 5, pp.length() - 2 ).replaceAll( "^/*", "" );
 					} else {
-						return pp.substring( 0, pp.length() - 2 ) ;
+						return pp.substring( 0, pp.length() - 2 );
 					}
-				}, ()->{
+				}, () -> {
 					if( pp.startsWith( "file:" ) ) {
-						return pp.substring( 5, pp.length() - 2 ) ;
+						return pp.substring( 5, pp.length() - 2 );
 					} else {
-						return pp.substring( 0, pp.length() - 2 ) ;
+						return pp.substring( 0, pp.length() - 2 );
 					}
 				} );
-				Path dir = Paths.get(dirStr);
-				System.out.println("561: " + "dir:" + dir );
+				Path dir = Paths.get( dirStr );
 
 				if( Files.isDirectory( dir ) ) {
 					dir = dir.toRealPath();
@@ -587,7 +583,6 @@ public class CommandLineParser implements AutoCloseable {
 				} catch( MalformedURLException e ) {
 				}
 			}
-			System.out.println("end 575");
 		}
 		urls.add( new URL( "file:/" ) );
 		libURLs = urls.toArray( new URL[ 0 ] );
@@ -673,8 +668,8 @@ public class CommandLineParser implements AutoCloseable {
 
 		if( filepath != null ) {
 			filepath = new StringBuilder()
-				.append( "jap:file:" )
-				.append( UriUtils.normalizeWindowsPath( japFile.getName() ) )
+				.append( "jap:" )
+				.append( Paths.get( japFile.getName() ).toUri() )
 				.append( "!" )
 				.append( filepath.startsWith( "/" ) ? "" : "/" )
 				.append( filepath )
@@ -722,7 +717,6 @@ public class CommandLineParser implements AutoCloseable {
 			result.source = olURL.toString();
 		} else {
 			for( String includePath : includePaths ) {
-				System.out.println( includePath + " " + olFilepath );
 				if( includePath.startsWith( "jap:" ) ) {
 					try {
 						olURL = new URI( UriUtils.normalizeJolieUri(
@@ -790,13 +784,11 @@ public class CommandLineParser implements AutoCloseable {
 
 		for( String context : prepend( "", includePaths ) ) {
 			try {
-				System.out.println( "before " + context + " and " + libPath );
 				String path = UriUtils.normalizeJolieUri(
 					UriUtils.normalizeWindowsPath(
 						UriUtils.resolve(
 							context,
 							libPath ) ) );
-				System.out.println( "after " + path );
 
 				if( Files.exists( Paths.get( path ) ) ) {
 					return Optional.of( Paths.get( path ).toUri().toString() );
