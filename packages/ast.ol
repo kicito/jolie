@@ -96,6 +96,16 @@ type VoidBasicType {
 	void  //<@JavaName("voidTag")
 }
 
+/// An any basic type.
+type AnyBasicType {
+	any  //<@JavaName("anyTag")
+}
+
+/// A raw basic type.
+type RawBasicType {
+	raw  //<@JavaName("rawTag")
+}
+
 /// An integer range.
 type IntRange {
 	min: int //< Must be lower than or equal to max.
@@ -121,6 +131,10 @@ type BasicType:
 	DoubleBasicType
 	|
 	StringBasicType
+	|
+	AnyBasicType
+	|
+	RawBasicType
 
 /// The type of a node in a tree type.
 type TreeNodeType {
@@ -165,8 +179,8 @@ type TypeDef {
 /// An aggregation, as in the aggregates construct used in input ports.
 type Aggregation {
 	textLocation: TextLocation
-	outputPort: LocatedSymbolRef
-	extender*: LocatedSymbolRef
+	outputPort*: LocatedSymbolRef
+	extender?: LocatedSymbolRef
 }
 
 /// The type of a OneWay operation.
@@ -247,9 +261,12 @@ type Module {
 	services*: ServiceDef
 }
 
+type ResolveSymbolResponse: TypeDef | InterfaceDef | ServiceDef
+
 interface AstInterface {
 RequestResponse:
-	parseModule( string )( Module )
+	parseModule( string )( Module ),
+	resolveSymbol( LocatedSymbolRef )( ResolveSymbolResponse )
 }
 
 service Ast {

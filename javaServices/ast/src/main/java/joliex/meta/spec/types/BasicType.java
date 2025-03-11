@@ -4,7 +4,7 @@ package joliex.meta.spec.types;
  * This is a sealed interface representing the following choice type:
  *
  * <pre>
- * BasicType: joliex.meta.spec.types.VoidBasicType | joliex.meta.spec.types.BoolBasicType | joliex.meta.spec.types.IntBasicType | joliex.meta.spec.types.LongBasicType | joliex.meta.spec.types.DoubleBasicType | joliex.meta.spec.types.StringBasicType
+ * BasicType: joliex.meta.spec.types.VoidBasicType | joliex.meta.spec.types.BoolBasicType | joliex.meta.spec.types.IntBasicType | joliex.meta.spec.types.LongBasicType | joliex.meta.spec.types.DoubleBasicType | joliex.meta.spec.types.StringBasicType | joliex.meta.spec.types.AnyBasicType | joliex.meta.spec.types.RawBasicType
  * </pre>
  *
  * @see jolie.runtime.embedding.java.JolieValue
@@ -15,12 +15,16 @@ package joliex.meta.spec.types;
  * @see joliex.meta.spec.types.LongBasicType
  * @see joliex.meta.spec.types.DoubleBasicType
  * @see joliex.meta.spec.types.StringBasicType
+ * @see joliex.meta.spec.types.AnyBasicType
+ * @see joliex.meta.spec.types.RawBasicType
  * @see #of1(joliex.meta.spec.types.VoidBasicType)
  * @see #of2(joliex.meta.spec.types.BoolBasicType)
  * @see #of3(joliex.meta.spec.types.IntBasicType)
  * @see #of4(joliex.meta.spec.types.LongBasicType)
  * @see #of5(joliex.meta.spec.types.DoubleBasicType)
  * @see #of6(joliex.meta.spec.types.StringBasicType)
+ * @see #of7(joliex.meta.spec.types.AnyBasicType)
+ * @see #of8(joliex.meta.spec.types.RawBasicType)
  */
 public sealed interface BasicType extends jolie.runtime.embedding.java.JolieValue {
 
@@ -290,6 +294,94 @@ public sealed interface BasicType extends jolie.runtime.embedding.java.JolieValu
 		}
 	}
 
+	public static record C7(joliex.meta.spec.types.AnyBasicType option) implements BasicType {
+
+		public C7 {
+			jolie.runtime.embedding.java.util.ValueManager.validated( "option", option );
+		}
+
+		public jolie.runtime.embedding.java.JolieNative.JolieVoid content() {
+			return option.content();
+		}
+
+		public java.util.Map< java.lang.String, java.util.List< jolie.runtime.embedding.java.JolieValue > > children() {
+			return option.children();
+		}
+
+		public jolie.runtime.Value jolieRepr() {
+			return joliex.meta.spec.types.AnyBasicType.toValue( option );
+		}
+
+		public boolean equals( java.lang.Object obj ) {
+			return obj != null && obj instanceof jolie.runtime.embedding.java.JolieValue j && option.equals( j );
+		}
+
+		public int hashCode() {
+			return option.hashCode();
+		}
+
+		public java.lang.String toString() {
+			return option.toString();
+		}
+
+		public static C7 from( jolie.runtime.embedding.java.JolieValue j )
+			throws jolie.runtime.embedding.java.TypeValidationException {
+			return new C7( joliex.meta.spec.types.AnyBasicType.from( j ) );
+		}
+
+		public static C7 fromValue( jolie.runtime.Value v ) throws jolie.runtime.typing.TypeCheckingException {
+			return new C7( joliex.meta.spec.types.AnyBasicType.fromValue( v ) );
+		}
+
+		public static jolie.runtime.Value toValue( C7 t ) {
+			return t.jolieRepr();
+		}
+	}
+
+	public static record C8(joliex.meta.spec.types.RawBasicType option) implements BasicType {
+
+		public C8 {
+			jolie.runtime.embedding.java.util.ValueManager.validated( "option", option );
+		}
+
+		public jolie.runtime.embedding.java.JolieNative.JolieVoid content() {
+			return option.content();
+		}
+
+		public java.util.Map< java.lang.String, java.util.List< jolie.runtime.embedding.java.JolieValue > > children() {
+			return option.children();
+		}
+
+		public jolie.runtime.Value jolieRepr() {
+			return joliex.meta.spec.types.RawBasicType.toValue( option );
+		}
+
+		public boolean equals( java.lang.Object obj ) {
+			return obj != null && obj instanceof jolie.runtime.embedding.java.JolieValue j && option.equals( j );
+		}
+
+		public int hashCode() {
+			return option.hashCode();
+		}
+
+		public java.lang.String toString() {
+			return option.toString();
+		}
+
+		public static C8 from( jolie.runtime.embedding.java.JolieValue j )
+			throws jolie.runtime.embedding.java.TypeValidationException {
+			return new C8( joliex.meta.spec.types.RawBasicType.from( j ) );
+		}
+
+		public static C8 fromValue( jolie.runtime.Value v ) throws jolie.runtime.typing.TypeCheckingException {
+			return new C8( joliex.meta.spec.types.RawBasicType.fromValue( v ) );
+		}
+
+		public static jolie.runtime.Value toValue( C8 t ) {
+			return t.jolieRepr();
+		}
+	}
+
 	public static ListBuilder listBuilder() {
 		return new ListBuilder();
 	}
@@ -353,6 +445,24 @@ public sealed interface BasicType extends jolie.runtime.embedding.java.JolieValu
 		return of6( f.apply( joliex.meta.spec.types.StringBasicType.builder() ) );
 	}
 
+	public static BasicType of7( joliex.meta.spec.types.AnyBasicType option ) {
+		return new C7( option );
+	}
+
+	public static BasicType of7(
+		java.util.function.Function< joliex.meta.spec.types.AnyBasicType.Builder, joliex.meta.spec.types.AnyBasicType > f ) {
+		return of7( f.apply( joliex.meta.spec.types.AnyBasicType.builder() ) );
+	}
+
+	public static BasicType of8( joliex.meta.spec.types.RawBasicType option ) {
+		return new C8( option );
+	}
+
+	public static BasicType of8(
+		java.util.function.Function< joliex.meta.spec.types.RawBasicType.Builder, joliex.meta.spec.types.RawBasicType > f ) {
+		return of8( f.apply( joliex.meta.spec.types.RawBasicType.builder() ) );
+	}
+
 	public static BasicType from( jolie.runtime.embedding.java.JolieValue j )
 		throws jolie.runtime.embedding.java.TypeValidationException {
 		return jolie.runtime.embedding.java.util.ValueManager.choiceFrom( j,
@@ -361,7 +471,9 @@ public sealed interface BasicType extends jolie.runtime.embedding.java.JolieValu
 				jolie.runtime.embedding.java.util.ValueManager.castFunc( C3::from ),
 				jolie.runtime.embedding.java.util.ValueManager.castFunc( C4::from ),
 				jolie.runtime.embedding.java.util.ValueManager.castFunc( C5::from ),
-				jolie.runtime.embedding.java.util.ValueManager.castFunc( C6::from ) ) );
+				jolie.runtime.embedding.java.util.ValueManager.castFunc( C6::from ),
+				jolie.runtime.embedding.java.util.ValueManager.castFunc( C7::from ),
+				jolie.runtime.embedding.java.util.ValueManager.castFunc( C8::from ) ) );
 	}
 
 	public static BasicType fromValue( jolie.runtime.Value v ) throws jolie.runtime.typing.TypeCheckingException {
@@ -371,7 +483,9 @@ public sealed interface BasicType extends jolie.runtime.embedding.java.JolieValu
 				jolie.runtime.embedding.java.util.ValueManager.castFunc( C3::fromValue ),
 				jolie.runtime.embedding.java.util.ValueManager.castFunc( C4::fromValue ),
 				jolie.runtime.embedding.java.util.ValueManager.castFunc( C5::fromValue ),
-				jolie.runtime.embedding.java.util.ValueManager.castFunc( C6::fromValue ) ) );
+				jolie.runtime.embedding.java.util.ValueManager.castFunc( C6::fromValue ),
+				jolie.runtime.embedding.java.util.ValueManager.castFunc( C7::fromValue ),
+				jolie.runtime.embedding.java.util.ValueManager.castFunc( C8::fromValue ) ) );
 	}
 
 	public static jolie.runtime.Value toValue( BasicType t ) {
@@ -551,6 +665,60 @@ public sealed interface BasicType extends jolie.runtime.embedding.java.JolieValu
 		public ListBuilder set6( int index,
 			java.util.function.Function< joliex.meta.spec.types.StringBasicType.Builder, joliex.meta.spec.types.StringBasicType > b ) {
 			return set6( index, b.apply( joliex.meta.spec.types.StringBasicType.builder() ) );
+		}
+
+		public ListBuilder add7( joliex.meta.spec.types.AnyBasicType option ) {
+			return add( new C7( option ) );
+		}
+
+		public ListBuilder add7( int index, joliex.meta.spec.types.AnyBasicType option ) {
+			return add( index, new C7( option ) );
+		}
+
+		public ListBuilder set7( int index, joliex.meta.spec.types.AnyBasicType option ) {
+			return set( index, new C7( option ) );
+		}
+
+		public ListBuilder add7(
+			java.util.function.Function< joliex.meta.spec.types.AnyBasicType.Builder, joliex.meta.spec.types.AnyBasicType > b ) {
+			return add7( b.apply( joliex.meta.spec.types.AnyBasicType.builder() ) );
+		}
+
+		public ListBuilder add7( int index,
+			java.util.function.Function< joliex.meta.spec.types.AnyBasicType.Builder, joliex.meta.spec.types.AnyBasicType > b ) {
+			return add7( index, b.apply( joliex.meta.spec.types.AnyBasicType.builder() ) );
+		}
+
+		public ListBuilder set7( int index,
+			java.util.function.Function< joliex.meta.spec.types.AnyBasicType.Builder, joliex.meta.spec.types.AnyBasicType > b ) {
+			return set7( index, b.apply( joliex.meta.spec.types.AnyBasicType.builder() ) );
+		}
+
+		public ListBuilder add8( joliex.meta.spec.types.RawBasicType option ) {
+			return add( new C8( option ) );
+		}
+
+		public ListBuilder add8( int index, joliex.meta.spec.types.RawBasicType option ) {
+			return add( index, new C8( option ) );
+		}
+
+		public ListBuilder set8( int index, joliex.meta.spec.types.RawBasicType option ) {
+			return set( index, new C8( option ) );
+		}
+
+		public ListBuilder add8(
+			java.util.function.Function< joliex.meta.spec.types.RawBasicType.Builder, joliex.meta.spec.types.RawBasicType > b ) {
+			return add8( b.apply( joliex.meta.spec.types.RawBasicType.builder() ) );
+		}
+
+		public ListBuilder add8( int index,
+			java.util.function.Function< joliex.meta.spec.types.RawBasicType.Builder, joliex.meta.spec.types.RawBasicType > b ) {
+			return add8( index, b.apply( joliex.meta.spec.types.RawBasicType.builder() ) );
+		}
+
+		public ListBuilder set8( int index,
+			java.util.function.Function< joliex.meta.spec.types.RawBasicType.Builder, joliex.meta.spec.types.RawBasicType > b ) {
+			return set8( index, b.apply( joliex.meta.spec.types.RawBasicType.builder() ) );
 		}
 
 		public java.util.List< BasicType > build() {

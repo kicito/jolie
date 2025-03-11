@@ -6,8 +6,8 @@ package joliex.meta.spec.types;
  *
  * <pre>
  * textLocation: {@link joliex.meta.spec.types.Location}
- * extender[0,2147483647]: {@link joliex.meta.spec.types.LocatedSymbolRef}
- * outputPort: {@link joliex.meta.spec.types.LocatedSymbolRef}
+ * extender[0,1]: {@link joliex.meta.spec.types.LocatedSymbolRef}
+ * outputPort[0,2147483647]: {@link joliex.meta.spec.types.LocatedSymbolRef}
  * </pre>
  *
  * @see jolie.runtime.embedding.java.JolieValue
@@ -23,28 +23,27 @@ public final class Aggregation extends jolie.runtime.embedding.java.TypedStructu
 	@jolie.runtime.embedding.java.util.JolieName( "textLocation" )
 	private final joliex.meta.spec.types.Location textLocation;
 	@jolie.runtime.embedding.java.util.JolieName( "extender" )
-	private final java.util.List< joliex.meta.spec.types.LocatedSymbolRef > extender;
+	private final joliex.meta.spec.types.LocatedSymbolRef extender;
 	@jolie.runtime.embedding.java.util.JolieName( "outputPort" )
-	private final joliex.meta.spec.types.LocatedSymbolRef outputPort;
+	private final java.util.List< joliex.meta.spec.types.LocatedSymbolRef > outputPort;
 
-	public Aggregation( joliex.meta.spec.types.Location textLocation,
-		java.util.SequencedCollection< joliex.meta.spec.types.LocatedSymbolRef > extender,
-		joliex.meta.spec.types.LocatedSymbolRef outputPort ) {
+	public Aggregation( joliex.meta.spec.types.Location textLocation, joliex.meta.spec.types.LocatedSymbolRef extender,
+		java.util.SequencedCollection< joliex.meta.spec.types.LocatedSymbolRef > outputPort ) {
 		this.textLocation = jolie.runtime.embedding.java.util.ValueManager.validated( "textLocation", textLocation );
-		this.extender =
-			jolie.runtime.embedding.java.util.ValueManager.validated( "extender", extender, 0, 2147483647, t -> t );
-		this.outputPort = jolie.runtime.embedding.java.util.ValueManager.validated( "outputPort", outputPort );
+		this.extender = extender;
+		this.outputPort =
+			jolie.runtime.embedding.java.util.ValueManager.validated( "outputPort", outputPort, 0, 2147483647, t -> t );
 	}
 
 	public joliex.meta.spec.types.Location textLocation() {
 		return textLocation;
 	}
 
-	public java.util.List< joliex.meta.spec.types.LocatedSymbolRef > extender() {
-		return extender;
+	public java.util.Optional< joliex.meta.spec.types.LocatedSymbolRef > extender() {
+		return java.util.Optional.ofNullable( extender );
 	}
 
-	public joliex.meta.spec.types.LocatedSymbolRef outputPort() {
+	public java.util.List< joliex.meta.spec.types.LocatedSymbolRef > outputPort() {
 		return outputPort;
 	}
 
@@ -77,9 +76,10 @@ public final class Aggregation extends jolie.runtime.embedding.java.TypedStructu
 		return new Aggregation(
 			jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "textLocation" ),
 				joliex.meta.spec.types.Location::from ),
+			jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "extender" ),
+				joliex.meta.spec.types.LocatedSymbolRef::from ),
 			jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
-				j.getChildOrDefault( "extender", java.util.List.of() ), joliex.meta.spec.types.LocatedSymbolRef::from ),
-			jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "outputPort" ),
+				j.getChildOrDefault( "outputPort", java.util.List.of() ),
 				joliex.meta.spec.types.LocatedSymbolRef::from ) );
 	}
 
@@ -88,9 +88,9 @@ public final class Aggregation extends jolie.runtime.embedding.java.TypedStructu
 		return new Aggregation(
 			jolie.runtime.embedding.java.util.ValueManager.singleFieldFrom( v, "textLocation",
 				joliex.meta.spec.types.Location::fromValue ),
-			jolie.runtime.embedding.java.util.ValueManager.vectorFieldFrom( v, "extender",
+			jolie.runtime.embedding.java.util.ValueManager.singleFieldFrom( v, "extender",
 				joliex.meta.spec.types.LocatedSymbolRef::fromValue ),
-			jolie.runtime.embedding.java.util.ValueManager.singleFieldFrom( v, "outputPort",
+			jolie.runtime.embedding.java.util.ValueManager.vectorFieldFrom( v, "outputPort",
 				joliex.meta.spec.types.LocatedSymbolRef::fromValue ) );
 	}
 
@@ -98,9 +98,10 @@ public final class Aggregation extends jolie.runtime.embedding.java.TypedStructu
 		final jolie.runtime.Value v = jolie.runtime.Value.create();
 
 		v.getFirstChild( "textLocation" ).deepCopy( joliex.meta.spec.types.Location.toValue( t.textLocation() ) );
-		t.extender().forEach(
-			c -> v.getNewChild( "extender" ).deepCopy( joliex.meta.spec.types.LocatedSymbolRef.toValue( c ) ) );
-		v.getFirstChild( "outputPort" ).deepCopy( joliex.meta.spec.types.LocatedSymbolRef.toValue( t.outputPort() ) );
+		t.extender().ifPresent(
+			c -> v.getFirstChild( "extender" ).deepCopy( joliex.meta.spec.types.LocatedSymbolRef.toValue( c ) ) );
+		t.outputPort().forEach(
+			c -> v.getNewChild( "outputPort" ).deepCopy( joliex.meta.spec.types.LocatedSymbolRef.toValue( c ) ) );
 
 		return v;
 	}
@@ -108,17 +109,18 @@ public final class Aggregation extends jolie.runtime.embedding.java.TypedStructu
 	public static class Builder {
 
 		private joliex.meta.spec.types.Location textLocation;
-		private java.util.SequencedCollection< joliex.meta.spec.types.LocatedSymbolRef > extender;
-		private joliex.meta.spec.types.LocatedSymbolRef outputPort;
+		private joliex.meta.spec.types.LocatedSymbolRef extender;
+		private java.util.SequencedCollection< joliex.meta.spec.types.LocatedSymbolRef > outputPort;
 
 		private Builder() {}
 
 		private Builder( jolie.runtime.embedding.java.JolieValue j ) {
 			this.textLocation = jolie.runtime.embedding.java.util.ValueManager
 				.fieldFrom( j.getFirstChild( "textLocation" ), joliex.meta.spec.types.Location::from );
-			this.extender = jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
-				j.getChildOrDefault( "extender", java.util.List.of() ), joliex.meta.spec.types.LocatedSymbolRef::from );
-			this.outputPort = jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "outputPort" ),
+			this.extender = jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "extender" ),
+				joliex.meta.spec.types.LocatedSymbolRef::from );
+			this.outputPort = jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
+				j.getChildOrDefault( "outputPort", java.util.List.of() ),
 				joliex.meta.spec.types.LocatedSymbolRef::from );
 		}
 
@@ -132,25 +134,26 @@ public final class Aggregation extends jolie.runtime.embedding.java.TypedStructu
 			return textLocation( f.apply( joliex.meta.spec.types.Location.builder() ) );
 		}
 
-		public Builder extender( java.util.SequencedCollection< joliex.meta.spec.types.LocatedSymbolRef > extender ) {
+		public Builder extender( joliex.meta.spec.types.LocatedSymbolRef extender ) {
 			this.extender = extender;
 			return this;
 		}
 
 		public Builder extender(
-			java.util.function.Function< jolie.runtime.embedding.java.util.StructureListBuilder< joliex.meta.spec.types.LocatedSymbolRef, joliex.meta.spec.types.LocatedSymbolRef.Builder >, java.util.List< joliex.meta.spec.types.LocatedSymbolRef > > f ) {
-			return extender( f.apply( new jolie.runtime.embedding.java.util.StructureListBuilder<>(
-				joliex.meta.spec.types.LocatedSymbolRef::builder ) ) );
+			java.util.function.Function< joliex.meta.spec.types.LocatedSymbolRef.Builder, joliex.meta.spec.types.LocatedSymbolRef > f ) {
+			return extender( f.apply( joliex.meta.spec.types.LocatedSymbolRef.builder() ) );
 		}
 
-		public Builder outputPort( joliex.meta.spec.types.LocatedSymbolRef outputPort ) {
+		public Builder outputPort(
+			java.util.SequencedCollection< joliex.meta.spec.types.LocatedSymbolRef > outputPort ) {
 			this.outputPort = outputPort;
 			return this;
 		}
 
 		public Builder outputPort(
-			java.util.function.Function< joliex.meta.spec.types.LocatedSymbolRef.Builder, joliex.meta.spec.types.LocatedSymbolRef > f ) {
-			return outputPort( f.apply( joliex.meta.spec.types.LocatedSymbolRef.builder() ) );
+			java.util.function.Function< jolie.runtime.embedding.java.util.StructureListBuilder< joliex.meta.spec.types.LocatedSymbolRef, joliex.meta.spec.types.LocatedSymbolRef.Builder >, java.util.List< joliex.meta.spec.types.LocatedSymbolRef > > f ) {
+			return outputPort( f.apply( new jolie.runtime.embedding.java.util.StructureListBuilder<>(
+				joliex.meta.spec.types.LocatedSymbolRef::builder ) ) );
 		}
 
 		public Aggregation build() {
