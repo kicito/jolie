@@ -21,9 +21,7 @@ package jolie;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.PrintStream;
 import java.io.StringWriter;
@@ -32,7 +30,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -69,6 +69,7 @@ import jolie.lang.parse.TypeChecker;
 import jolie.lang.parse.ast.Program;
 import jolie.lang.parse.module.ModuleException;
 import jolie.lang.parse.module.ModuleParsingConfiguration;
+import jolie.lang.parse.module.ModuleSource;
 import jolie.lang.parse.module.Modules;
 import jolie.lang.parse.module.SymbolTable;
 import jolie.monitoring.MonitoringEvent;
@@ -281,7 +282,6 @@ public class Interpreter {
 	private final ScheduledExecutorService scheduledExecutor =
 		Executors.newSingleThreadScheduledExecutor( new NativeJolieThreadFactory( this ) );
 
-	private final File programDirectory;
 	private OutputPort monitor = null;
 
 	private final Cleaner cleaner = Cleaner.create();
@@ -617,10 +617,13 @@ public class Interpreter {
 		StringWriter writer = new StringWriter();
 		try {
 			new ValuePrettyPrinter( fault.value(), writer,
-				"Thrown unhandled fault: " + fault.faultName() + "\nContent (if any)" ).run();
+				"Thrown unhandled fault: " + fault.faultName() + "\nSource location: " + fault.getContextString()
+					+ "\nContent (if any)" )
+				.run();
 			logInfo( writer.toString() );
 		} catch( IOException e ) {
-			logInfo( "Thrown unhandled fault: " + fault.faultName() );
+			logInfo(
+				"Thrown unhandled fault: " + fault.faultName() + "\nSource location: " + fault.getContextString() );
 		}
 	}
 
@@ -669,7 +672,7 @@ public class Interpreter {
 
 	private LogRecord buildLogRecord( Level level, String message ) {
 		LogRecord record = new LogRecord( level, message );
-		record.setSourceClassName( configuration.programFilepath().getName() );
+		record.setSourceClassName( this.programFilename() );
 		return record;
 	}
 
@@ -800,12 +803,12 @@ public class Interpreter {
 	/**
 	 * Constructor.
 	 *
-	 * @param programDirectory the program directory of this Interpreter, necessary if it is run inside
-	 *        a JAP file.
-	 * @throws IOException if a Scanner constructor signals an error.
+	 * @param configuration the configuration of this Interpreter
+	 * @param params the input parameters for the service
+	 * @param parentLogPrefix the log prefix of the parent Interpreter, if any
+	 * @throws IOException
 	 */
-	public Interpreter( Configuration configuration,
-		File programDirectory, Optional< Value > params, Optional< String > parentLogPrefix )
+	public Interpreter( Configuration configuration, Optional< Value > params, Optional< String > parentLogPrefix )
 		throws IOException {
 		TracerUtils.TracerLevels tracerLevel = TracerUtils.TracerLevels.ALL;
 		this.configuration = configuration;
@@ -827,8 +830,8 @@ public class Interpreter {
 		includePaths = configuration.includePaths();
 
 		logPrefix =
-			(parentLogPrefix.isPresent() ? parentLogPrefix.get() + " -> " + configuration.programFilepath().getName()
-				: configuration.programFilepath().getName())
+			(parentLogPrefix.isPresent() ? parentLogPrefix.get() + " -> " + this.programFilename()
+				: this.programFilename())
 				+ (configuration.executionTarget() != null ? " -> " + configuration.executionTarget() : "");
 
 		if( configuration.tracer() ) {
@@ -846,34 +849,12 @@ public class Interpreter {
 		exitingLock = new ReentrantLock();
 		exitingCondition = exitingLock.newCondition();
 
-		if( configuration.programDirectory() == null ) {
-			this.programDirectory = programDirectory;
-		} else {
-			this.programDirectory = configuration.programDirectory();
-		}
-
-		if( this.programDirectory == null ) {
-			throw new IOException(
-				"Could not localise the service execution directory. This might be a bug in the Jolie interpreter, please report it to https://github.com/jolie/jolie" );
-		}
-
 		this.receivingEmbeddedValue = params.orElse( Value.create() );
 	}
 
-	/**
-	 * Constructor.
-	 *
-	 * @param programDirectory the program directory of this Interpreter, necessary if it is run inside
-	 *        a JAP file.
-	 * @param parentInterpreter
-	 * @param internalServiceProgram
-	 * @throws FileNotFoundException if one of the passed input files is not found.
-	 * @throws IOException if a Scanner constructor signals an error.
-	 */
-	public Interpreter( Configuration configuration,
-		File programDirectory, Interpreter parentInterpreter, Program internalServiceProgram )
-		throws FileNotFoundException, IOException {
-		this( configuration, programDirectory, Optional.empty(), Optional.of( parentInterpreter.logPrefix() ) );
+	public Interpreter( Configuration configuration, Interpreter parentInterpreter, Program internalServiceProgram )
+		throws IOException {
+		this( configuration, Optional.empty(), Optional.of( parentInterpreter.logPrefix() ) );
 
 		this.parentInterpreter = parentInterpreter;
 		this.internalServiceProgram = internalServiceProgram;
@@ -882,19 +863,16 @@ public class Interpreter {
 	/**
 	 * Constructor. for the JolieServiceNodeLoader
 	 *
-	 * @param programDirectory the program directory of this Interpreter, necessary if it is run inside
-	 *        a JAP file.
 	 * @param parentSymbolTables symbol table from the parent service
-	 * @param internalServiceProgram
+	 * @param internalServiceProgram Jolie program for
 	 * @param receivingEmbeddedValue
-	 * @throws FileNotFoundException if one of the passed input files is not found.
 	 * @throws IOException if a Scanner constructor signals an error.
 	 */
-	public Interpreter( Configuration configuration,
-		File programDirectory, Map< URI, SymbolTable > parentSymbolTables, Program internalServiceProgram,
+	public Interpreter( Configuration configuration, Map< URI, SymbolTable > parentSymbolTables,
+		Program internalServiceProgram,
 		Value receivingEmbeddedValue, String parentLogPrefix )
-		throws FileNotFoundException, IOException {
-		this( configuration, programDirectory, Optional.of( receivingEmbeddedValue ), Optional.of( parentLogPrefix ) );
+		throws IOException {
+		this( configuration, Optional.of( receivingEmbeddedValue ), Optional.of( parentLogPrefix ) );
 		this.internalServiceProgram = internalServiceProgram;
 		this.symbolTables.putAll( parentSymbolTables );
 	}
@@ -905,7 +883,11 @@ public class Interpreter {
 	 * @return the parent directory of the program executed by this Interpreter.
 	 */
 	public File programDirectory() {
-		return programDirectory;
+		if( configuration.source().parentURI().isPresent() ) {
+			return Paths.get( configuration.source().parentURI().get() ).toFile();
+		} else {
+			return new File( "" );
+		}
 	}
 
 	public Interpreter parentInterpreter() {
@@ -927,7 +909,7 @@ public class Interpreter {
 	 * @return the program filename this interpreter was launched with
 	 */
 	public String programFilename() {
-		return configuration.programFilepath().getName();
+		return configuration.source().name();
 	}
 
 	/**
@@ -936,7 +918,7 @@ public class Interpreter {
 	 * @return the path at which the file to be interpreted has been found
 	 */
 	public String programFilepath() {
-		return configuration.programFilepath().toString();
+		return configuration.source().uri().toString();
 	}
 
 	/**
@@ -1114,7 +1096,7 @@ public class Interpreter {
 		private final jolie.State initState = new jolie.State();
 
 		public StarterThread( CompletableFuture< Exception > future ) {
-			super( createStarterThreadName( configuration.programFilepath().getName() ) );
+			super( createStarterThreadName( configuration.source().name() ) );
 			this.future = future;
 			setContextClassLoader( configuration.jolieClassLoader() );
 		}
@@ -1151,7 +1133,7 @@ public class Interpreter {
 		embeddedServiceLoaders.clear();
 		configuration.clear();
 		symbolTables.clear();
-		Modules.freeCache( configuration.programFilepath().toURI() );
+		Modules.freeCache( configuration.source().uri() );
 		commCore = null;
 		// System.gc();
 	}
@@ -1170,7 +1152,7 @@ public class Interpreter {
 		try {
 			Program program;
 			if( configuration.isProgramCompiled() ) {
-				try( final ObjectInputStream istream = new ObjectInputStream( configuration.inputStream() ) ) {
+				try( final ObjectInputStream istream = new ObjectInputStream( configuration.source().openStream() ) ) {
 					final Object o = istream.readObject();
 					if( o instanceof Program ) {
 						program = (Program) o;
@@ -1192,14 +1174,11 @@ public class Interpreter {
 						false,
 						true );
 					Modules.ModuleParsedResult parsedResult =
-						Modules.parseModule( configuration, configuration().inputStream(),
-							configuration().programFilepath().toURI() );
+						Modules.parseModule( configuration, configuration().source() );
 					this.symbolTables.putAll( parsedResult.symbolTables() );
 					program = parsedResult.mainProgram();
 				}
 			}
-
-			configuration.inputStream().close();
 
 			check = configuration.check();
 
@@ -1393,9 +1372,8 @@ public class Interpreter {
 		private final String[] optionArgs;
 		private final String[] arguments;
 		private final URL[] libURLs;
-		private final InputStream inputStream;
+		private final ModuleSource source;
 		private final String charset;
-		private final File programFilepath;
 		private final Map< String, Scanner.Token > constants = new HashMap<>();
 		private JolieClassLoader jolieClassLoader;
 		private final boolean isProgramCompiled;
@@ -1407,7 +1385,6 @@ public class Interpreter {
 		private final long responseTimeout;
 		private final boolean printStackTraces;
 		private final Level logLevel;
-		private final File programDirectory;
 		private final String[] packagePaths;
 		private final String executionTarget;
 		private final Optional< Path > parametersFilePath;
@@ -1415,12 +1392,11 @@ public class Interpreter {
 		private Configuration( int connectionsLimit,
 			int cellId,
 			CorrelationEngine.Type correlationAlgorithm,
-			String[] includeList,
+			String[] includePaths,
 			String[] optionArgs,
 			URL[] libUrls,
-			InputStream inputStream,
+			ModuleSource source,
 			String charset,
-			File programFilepath,
 			String[] arguments,
 			Map< String, Scanner.Token > constants,
 			JolieClassLoader jolieClassLoader,
@@ -1433,19 +1409,17 @@ public class Interpreter {
 			boolean printStackTraces,
 			long responseTimeout,
 			Level logLevel,
-			File programDirectory,
 			String[] packagePaths,
 			String executionTarget,
 			Optional< Path > parametersFilePath ) {
 			this.connectionsLimit = connectionsLimit;
 			this.cellId = cellId;
 			this.correlationAlgorithm = correlationAlgorithm;
-			this.includePaths = includeList;
+			this.includePaths = includePaths;
 			this.optionArgs = optionArgs;
 			this.libURLs = libUrls;
-			this.inputStream = inputStream;
+			this.source = source;
 			this.charset = charset;
-			this.programFilepath = programFilepath;
 			this.arguments = arguments;
 			this.constants.putAll( constants );
 			this.jolieClassLoader = jolieClassLoader;
@@ -1458,25 +1432,52 @@ public class Interpreter {
 			this.printStackTraces = printStackTraces;
 			this.responseTimeout = responseTimeout;
 			this.logLevel = logLevel;
-			this.programDirectory = programDirectory;
 			this.packagePaths = packagePaths;
 			this.executionTarget = executionTarget;
 			this.parametersFilePath = parametersFilePath;
 		}
 
+		/**
+		 * Creates a new configuration instance.
+		 *
+		 * @param connectionsLimit the value of the -c option
+		 * @param cellId the value of the -cellId option
+		 * @param correlationAlgorithm the value of the -correlationAlgorithm option
+		 * @param includePaths the value of the -i option
+		 * @param optionArgs the value of the options arguments
+		 * @param libUrls the value of the -l option
+		 * @param source the source to read from
+		 * @param charset the charset to use
+		 * @param source the source of the program
+		 * @param arguments the arguments to pass to the program
+		 * @param constants the constants to set
+		 * @param jolieClassLoader the class loader to use
+		 * @param isProgramCompiled whether the program is compiled
+		 * @param typeCheck whether to type check the program
+		 * @param tracer whether to trace the program
+		 * @param tracerLevel the trace level
+		 * @param tracerMode the trace mode
+		 * @param check whether to check the program
+		 * @param printStackTraces whether to print stack traces
+		 * @param responseTimeout the response timeout
+		 * @param logLevel the log level
+		 * @param packagePaths the package paths
+		 * @param executionTarget the execution target
+		 * @param parametersFilePath the path to the parameters file
+		 * @return a new configuration instance
+		 */
 		public static Configuration create( int connectionsLimit,
 			int cellId,
 			CorrelationEngine.Type correlationAlgorithm,
-			String[] includeList,
+			String[] includePaths,
 			String[] optionArgs,
 			URL[] libUrls,
-			InputStream inputStream,
+			ModuleSource source,
 			String charset,
-			File programFilepath,
 			String[] arguments,
 			Map< String, Scanner.Token > constants,
 			JolieClassLoader jolieClassLoader,
-			boolean programCompiled,
+			boolean isProgramCompiled,
 			boolean typeCheck,
 			boolean tracer,
 			String tracerLevel,
@@ -1485,37 +1486,92 @@ public class Interpreter {
 			boolean printStackTraces,
 			long responseTimeout,
 			Level logLevel,
-			File programDirectory,
 			String[] packagePaths,
 			String executionTarget,
 			Optional< Path > parametersFilePath ) {
-			return new Configuration( connectionsLimit, cellId, correlationAlgorithm, includeList, optionArgs, libUrls,
-				inputStream, charset, programFilepath, arguments, constants, jolieClassLoader, programCompiled,
+			return new Configuration( connectionsLimit, cellId, correlationAlgorithm, includePaths, optionArgs, libUrls,
+				source, charset, arguments, constants, jolieClassLoader,
+				isProgramCompiled,
 				typeCheck, tracer, tracerLevel, tracerMode, check, printStackTraces, responseTimeout, logLevel,
-				programDirectory, packagePaths, executionTarget, parametersFilePath );
+				packagePaths, executionTarget, parametersFilePath );
 		}
 
+
+		/**
+		 * Creates a new instance of the Configuration class, starting from the given config object. The
+		 * parameters are overwritten with the ones given in the parameters.
+		 *
+		 * @param config the configuration to clone
+		 * @param source the source of the program
+		 * @param executionTarget the execution target
+		 * @param parametersFilePath the optional file path of the parameters
+		 * @return a new instance of the Configuration class
+		 */
 		public static Configuration create( Configuration config,
-			File programFilepath,
-			InputStream inputStream ) {
-			return create( config.connectionsLimit, config.cellId, config.correlationAlgorithm, config.includePaths,
+			ModuleSource source,
+			String executionTarget,
+			Optional< Path > parametersFilePath ) {
+			List< String > newIncludePaths = new ArrayList< String >( Arrays.asList( config.includePaths ) );
+			if( source.includePath().isPresent() ) {
+				newIncludePaths.add( 0, source.includePath().get().toString() );
+			}
+
+			if( source.parentURI().isPresent() ) {
+				newIncludePaths.add( 0, source.parentURI().get().toString() );
+			}
+
+			return Configuration.create( config.connectionsLimit, config.cellId, config.correlationAlgorithm,
+				newIncludePaths.toArray( new String[ 0 ] ),
 				config.optionArgs,
-				config.libURLs, inputStream, config.charset, programFilepath, config.arguments, config.constants,
+				config.libURLs, source, config.charset,
+				config.arguments, config.constants,
 				config.jolieClassLoader, config.isProgramCompiled, config.typeCheck, config.tracer, config.tracerLevel,
 				config.tracerMode, config.check, config.printStackTraces, config.responseTimeout, config.logLevel,
-				config.programDirectory, config.packagePaths, config.executionTarget, config.parametersFilePath );
+				config.packagePaths, executionTarget, parametersFilePath );
 		}
 
+
+		/**
+		 * Creates a new instance of the Configuration class, starting from the given config object. The
+		 * parameters are overwritten with the ones given in the parameters.
+		 *
+		 * @param config the configuration to clone
+		 * @param source the ModuleSource of the program
+		 * @param executionTarget the execution target
+		 * @return a new instance of the Configuration class
+		 */
 		public static Configuration create( Configuration config,
-			File programFilepath,
-			InputStream inputStream,
+			ModuleSource source, String executionTarget ) {
+			return Configuration.create( config, source, executionTarget, Optional.empty() );
+		}
+
+		/**
+		 * Creates a new instance of the Configuration class, starting from the given config object. Only
+		 * the programURI and inputStream are overwritten with the ones given in the parameters. All the
+		 * other parameters are copied from the given config object.
+		 *
+		 * @param config the configuration to clone
+		 * @param source the source of the program
+		 * @return a new instance of the Configuration class
+		 */
+		public static Configuration create( Configuration config,
+			ModuleSource source ) {
+			return Configuration.create( config, source, source.name(), Optional.empty() );
+		}
+
+		/**
+		 * Creates a new instance of the Configuration class, starting from the given config object. Only
+		 * the executionTarget is overwritten with the one given in the parameter. All the other parameters
+		 * are copied from the given config object.
+		 *
+		 * @param config the configuration to clone
+		 * @param executionTarget the execution target
+		 * @return a new instance of the Configuration class
+		 */
+		public static Configuration create( Configuration config,
 			String executionTarget ) {
-			return create( config.connectionsLimit, config.cellId, config.correlationAlgorithm, config.includePaths,
-				config.optionArgs,
-				config.libURLs, inputStream, config.charset, programFilepath, config.arguments, config.constants,
-				config.jolieClassLoader, config.isProgramCompiled, config.typeCheck, config.tracer, config.tracerLevel,
-				config.tracerMode, config.check, config.printStackTraces, config.responseTimeout, config.logLevel,
-				config.programDirectory, config.packagePaths, executionTarget, config.parametersFilePath );
+			return Configuration.create( config, config.source(), executionTarget,
+				config.parametersPath() );
 		}
 
 		/**
@@ -1575,12 +1631,12 @@ public class Interpreter {
 		}
 
 		/**
-		 * Returns an InputStream for the program code to execute.
+		 * Returns the source object of the JOLIE program.
 		 *
-		 * @return an InputStream for the program code to execute
+		 * @return the source object of the JOLIE program
 		 */
-		public InputStream inputStream() {
-			return this.inputStream;
+		public ModuleSource source() {
+			return source;
 		}
 
 		/**
@@ -1590,15 +1646,6 @@ public class Interpreter {
 		 */
 		public String charset() {
 			return this.charset;
-		}
-
-		/**
-		 * Returns the file path of the JOLIE program to execute.
-		 *
-		 * @return the file path of the JOLIE program to execute
-		 */
-		public File programFilepath() {
-			return this.programFilepath;
 		}
 
 		/**
@@ -1720,15 +1767,6 @@ public class Interpreter {
 		 */
 		public String[] packagePaths() {
 			return packagePaths;
-		}
-
-		/**
-		 * Returns the directory in which the main program is located.
-		 *
-		 * @return the directory in which the main program is located.
-		 */
-		public File programDirectory() {
-			return programDirectory;
 		}
 
 		public void clear() {

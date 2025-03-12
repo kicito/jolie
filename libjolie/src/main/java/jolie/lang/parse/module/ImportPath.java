@@ -14,7 +14,7 @@ public class ImportPath {
 	}
 
 	protected List< String > pathParts() {
-		return pathParts;
+		return this.pathParts;
 	}
 
 	/**
@@ -28,11 +28,22 @@ public class ImportPath {
 	 *
 	 */
 	protected boolean isRelativeImport() {
-		return pathParts.get( 0 ).isEmpty();
+		return this.pathParts.get( 0 ).isEmpty();
+	}
+
+	public String toRelativePathString() {
+		if( !this.isRelativeImport() ) {
+			throw new IllegalStateException( "This import path is targeting packages module" );
+		}
+		String joinedPath = String.join( "/", this.pathParts() );
+		if( joinedPath.isEmpty() ) {
+			throw new IllegalStateException( "This relative import path must not be empty at this state" );
+		}
+		return joinedPath.substring( 1 );
 	}
 
 	@Override
 	public String toString() {
-		return isRelativeImport() ? "." + String.join( ".", this.pathParts() ) : String.join( ".", this.pathParts() );
+		return String.join( ".", this.pathParts() );
 	}
 }

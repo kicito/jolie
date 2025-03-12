@@ -53,10 +53,11 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import jolie.Interpreter;
 import jolie.JolieClassLoader;
-import jolie.jap.JapURLConnection;
 import jolie.lang.Constants;
 import jolie.lang.parse.Scanner;
+import jolie.lang.parse.module.ModuleSource;
 import jolie.runtime.correlation.CorrelationEngine;
+import jolie.util.Helpers;
 import jolie.util.UriUtils;
 
 /**
@@ -75,7 +76,7 @@ public class CommandLineParser implements AutoCloseable {
 	private final URL[] libURLs;
 	private final InputStream programStream;
 	private String charset = null;
-	private final File programFilepath;
+	private final URI programURI;
 	private final String[] arguments;
 	private final Map< String, Scanner.Token > constants = new HashMap<>();
 	private final JolieClassLoader jolieClassLoader;
@@ -90,7 +91,6 @@ public class CommandLineParser implements AutoCloseable {
 	private final Level logLevel;
 	private final String executionTarget;
 	private final Optional< Path > parametersFilepath;
-	private File programDirectory = null;
 	private int cellId = 0;
 
 	/**
@@ -144,7 +144,7 @@ public class CommandLineParser implements AutoCloseable {
 					"Set the maximum number of cached persistent output connections" ) )
 			.append(
 				getOptionString( "--responseTimeout [number]",
-					"Set the timeout for request-response invocations (in milliseconds)" ) )
+					"Set the timeout for request-response invocations (in milliseconds, default 1 min = 60*1000)" ) )
 			.append(
 				getOptionString( "--correlationAlgorithm [simple|hash]",
 					"Set the algorithm to use for message correlation" ) )
@@ -181,15 +181,16 @@ public class CommandLineParser implements AutoCloseable {
 				getOptionString( "--cellId",
 					"set an integer as cell identifier, used for creating message ids. (max: "
 						+ Integer.MAX_VALUE + ")" ) )
+			.append(
+				getOptionString( "--stackTraces", "Print stack traces (default: false)" ) )
 			.toString();
 	}
 
 	private void parseCommandLineConstant( String input )
 		throws IOException {
-		try {
-			// for command line options use the system's default charset (null)
-			Scanner scanner =
-				new Scanner( new ByteArrayInputStream( input.getBytes() ), new URI( "urn:CommandLine" ), null );
+		// for command line options use the system's default charset (null)
+		try( Scanner scanner =
+			new Scanner( new ByteArrayInputStream( input.getBytes() ), new URI( "urn:CommandLine" ) ) ) {
 			Scanner.Token token = scanner.getToken();
 			if( token.is( Scanner.TokenType.ID ) ) {
 				String id = token.content();
@@ -266,7 +267,7 @@ public class CommandLineParser implements AutoCloseable {
 	 */
 	public CommandLineParser( String[] args, ClassLoader parentClassLoader, ArgumentHandler argHandler,
 		boolean ignoreFile )
-		throws CommandLineException, IOException {
+		throws CommandLineException, IOException, IllegalArgumentException {
 		List< String > argsList = Arrays.asList( args );
 
 		String csetAlgorithmName = "simple";
@@ -477,13 +478,11 @@ public class CommandLineParser implements AutoCloseable {
 							if( Files.exists( Paths.get( japFilename ) ) ) {
 								try( JarFile japFile = new JarFile( japFilename ) ) {
 									Manifest manifest = japFile.getManifest();
-									olFilepath = UriUtils
-										.normalizeWindowsPath( parseJapManifestForMainProgram( manifest, japFile ) );
+									olFilepath = parseJapManifestForMainProgram( manifest, japFile );
 									libList.add( japFilename );
 									Collection< String > japOptions = parseJapManifestForOptions( manifest );
 									argsList.addAll( i + 1, japOptions );
 									japUrl = japFilename + "!";
-									programDirectory = new File( japFilename ).getParentFile();
 								}
 								break;
 							}
@@ -537,24 +536,36 @@ public class CommandLineParser implements AutoCloseable {
 		List< URL > urls = new ArrayList<>();
 		for( String pathInList : libList ) {
 			String path = pathInList;
+
 			if( path.contains( "!/" ) && !path.startsWith( "jap:" ) && !path.startsWith( "jar:" ) ) {
 				path = "jap:file:" + path;
 			}
 			if( path.endsWith( ".jar" ) || path.endsWith( ".jap" ) ) {
 				if( path.startsWith( "jap:" ) ) {
 					urls.add( new URL( path + "!/" ) );
+				} else if( path.startsWith( "file:" ) ) {
+					urls.add( new URL( "jap:" + path + "!/" ) );
 				} else {
 					urls.add( new URL( "jap:file:" + path + "!/" ) );
 				}
 			} else if( new File( path ).isDirectory() ) {
 				urls.add( new URL( "file:" + path + "/" ) );
 			} else if( path.endsWith( "/*" ) ) {
-				Path dir;
-				if( path.startsWith( "file:" ) ) {
-					dir = Paths.get( path.substring( 5, path.length() - 2 ) );
-				} else {
-					dir = Paths.get( path.substring( 0, path.length() - 2 ) );
-				}
+				final String pp = path;
+				String dirStr = Helpers.ifWindowsOrElse( () -> {
+					if( pp.startsWith( "file:" ) ) {
+						return pp.substring( 5, pp.length() - 2 ).replaceAll( "^/*", "" );
+					} else {
+						return pp.substring( 0, pp.length() - 2 );
+					}
+				}, () -> {
+					if( pp.startsWith( "file:" ) ) {
+						return pp.substring( 5, pp.length() - 2 );
+					} else {
+						return pp.substring( 0, pp.length() - 2 );
+					}
+				} );
+				Path dir = Paths.get( dirStr );
 
 				if( Files.isDirectory( dir ) ) {
 					dir = dir.toRealPath();
@@ -606,7 +617,15 @@ public class CommandLineParser implements AutoCloseable {
 		isProgramCompiled = olFilepath.endsWith( ".olc" );
 		tracer = bTracer && !isProgramCompiled;
 		check = bCheck && !isProgramCompiled;
-		programFilepath = new File( olResult.source );
+		try {
+			if( olResult.source.startsWith( "jap" ) || olResult.source.startsWith( "file" ) ) {
+				programURI = new URI( olResult.source );
+			} else {
+				programURI = URI.create( "file:" + olResult.source );
+			}
+		} catch( URISyntaxException e ) {
+			throw new CommandLineException( e.getMessage() );
+		}
 		programStream = olResult.stream;
 
 		includePaths = new LinkedHashSet<>( includeList ).toArray( new String[ 0 ] );
@@ -649,9 +668,10 @@ public class CommandLineParser implements AutoCloseable {
 
 		if( filepath != null ) {
 			filepath = new StringBuilder()
-				.append( "jap:file:" )
-				.append( UriUtils.normalizeWindowsPath( japFile.getName() ) )
-				.append( "!/" )
+				.append( "jap:" )
+				.append( Paths.get( japFile.getName() ).toUri() )
+				.append( "!" )
+				.append( filepath.startsWith( "/" ) ? "" : "/" )
 				.append( filepath )
 				.toString();
 		}
@@ -691,28 +711,27 @@ public class CommandLineParser implements AutoCloseable {
 		if( f.exists() ) {
 			result.stream = new FileInputStream( f );
 			result.source = f.toURI().getSchemeSpecificPart();
-			programDirectory = f.getParentFile();
+		} else if( olFilepath.startsWith( "jap" ) ) {
+			olURL = new URL( olFilepath );
+			result.stream = olURL.openStream();
+			result.source = olURL.toString();
 		} else {
 			for( String includePath : includePaths ) {
 				if( includePath.startsWith( "jap:" ) ) {
 					try {
-						olURL = new URL( UriUtils.normalizeJolieUri(
-							UriUtils.normalizeWindowsPath( UriUtils.resolve( includePath, olFilepath ) ) ) );
+						olURL = new URI( UriUtils.normalizeJolieUri(
+							UriUtils.resolve( includePath, olFilepath ) ) ).toURL();
 						result.stream = olURL.openStream();
 						result.source = olURL.toString();
 						break;
 					} catch( URISyntaxException | IOException e ) {
 					}
 				} else {
-					f = new File(
-						includePath +
-							jolie.lang.Constants.FILE_SEPARATOR +
-							olFilepath );
+					f = new File( UriUtils.resolve( includePath, olFilepath ) );
 					if( f.exists() ) {
 						f = f.getAbsoluteFile();
 						result.stream = new FileInputStream( f );
 						result.source = f.toURI().getSchemeSpecificPart();
-						programDirectory = f.getParentFile();
 						break;
 					}
 				}
@@ -720,28 +739,17 @@ public class CommandLineParser implements AutoCloseable {
 
 			if( result.stream == null ) {
 				try {
-					olURL = new URL( olFilepath );
+					olURL = new URI( olFilepath ).toURL();
 					result.stream = olURL.openStream();
 					result.source = olFilepath;
 					if( result.stream == null ) {
 						throw new MalformedURLException();
 					}
-				} catch( MalformedURLException e ) {
+				} catch( MalformedURLException | URISyntaxException e ) {
 					olURL = classLoader.getResource( olFilepath );
 					if( olURL != null ) {
 						result.stream = olURL.openStream();
 						result.source = olURL.toString();
-					}
-				}
-				if( programDirectory == null && olURL != null && olURL.getPath() != null ) {
-					// Try to extract the parent directory of the JAP/JAR library file
-					try {
-						File urlFile = new File( JapURLConnection.NESTING_SEPARATION_PATTERN
-							.split( new URI( olURL.getPath() ).getSchemeSpecificPart() )[ 0 ] ).getAbsoluteFile();
-						if( urlFile.exists() ) {
-							programDirectory = urlFile.getParentFile();
-						}
-					} catch( URISyntaxException e ) {
 					}
 				}
 			}
@@ -783,11 +791,11 @@ public class CommandLineParser implements AutoCloseable {
 							libPath ) ) );
 
 				if( Files.exists( Paths.get( path ) ) ) {
-					return Optional.of( path );
+					return Optional.of( Paths.get( path ).toUri().toString() );
 				} else {
 					URL url = classLoader.getResource( path );
 					if( url != null ) {
-						return Optional.of( url.toString() );
+						return Optional.of( url.toURI().toString() );
 					}
 				}
 			} catch( URISyntaxException | InvalidPathException e ) {
@@ -805,6 +813,9 @@ public class CommandLineParser implements AutoCloseable {
 	}
 
 	public Interpreter.Configuration getInterpreterConfiguration() throws CommandLineException, IOException {
+
+		ModuleSource source = ModuleSource.create( programURI );
+
 		return Interpreter.Configuration.create(
 			connectionsLimit,
 			cellId,
@@ -812,9 +823,8 @@ public class CommandLineParser implements AutoCloseable {
 			includePaths,
 			optionArgs,
 			libURLs,
-			programStream,
+			source,
 			charset,
-			programFilepath,
 			arguments,
 			constants,
 			jolieClassLoader,
@@ -827,11 +837,9 @@ public class CommandLineParser implements AutoCloseable {
 			printStackTraces,
 			responseTimeout,
 			logLevel,
-			programDirectory,
 			packagePaths,
 			executionTarget,
 			parametersFilepath );
-
 	}
 
 	/**

@@ -24,7 +24,7 @@ define doTest {
     //println@Console( mockmd5 )()
 	stats@Runtime()( stats )
 	if ( stats.os.name == "Linux" ) {
-		if ( mockmd5 != "663c50e2d6cd7901c1aa5e6d4dfb32b2" ) {
+		if ( mockmd5 != "30da2fb6f29e87965f695bacb8f6e81b" ) {
 			throw( TestFailed, "md5 of mock does not correspond, expected 663c50e2d6cd7901c1aa5e6d4dfb32b2, found " + mockmd5 )
 		}
 	}
