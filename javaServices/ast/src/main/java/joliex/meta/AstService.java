@@ -66,9 +66,15 @@ public class AstService extends JavaService {
 			semanticVerificationConfiguration.setCheckForMain( false );
 			ClassLoader classLoader = configuration.jolieClassLoader();
 			InputStream mainFileInputStream = new FileInputStream( modulePath.toFile() );
-			return ParsingUtils.parseProgram( mainFileInputStream, moduleURI,
-				mainFileReader.getEncoding(), includePaths, packagesPath, classLoader,
-				configuration.constants(), semanticVerificationConfiguration, true );
+			return ParsingUtils.parseProgram(
+				cliParser.getInterpreterConfiguration().source(),
+				cliParser.getInterpreterConfiguration().charset(),
+				cliParser.getInterpreterConfiguration().includePaths(),
+				cliParser.getInterpreterConfiguration().packagePaths(),
+				cliParser.getInterpreterConfiguration().jolieClassLoader(),
+				cliParser.getInterpreterConfiguration().constants(),
+				cliParser.getInterpreterConfiguration().executionTarget(),
+				true );
 		} catch( FileNotFoundException e ) {
 			throw new RuntimeException( e );
 		} catch( IOException e ) {
@@ -103,9 +109,15 @@ public class AstService extends JavaService {
 			semanticVerificationConfiguration.setCheckForMain( false );
 			ClassLoader classLoader = configuration.jolieClassLoader();
 			InputStream mainFileInputStream = new FileInputStream( modulePath.toFile() );
-			return ParsingUtils.parseProgramModule( mainFileInputStream, moduleURI,
-				mainFileReader.getEncoding(), includePaths, packagesPath, classLoader,
-				configuration.constants(), semanticVerificationConfiguration, true );
+			return ParsingUtils.parseProgramModule(
+				cliParser.getInterpreterConfiguration().source(),
+				cliParser.getInterpreterConfiguration().charset(),
+				cliParser.getInterpreterConfiguration().includePaths(),
+				cliParser.getInterpreterConfiguration().packagePaths(),
+				cliParser.getInterpreterConfiguration().jolieClassLoader(),
+				cliParser.getInterpreterConfiguration().constants(),
+				semanticVerificationConfiguration,
+				true );
 		} catch( FileNotFoundException e ) {
 			throw new RuntimeException( e );
 		} catch( IOException e ) {
