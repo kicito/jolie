@@ -67,13 +67,13 @@ public class AstService extends JavaService {
 			ClassLoader classLoader = configuration.jolieClassLoader();
 			InputStream mainFileInputStream = new FileInputStream( modulePath.toFile() );
 			return ParsingUtils.parseProgram(
-				cliParser.getInterpreterConfiguration().source(),
-				cliParser.getInterpreterConfiguration().charset(),
-				cliParser.getInterpreterConfiguration().includePaths(),
-				cliParser.getInterpreterConfiguration().packagePaths(),
-				cliParser.getInterpreterConfiguration().jolieClassLoader(),
-				cliParser.getInterpreterConfiguration().constants(),
-				cliParser.getInterpreterConfiguration().executionTarget(),
+				configuration.source(),
+				configuration.charset(),
+				includePaths,
+				packagesPath,
+				configuration.jolieClassLoader(),
+				configuration.constants(),
+				semanticVerificationConfiguration,
 				true );
 		} catch( FileNotFoundException e ) {
 			throw new RuntimeException( e );
@@ -110,12 +110,12 @@ public class AstService extends JavaService {
 			ClassLoader classLoader = configuration.jolieClassLoader();
 			InputStream mainFileInputStream = new FileInputStream( modulePath.toFile() );
 			return ParsingUtils.parseProgramModule(
-				cliParser.getInterpreterConfiguration().source(),
-				cliParser.getInterpreterConfiguration().charset(),
-				cliParser.getInterpreterConfiguration().includePaths(),
-				cliParser.getInterpreterConfiguration().packagePaths(),
-				cliParser.getInterpreterConfiguration().jolieClassLoader(),
-				cliParser.getInterpreterConfiguration().constants(),
+				configuration.source(),
+				configuration.charset(),
+				includePaths,
+				packagesPath,
+				configuration.jolieClassLoader(),
+				configuration.constants(),
 				semanticVerificationConfiguration,
 				true );
 		} catch( FileNotFoundException e ) {
