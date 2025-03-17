@@ -36,6 +36,7 @@ from console import Console
 from file import File
 from string_utils import StringUtils 
 from runtime import Runtime
+from mustache import Mustache
 
 type MetaRenderCodeType {
     type: Type
@@ -89,6 +90,7 @@ service MetaRenderCode {
     embed File as File 
     embed StringUtils as StringUtils
     embed Runtime as Runtime
+    embed Mustache as Mustache
 
     execution: concurrent 
 
@@ -164,11 +166,22 @@ service MetaRenderCode {
             getSurfaceWithoutOutputPort@MySelf( request )( surface  )
 
             // insert outputPort
-            response = surface + "\n\noutputPort " + request.name + " {\n"
-                + _indentation_token + "protocol:" + request.protocol + "\n"
-                + _indentation_token + "location:\"" + request.location + "\"\n"
-                + _indentation_token + "interfaces:" + request.name + "Interface\n"
-                + "}\n\n"
+            data << {
+                name = request.name
+                surface = surface 
+                location = request.location 
+            }
+            if ( is_defined( request.protocol ) ) { data.protocol.protocol = request.protocol }
+            render@Mustache({
+                template = "
+{{{surface}}}
+
+outputPort {{name}} {
+\tlocation: \"{{location}}\"
+{{#protocol}}\tprotocol: {{protocol}}\n\t{{/protocol}}\tinterfaces: {{name}}Interface
+}"              
+                data << data
+            })( response )
         }] 
 
         [ getOperation( request )( response ) {
@@ -183,29 +196,31 @@ service MetaRenderCode {
                         if ( !(request.fault[ f ].type instanceof TypeUndefined)  ) {
 
                             if ( request.fault[ f ].type instanceof TypeLink ) {
-                                response = response + "(" + request.fault[ f ].type.link_name + ") "
+                                response = response + "(" + request.fault[ f ].type.link_name + ")"
                             }
                             if ( request.fault[ f ].type instanceof NativeType ) {
                                 getNativeType@MySelf( request.fault[ f ].type )( fault_native_type )
-                                response = response + "(" + fault_native_type + ") "
+                                response = response + "(" + fault_native_type + ")"
                             }
                                 
-                        };
-                        response = response + " "
+                        }
                     }
                 }
         }]
 
         [ getSurfaceWithoutOutputPort( request )( response ) {
             // insert types
+            // hashmap with type names for avoiding type duplication
             for( i = 0, i < #request.interfaces, i++ ) {
-                intf -> request.interfaces[ i ];
+                intf -> request.interfaces[ i ]
                 for( t = 0, t < #intf.types, t++ ) {
-                    tp -> intf.types[ t ];
-                    getTypeDefinition@MySelf( tp )( response_type );
-                    response = response + response_type
+                    if ( !types.( intf.types[ t ].name ) ) {
+                        types.( intf.types[ t ].name ) = true
+                        getTypeDefinition@MySelf( intf.types[ t ] )( response_type )
+                        response = response + response_type
+                    }
                 }
-            };
+            }
 
             // insert interface
             response = response + "interface " + request.name + "Interface {\n";
@@ -238,7 +253,7 @@ service MetaRenderCode {
                 }
             };
             if ( ow_count > 0 ) {
-                response = response + "OneWay:";
+                response = response + "OneWay:\n";
                 for ( x = 0, x < ow_count, x++ ) {
                     getOperation@MySelf( ow[ x ] )( op_rs  )
                     response = response + _indentation_string + op_rs
@@ -279,10 +294,10 @@ service MetaRenderCode {
                                 }
                                 response = response + .fault[ f ].name;
                                 if ( .fault[ f ].type instanceof TypeLink ) {
-                                        response = response + "( " + .fault[ f ].type.link_name + " ) "
+                                        response = response + "( " + .fault[ f ].type.link_name + " )"
                                 } else if ( .fault[ f ].type instanceof NativeType ) {
                                         getNativeType@MySelf(.fault[ f ].type  )( ntype )
-                                        response = response + "( " + ntype + " ) "
+                                        response = response + "( " + ntype + " )"
                                 }
                                 response = response + " "
                             }
@@ -296,7 +311,7 @@ service MetaRenderCode {
                     }
                 }
                 if ( ow_count > 0 ) {
-                    response = response + "OneWay:";
+                    response = response + "OneWay:\n";
                     for ( x = 0, x < ow_count, x++ ) {
                         with ( ow[ x ] ) {
                             response = response + _indentation_string + .operation_name + "( " + .input + " )";
