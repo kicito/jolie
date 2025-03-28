@@ -218,8 +218,7 @@ public class AstService extends JavaService {
 		// e.g protocol = param.protocol
 		case VariableExpressionNode variableExpressionNode -> {
 			VariablePathNode variablePathNode = variableExpressionNode.variablePath();
-			// TODO test if this is the right string
-			yield Optional.of( new LocatedString( variablePathNode.toString(), location( variablePathNode ) ) );
+			yield Optional.of( new LocatedString( variablePathNode.toPrettyString(), location( variablePathNode ) ) );
 		}
 		case null -> Optional.empty();
 		default ->
@@ -272,8 +271,7 @@ public class AstService extends JavaService {
 		// e.g protocol = param.protocol
 		case VariableExpressionNode variableExpressionNode -> {
 			VariablePathNode variablePathNode = variableExpressionNode.variablePath();
-			// TODO test if this is the right string
-			yield Optional.of( new LocatedString( variablePathNode.toString(), location( variablePathNode ) ) );
+			yield Optional.of( new LocatedString( variablePathNode.toPrettyString(), location( variablePathNode ) ) );
 		}
 		case null -> Optional.empty();
 		default -> throw new IllegalStateException( "Unexpected inputPort location type: " + inputPortInfo.location() );
