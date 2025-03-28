@@ -56,16 +56,13 @@ public class AstService extends JavaService {
 		String[] includePaths = new String[] { jolieHomePath + "/include", modulePath.getParent().toUri().toString() };
 		String[] cliArgs = new String[] { moduleURI.toString() };
 
-		try( FileReader mainFileReader = new FileReader(
-			modulePath.toFile() );
+		try(
 			CommandLineParser cliParser = new CommandLineParser( cliArgs, AstService.class.getClassLoader(), false ) ) {
 			Interpreter.Configuration configuration = cliParser.getInterpreterConfiguration();
 			SemanticVerifier.Configuration semanticVerificationConfiguration = new SemanticVerifier.Configuration(
 				configuration.executionTarget() );
 			// don't check for main to allow us to read modules without services.
 			semanticVerificationConfiguration.setCheckForMain( false );
-			ClassLoader classLoader = configuration.jolieClassLoader();
-			InputStream mainFileInputStream = new FileInputStream( modulePath.toFile() );
 			return ParsingUtils.parseProgram(
 				configuration.source(),
 				configuration.charset(),
@@ -99,16 +96,13 @@ public class AstService extends JavaService {
 		String[] includePaths = new String[] { jolieHomePath + "/include", modulePath.getParent().toUri().toString() };
 		String[] cliArgs = new String[] { moduleURI.toString() };
 
-		try( FileReader mainFileReader = new FileReader(
-			modulePath.toFile() );
+		try(
 			CommandLineParser cliParser = new CommandLineParser( cliArgs, AstService.class.getClassLoader(), false ) ) {
 			Interpreter.Configuration configuration = cliParser.getInterpreterConfiguration();
 			SemanticVerifier.Configuration semanticVerificationConfiguration = new SemanticVerifier.Configuration(
 				configuration.executionTarget() );
 			// don't check for main to allow us to read modules without services.
 			semanticVerificationConfiguration.setCheckForMain( false );
-			ClassLoader classLoader = configuration.jolieClassLoader();
-			InputStream mainFileInputStream = new FileInputStream( modulePath.toFile() );
 			return ParsingUtils.parseProgramModule(
 				configuration.source(),
 				configuration.charset(),
