@@ -265,8 +265,8 @@ type ResolveSymbolResponse: TypeDef | InterfaceDef | ServiceDef
 
 interface AstInterface {
 RequestResponse:
-	parseModule( string )( Module ),
-	resolveSymbol( LocatedSymbolRef )( ResolveSymbolResponse )
+	parseModule( string )( Module ) throws CodeCheckException,
+	resolveSymbol( LocatedSymbolRef )( ResolveSymbolResponse ) throws CodeCheckException
 }
 
 service Ast {

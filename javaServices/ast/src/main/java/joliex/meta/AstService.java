@@ -22,7 +22,6 @@ package joliex.meta;
 import jolie.Interpreter;
 import jolie.cli.CommandLineException;
 import jolie.lang.CodeCheckException;
-import jolie.lang.parse.ParserException;
 import jolie.lang.parse.SemanticVerifier;
 import jolie.lang.parse.ast.*;
 import jolie.lang.parse.ast.expression.ConstantStringExpression;
@@ -30,10 +29,10 @@ import jolie.lang.parse.ast.expression.InlineTreeExpressionNode;
 import jolie.lang.parse.ast.expression.VariableExpressionNode;
 import jolie.lang.parse.ast.types.*;
 import jolie.lang.parse.ast.types.refinements.*;
-import jolie.lang.parse.module.ModuleException;
 import jolie.lang.parse.util.ParsingUtils;
 import jolie.cli.CommandLineParser;
 
+import jolie.runtime.FaultException;
 import jolie.runtime.JavaService;
 import jolie.runtime.Value;
 import jolie.runtime.embedding.java.JolieNative;
@@ -48,7 +47,7 @@ import java.util.*;
 
 public class AstService extends JavaService {
 
-	private Program getModuleProgram( String moduleURIString ) {
+	private Program getModuleProgram( String moduleURIString ) throws CodeCheckException {
 		URI moduleURI = URI.create( moduleURIString );
 		Path modulePath = Paths.get( moduleURI );
 		String jolieHomePath = System.getenv( "JOLIE_HOME" );
@@ -78,16 +77,10 @@ public class AstService extends JavaService {
 			throw new RuntimeException( e );
 		} catch( CommandLineException e ) {
 			throw new RuntimeException( e );
-		} catch( ParserException e ) {
-			throw new RuntimeException( e );
-		} catch( ModuleException e ) {
-			throw new RuntimeException( e );
-		} catch( CodeCheckException e ) {
-			throw new RuntimeException( e );
 		}
 	}
 
-	private SemanticVerifier getSemanticVerifier( String moduleURIString ) {
+	private SemanticVerifier getSemanticVerifier( String moduleURIString ) throws CodeCheckException {
 		// TODO this is extremely similar to getModuleProgram, maybe merge them.
 		URI moduleURI = URI.create( moduleURIString );
 		Path modulePath = Paths.get( moduleURI );
@@ -117,12 +110,6 @@ public class AstService extends JavaService {
 		} catch( IOException e ) {
 			throw new RuntimeException( e );
 		} catch( CommandLineException e ) {
-			throw new RuntimeException( e );
-		} catch( ParserException e ) {
-			throw new RuntimeException( e );
-		} catch( ModuleException e ) {
-			throw new RuntimeException( e );
-		} catch( CodeCheckException e ) {
 			throw new RuntimeException( e );
 		}
 	}
@@ -684,35 +671,44 @@ public class AstService extends JavaService {
 	 * @param modulePath The path to the module in URI form (e.g. "file:///home/user/main.ol").
 	 * @return The Module
 	 */
-	public Value parseModule( String modulePath ) {
+	public Value parseModule( String modulePath ) throws FaultException {
 
-		Program moduleProgram = getModuleProgram( modulePath );
+		try {
+			Program moduleProgram = getModuleProgram( modulePath );
 
-		return Module.toValue( Module.builder()
-			.types( parseTypes( moduleProgram ) )
-			.services( parseServices( moduleProgram ) )
-			.interfaces( parseInterfaces( moduleProgram ) )
-			.build() );
+			return Module.toValue( Module.builder()
+				.types( parseTypes( moduleProgram ) )
+				.services( parseServices( moduleProgram ) )
+				.interfaces( parseInterfaces( moduleProgram ) )
+				.build() );
+		} catch( CodeCheckException e ) {
+			throw new FaultException( "CodeCheckException" );
+		}
 	}
 
-	public Value resolveSymbol( LocatedSymbolRef request ) {
+	public Value resolveSymbol( LocatedSymbolRef request ) throws FaultException {
 		String modulePath = request.textLocation().source();
 		URI moduleURI = URI.create( modulePath );
-		SemanticVerifier semanticVerifier = getSemanticVerifier( modulePath );
 
-		ImportableSymbol node = (ImportableSymbol) semanticVerifier
-			.symbolTables()
-			.get( moduleURI )
-			// TODO error handling in case the symbol is not found.
-			.getSymbol( request.contentValue() )
-			.orElseThrow()
-			.node();
+		try {
+			SemanticVerifier semanticVerifier = getSemanticVerifier( modulePath );
 
-		return switch( node ) {
-		case ServiceNode serviceNode -> ServiceDef.toValue( getService( serviceNode ) );
-		case InterfaceDefinition interfaceDefinition -> InterfaceDef.toValue( getInterface( interfaceDefinition ) );
-		case TypeDefinition typeDefinition -> TypeDef.toValue( getTypeDef( typeDefinition ) );
-		default -> throw new IllegalStateException( "Unexpected value: " + node );
-		};
+			ImportableSymbol node = (ImportableSymbol) semanticVerifier
+				.symbolTables()
+				.get( moduleURI )
+				// TODO error handling in case the symbol is not found.
+				.getSymbol( request.contentValue() )
+				.orElseThrow()
+				.node();
+
+			return switch( node ) {
+			case ServiceNode serviceNode -> ServiceDef.toValue( getService( serviceNode ) );
+			case InterfaceDefinition interfaceDefinition -> InterfaceDef.toValue( getInterface( interfaceDefinition ) );
+			case TypeDefinition typeDefinition -> TypeDef.toValue( getTypeDef( typeDefinition ) );
+			default -> throw new IllegalStateException( "Unexpected value: " + node );
+			};
+		} catch( CodeCheckException e ) {
+			throw new FaultException( "CodeCheckException" );
+		}
 	}
 }
