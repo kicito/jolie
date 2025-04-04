@@ -378,7 +378,6 @@ public class Scanner implements AutoCloseable {
 	private int currColumn;					// column of the current character
 	private int currOffset = -1;			// 0-indexed line offset of the current character without multi-increment on '\t'
 	private int errorColumn;				// column of the error character (first character of the current token or line)
-	private int tokenStartLine;				// Line the last returned token started on.
 	private int tokenStartOffset;			// Offset that the last returned token started on
 	private int tokenEndLine;				// Line the last returned token ended on
 	private int tokenEndOffset; 			// Offset the last returned token ended on
@@ -632,10 +631,6 @@ public class Scanner implements AutoCloseable {
 		this.endLine = endLine;
 	}
 
-	public int tokenStartLine(){
-		return tokenStartLine;
-	}
-
 	public int tokenStartOffset() {
 		return tokenStartOffset;
 	}
@@ -646,16 +641,6 @@ public class Scanner implements AutoCloseable {
 
 	public int tokenEndOffset() {
 		return tokenEndOffset;
-	}
-
-
-
-	/**
-	 * Saves the start line and offset of a token
-	 */
-	private void recordTokenStart() {
-		tokenStartOffset = currOffset;
-		tokenStartLine = line;
 	}
 
 	/**
@@ -913,7 +898,8 @@ public class Scanner implements AutoCloseable {
 			errorColumn = currColumn-1;
 			return new Token( TokenType.EOF );
 		}
-		recordTokenStart();
+
+		tokenStartOffset = currOffset;
 
 		boolean stopOneChar = false;
 		Token retval = null;

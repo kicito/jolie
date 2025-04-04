@@ -1610,8 +1610,7 @@ public class OLParser extends AbstractParser {
 	 */
 	private < I > InternalParseResult< I > parseInternals( ParsingLambda< I > internalsParser )
 		throws IOException, ParserException {
-		ParsingContext earlyContext = getContext();
-		int startLine = scanner().tokenStartLine();
+		int startLine = scanner().line();
 		int startOffset = scanner().tokenStartOffset();
 
 		I internals = internalsParser.get();
@@ -1619,7 +1618,7 @@ public class OLParser extends AbstractParser {
 		ParsingContext finalContext =
 			new URIParsingContext( scanner().source(), startLine, lastTokenEnd.tokenEndLine(),
 				startOffset, lastTokenEnd.tokenEndOffset(),
-				earlyContext.enclosingCode() );
+				getContext().enclosingCode() );
 		return new InternalParseResult<>( internals, finalContext );
 	}
 
