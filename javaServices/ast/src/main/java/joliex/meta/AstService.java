@@ -46,17 +46,25 @@ import java.util.*;
 
 public class AstService extends JavaService {
 
+	private Interpreter.Configuration getInterpreterConfiguration( String moduleURIString )
+		throws IOException, CommandLineException {
+		URI moduleURI = URI.create( moduleURIString );
+		String[] cliArgs = new String[] { moduleURI.toString() };
+		try( CommandLineParser cliParser =
+			new CommandLineParser( cliArgs, AstService.class.getClassLoader(), false ) ) {
+			return cliParser.getInterpreterConfiguration();
+		}
+	}
+
 	private Program getModuleProgram( String moduleURIString ) throws CodeCheckException {
 		URI moduleURI = URI.create( moduleURIString );
 		Path modulePath = Paths.get( moduleURI );
 		String jolieHomePath = System.getenv( "JOLIE_HOME" );
 		String[] packagesPath = new String[] { System.getenv( "JOLIE_HOME" ) + "/packages" };
 		String[] includePaths = new String[] { jolieHomePath + "/include", modulePath.getParent().toUri().toString() };
-		String[] cliArgs = new String[] { moduleURI.toString() };
 
-		try(
-			CommandLineParser cliParser = new CommandLineParser( cliArgs, AstService.class.getClassLoader(), false ) ) {
-			Interpreter.Configuration configuration = cliParser.getInterpreterConfiguration();
+		try {
+			Interpreter.Configuration configuration = getInterpreterConfiguration( moduleURIString );
 			SemanticVerifier.Configuration semanticVerificationConfiguration = new SemanticVerifier.Configuration(
 				configuration.executionTarget() );
 			// don't check for main to allow us to read modules without services.
@@ -80,21 +88,19 @@ public class AstService extends JavaService {
 	}
 
 	private SemanticVerifier getSemanticVerifier( String moduleURIString ) throws CodeCheckException {
-		// TODO this is extremely similar to getModuleProgram, maybe merge them.
 		URI moduleURI = URI.create( moduleURIString );
 		Path modulePath = Paths.get( moduleURI );
 		String jolieHomePath = System.getenv( "JOLIE_HOME" );
 		String[] packagesPath = new String[] { System.getenv( "JOLIE_HOME" ) + "/packages" };
 		String[] includePaths = new String[] { jolieHomePath + "/include", modulePath.getParent().toUri().toString() };
-		String[] cliArgs = new String[] { moduleURI.toString() };
 
-		try(
-			CommandLineParser cliParser = new CommandLineParser( cliArgs, AstService.class.getClassLoader(), false ) ) {
-			Interpreter.Configuration configuration = cliParser.getInterpreterConfiguration();
+		try {
+			Interpreter.Configuration configuration = getInterpreterConfiguration( moduleURIString );
 			SemanticVerifier.Configuration semanticVerificationConfiguration = new SemanticVerifier.Configuration(
 				configuration.executionTarget() );
 			// don't check for main to allow us to read modules without services.
 			semanticVerificationConfiguration.setCheckForMain( false );
+
 			return ParsingUtils.parseProgramModule(
 				configuration.source(),
 				configuration.charset(),
