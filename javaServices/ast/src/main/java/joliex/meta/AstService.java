@@ -32,7 +32,6 @@ import jolie.lang.parse.ast.types.refinements.*;
 import jolie.lang.parse.util.ParsingUtils;
 import jolie.cli.CommandLineParser;
 
-import jolie.runtime.FaultException;
 import jolie.runtime.JavaService;
 import jolie.runtime.Value;
 import jolie.runtime.embedding.java.JolieNative;
@@ -177,8 +176,30 @@ public class AstService extends JavaService {
 			.map( this::createOutputPort )
 			.toList();
 
+		List< Embedding > embeddings = service.program().children().stream()
+			.filter( node -> node instanceof EmbedServiceNode )
+			.map( node -> (EmbedServiceNode) node )
+			.map( this::getEmbeddings )
+			.toList();
+
 		builder.inputPorts( inputPorts )
-			.outputPorts( outputPorts );
+			.outputPorts( outputPorts )
+			.embeddings( embeddings );
+
+		return builder.build();
+	}
+
+	Embedding getEmbeddings( EmbedServiceNode embedServiceNode ) {
+		Embedding.Builder builder = Embedding.builder();
+
+		builder.textLocation( location( embedServiceNode ) )
+			// FiXME serviceName has no real location
+			.embeddedService( new LocatedSymbolRef( embedServiceNode.serviceName(), location( embedServiceNode ) ) );
+
+		if( embedServiceNode.hasBindingPort() )
+			// FIXME the outputPort of an embed statement has no location
+			builder.outputPort(
+				new LocatedSymbolRef( embedServiceNode.bindingPort().id(), location( embedServiceNode ) ) );
 
 		return builder.build();
 	}
@@ -670,8 +691,9 @@ public class AstService extends JavaService {
 	 *
 	 * @param modulePath The path to the module in URI form (e.g. "file:///home/user/main.ol").
 	 * @return The Module
+	 * @throws joliex.meta.spec.faults.CodeCheckException If the module cannot be parsed
 	 */
-	public Value parseModule( String modulePath ) throws FaultException {
+	public Value parseModule( String modulePath ) throws joliex.meta.spec.faults.CodeCheckException {
 
 		try {
 			Program moduleProgram = getModuleProgram( modulePath );
@@ -682,11 +704,11 @@ public class AstService extends JavaService {
 				.interfaces( parseInterfaces( moduleProgram ) )
 				.build() );
 		} catch( CodeCheckException e ) {
-			throw new FaultException( "CodeCheckException" );
+			throw new joliex.meta.spec.faults.CodeCheckException( new VoidBasicType( new JolieNative.JolieVoid() ) );
 		}
 	}
 
-	public Value resolveSymbol( LocatedSymbolRef request ) throws FaultException {
+	public Value resolveSymbol( LocatedSymbolRef request ) throws joliex.meta.spec.faults.CodeCheckException {
 		String modulePath = request.textLocation().source();
 		URI moduleURI = URI.create( modulePath );
 
@@ -697,6 +719,8 @@ public class AstService extends JavaService {
 				.symbolTables()
 				.get( moduleURI )
 				// TODO error handling in case the symbol is not found.
+				// FIXME handle case: resolved interface of new outputPort from embedding is not added to the
+				// symboltable
 				.getSymbol( request.contentValue() )
 				.orElseThrow()
 				.node();
@@ -708,7 +732,7 @@ public class AstService extends JavaService {
 			default -> throw new IllegalStateException( "Unexpected value: " + node );
 			};
 		} catch( CodeCheckException e ) {
-			throw new FaultException( "CodeCheckException" );
+			throw new joliex.meta.spec.faults.CodeCheckException( new VoidBasicType( new JolieNative.JolieVoid() ) );
 		}
 	}
 }

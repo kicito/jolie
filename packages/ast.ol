@@ -238,6 +238,13 @@ type OutputPort {
 	interfaces*: SymbolRef
 }
 
+/// An embedding
+type Embedding {
+    textLocation: TextLocation
+    embeddedService: LocatedSymbolRef
+    outputPort?: LocatedSymbolRef
+}
+
 /// A service.
 type ServiceDef {
 	textLocation: TextLocation
@@ -245,6 +252,7 @@ type ServiceDef {
 	name: LocatedString
 	inputPorts*: InputPort
 	outputPorts*: OutputPort
+	embeddings*: Embedding
 }
 
 /// An interface definition.

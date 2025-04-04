@@ -6,6 +6,7 @@ package joliex.meta.spec.types;
  *
  * <pre>
  * textLocation: {@link joliex.meta.spec.types.Location}
+ * embeddings[0,2147483647]: {@link joliex.meta.spec.types.Embedding}
  * documentation[0,1]: {@link joliex.meta.spec.types.Documentation}
  * outputPorts[0,2147483647]: {@link joliex.meta.spec.types.OutputPort}
  * name: {@link joliex.meta.spec.types.LocatedString}
@@ -15,6 +16,7 @@ package joliex.meta.spec.types;
  * @see jolie.runtime.embedding.java.JolieValue
  * @see jolie.runtime.embedding.java.JolieNative
  * @see joliex.meta.spec.types.Location
+ * @see joliex.meta.spec.types.Embedding
  * @see joliex.meta.spec.types.Documentation
  * @see joliex.meta.spec.types.OutputPort
  * @see joliex.meta.spec.types.LocatedString
@@ -27,6 +29,8 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 
 	@jolie.runtime.embedding.java.util.JolieName( "textLocation" )
 	private final joliex.meta.spec.types.Location textLocation;
+	@jolie.runtime.embedding.java.util.JolieName( "embeddings" )
+	private final java.util.List< joliex.meta.spec.types.Embedding > embeddings;
 	@jolie.runtime.embedding.java.util.JolieName( "documentation" )
 	private final joliex.meta.spec.types.Documentation documentation;
 	@jolie.runtime.embedding.java.util.JolieName( "outputPorts" )
@@ -36,11 +40,15 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 	@jolie.runtime.embedding.java.util.JolieName( "inputPorts" )
 	private final java.util.List< joliex.meta.spec.types.InputPort > inputPorts;
 
-	public ServiceDef( joliex.meta.spec.types.Location textLocation, joliex.meta.spec.types.Documentation documentation,
+	public ServiceDef( joliex.meta.spec.types.Location textLocation,
+		java.util.SequencedCollection< joliex.meta.spec.types.Embedding > embeddings,
+		joliex.meta.spec.types.Documentation documentation,
 		java.util.SequencedCollection< joliex.meta.spec.types.OutputPort > outputPorts,
 		joliex.meta.spec.types.LocatedString name,
 		java.util.SequencedCollection< joliex.meta.spec.types.InputPort > inputPorts ) {
 		this.textLocation = jolie.runtime.embedding.java.util.ValueManager.validated( "textLocation", textLocation );
+		this.embeddings =
+			jolie.runtime.embedding.java.util.ValueManager.validated( "embeddings", embeddings, 0, 2147483647, t -> t );
 		this.documentation = documentation;
 		this.outputPorts = jolie.runtime.embedding.java.util.ValueManager.validated( "outputPorts", outputPorts, 0,
 			2147483647, t -> t );
@@ -51,6 +59,10 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 
 	public joliex.meta.spec.types.Location textLocation() {
 		return textLocation;
+	}
+
+	public java.util.List< joliex.meta.spec.types.Embedding > embeddings() {
+		return embeddings;
 	}
 
 	public java.util.Optional< joliex.meta.spec.types.Documentation > documentation() {
@@ -98,6 +110,8 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 		return new ServiceDef(
 			jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "textLocation" ),
 				joliex.meta.spec.types.Location::from ),
+			jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
+				j.getChildOrDefault( "embeddings", java.util.List.of() ), joliex.meta.spec.types.Embedding::from ),
 			jolie.runtime.embedding.java.util.ValueManager.fieldFrom( j.getFirstChild( "documentation" ),
 				joliex.meta.spec.types.Documentation::from ),
 			jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
@@ -113,6 +127,8 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 		return new ServiceDef(
 			jolie.runtime.embedding.java.util.ValueManager.singleFieldFrom( v, "textLocation",
 				joliex.meta.spec.types.Location::fromValue ),
+			jolie.runtime.embedding.java.util.ValueManager.vectorFieldFrom( v, "embeddings",
+				joliex.meta.spec.types.Embedding::fromValue ),
 			jolie.runtime.embedding.java.util.ValueManager.singleFieldFrom( v, "documentation",
 				joliex.meta.spec.types.Documentation::fromValue ),
 			jolie.runtime.embedding.java.util.ValueManager.vectorFieldFrom( v, "outputPorts",
@@ -127,6 +143,8 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 		final jolie.runtime.Value v = jolie.runtime.Value.create();
 
 		v.getFirstChild( "textLocation" ).deepCopy( joliex.meta.spec.types.Location.toValue( t.textLocation() ) );
+		t.embeddings()
+			.forEach( c -> v.getNewChild( "embeddings" ).deepCopy( joliex.meta.spec.types.Embedding.toValue( c ) ) );
 		t.documentation().ifPresent(
 			c -> v.getFirstChild( "documentation" ).deepCopy( joliex.meta.spec.types.Documentation.toValue( c ) ) );
 		t.outputPorts()
@@ -141,6 +159,7 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 	public static class Builder {
 
 		private joliex.meta.spec.types.Location textLocation;
+		private java.util.SequencedCollection< joliex.meta.spec.types.Embedding > embeddings;
 		private joliex.meta.spec.types.Documentation documentation;
 		private java.util.SequencedCollection< joliex.meta.spec.types.OutputPort > outputPorts;
 		private joliex.meta.spec.types.LocatedString name;
@@ -151,6 +170,8 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 		private Builder( jolie.runtime.embedding.java.JolieValue j ) {
 			this.textLocation = jolie.runtime.embedding.java.util.ValueManager
 				.fieldFrom( j.getFirstChild( "textLocation" ), joliex.meta.spec.types.Location::from );
+			this.embeddings = jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
+				j.getChildOrDefault( "embeddings", java.util.List.of() ), joliex.meta.spec.types.Embedding::from );
 			this.documentation = jolie.runtime.embedding.java.util.ValueManager
 				.fieldFrom( j.getFirstChild( "documentation" ), joliex.meta.spec.types.Documentation::from );
 			this.outputPorts = jolie.runtime.embedding.java.util.ValueManager.fieldFrom(
@@ -169,6 +190,17 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 		public Builder textLocation(
 			java.util.function.Function< joliex.meta.spec.types.Location.Builder, joliex.meta.spec.types.Location > f ) {
 			return textLocation( f.apply( joliex.meta.spec.types.Location.builder() ) );
+		}
+
+		public Builder embeddings( java.util.SequencedCollection< joliex.meta.spec.types.Embedding > embeddings ) {
+			this.embeddings = embeddings;
+			return this;
+		}
+
+		public Builder embeddings(
+			java.util.function.Function< jolie.runtime.embedding.java.util.StructureListBuilder< joliex.meta.spec.types.Embedding, joliex.meta.spec.types.Embedding.Builder >, java.util.List< joliex.meta.spec.types.Embedding > > f ) {
+			return embeddings( f.apply( new jolie.runtime.embedding.java.util.StructureListBuilder<>(
+				joliex.meta.spec.types.Embedding::builder ) ) );
 		}
 
 		public Builder documentation( joliex.meta.spec.types.Documentation documentation ) {
@@ -214,7 +246,7 @@ public final class ServiceDef extends jolie.runtime.embedding.java.TypedStructur
 		}
 
 		public ServiceDef build() {
-			return new ServiceDef( textLocation, documentation, outputPorts, name, inputPorts );
+			return new ServiceDef( textLocation, embeddings, documentation, outputPorts, name, inputPorts );
 		}
 	}
 }
