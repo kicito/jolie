@@ -1624,7 +1624,7 @@ public class OLParser extends AbstractParser {
 		} else {
 			// if the scanner moved into a '\n', it has already incremented the line, meaning
 			endLine = scanner().tokenEndLine();
-			endColumn = scanner().tokenEndOffset();
+			endColumn = scanner().tokenEndColumn();
 		}
 
 		ParsingContext finalContext =

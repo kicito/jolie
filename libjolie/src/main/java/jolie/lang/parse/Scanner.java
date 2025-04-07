@@ -379,7 +379,7 @@ public class Scanner implements AutoCloseable {
 	private int errorColumn;				// column of the error character (first character of the current token or line)
 	private int tokenStartOffset;			// Offset that the last returned token started on
 	private int tokenEndLine;				// Line the last returned token ended on
-	private int tokenEndOffset; 			// Offset the last returned token ended on
+	private int tokenEndColumn; 			// Column the last returned token ended on
 
 	/**
 	 * Constructor for arbitrary streams, used for CommandLineParser parsing constants
@@ -638,16 +638,16 @@ public class Scanner implements AutoCloseable {
 		return tokenEndLine;
 	}
 
-	public int tokenEndOffset() {
-		return tokenEndOffset;
+	public int tokenEndColumn() {
+		return tokenEndColumn;
 	}
 
 	/**
-	 * Saves the end line and offset of a token, sets tokenEndOffset and tokenEndLine correctly if run before readChar()
+	 * Saves the end line and column of a token, sets tokenEndColumn and tokenEndLine correctly if run before readChar()
 	 * moves the Scanner past the last character of the Token.
 	 */
 	private void recordTokenEnd() {
-		tokenEndOffset = currColumn;
+		tokenEndColumn = currColumn;
 		tokenEndLine = line;
 	}
 
