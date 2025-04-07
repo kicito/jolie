@@ -376,7 +376,6 @@ public class Scanner implements AutoCloseable {
 	private final boolean includeDocumentation;	// include documentation tokens
 	private final ArrayList<String> readCodeLines = new ArrayList<>();
 	private int currColumn;					// column of the current character
-	private int currOffset = -1;			// 0-indexed line offset of the current character without multi-increment on '\t'
 	private int errorColumn;				// column of the error character (first character of the current token or line)
 	private int tokenStartOffset;			// Offset that the last returned token started on
 	private int tokenEndLine;				// Line the last returned token ended on
@@ -399,7 +398,7 @@ public class Scanner implements AutoCloseable {
 		line = 0;
 		startLine = 0;
 		endLine = 0;
-		currColumn = 0;
+		currColumn = -1;
 		readChar();
 	}
 
@@ -421,7 +420,7 @@ public class Scanner implements AutoCloseable {
 		line = 0;
 		startLine = 0;
 		endLine = 0;
-		currColumn = 0;
+		currColumn = -1;
 		readChar();
 	}
 
@@ -648,8 +647,8 @@ public class Scanner implements AutoCloseable {
 	 * moves the Scanner past the last character of the Token.
 	 */
 	private void recordTokenEnd() {
-		tokenEndOffset = currOffset;
-		tokenEndLine = line; //Only necessary if tokens can span multiple lines
+		tokenEndOffset = currColumn;
+		tokenEndLine = line;
 	}
 
 
@@ -776,17 +775,10 @@ public class Scanner implements AutoCloseable {
 				readCodeLines.add( line(), temp );
 			}
 		}
-
-		currOffset++;
-		if(ch == '\t'){
-			currColumn += Constants.TAB_SIZE; // column has to have the tabSize added to be correct for the error context
-		} else{
-			currColumn++;
-		}
+		currColumn++;
 		if ( ch == '\n' ) {
 			line++;
-			currColumn = 0;
-			currOffset = -1;
+			currColumn = -1;
 		}
 	}
 
@@ -825,14 +817,10 @@ public class Scanner implements AutoCloseable {
 			}
 			readCodeLines.add( line(), temp );
 		}
-		if(ch == '\t'){
-			currColumn += Constants.TAB_SIZE; // increase the currentcolumn with tabSize instead of 1, when char is tab
-		} else{
-			currColumn++;
-		}
+		currColumn++;
 		if ( ch == '\n' ) {
 			line++;
-			currColumn = 0;
+			currColumn = -1;
 		}
 	}
 
