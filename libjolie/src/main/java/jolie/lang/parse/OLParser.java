@@ -1612,7 +1612,7 @@ public class OLParser extends AbstractParser {
 	private < I > InternalParseResult< I > parseInternals( boolean readsNextToken, ParsingLambda< I > internalsParser )
 		throws IOException, ParserException {
 		int startLine = scanner().line();
-		int startOffset = scanner().tokenStartOffset();
+		int startOffset = scanner().errorColumn();
 
 		I internals = internalsParser.get();
 		int endLine;

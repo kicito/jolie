@@ -99,7 +99,7 @@ public abstract class AbstractParser {
 		if( tokens.isEmpty() ) {
 			token = scanner.getToken();
 			if( !token.is( Scanner.TokenType.NEWLINE ) ) {
-				previousTokenEnd.put( new TokenEnd( scanner.tokenEndLine(), scanner.tokenEndOffset() ) );
+				previousTokenEnd.put( new TokenEnd( scanner.tokenEndLine(), scanner.tokenEndColumn() ) );
 			}
 		} else {
 			token = tokens.remove( 0 );

@@ -377,7 +377,6 @@ public class Scanner implements AutoCloseable {
 	private final ArrayList<String> readCodeLines = new ArrayList<>();
 	private int currColumn;					// column of the current character
 	private int errorColumn;				// column of the error character (first character of the current token or line)
-	private int tokenStartOffset;			// Offset that the last returned token started on
 	private int tokenEndLine;				// Line the last returned token ended on
 	private int tokenEndColumn; 			// Column the last returned token ended on
 
@@ -576,12 +575,11 @@ public class Scanner implements AutoCloseable {
 	}
 
 	/**
-	 * Returns the value minus one, because errorcolumn is set to currentcolumn while reading, and thus has 1 added to it
-	 * because the current column has already moved to the next characer of where the word started we are reading
-	 * @return the starting index of the token which is erroneous
+	 * Returns The 0-indexed column of the error character (first character of the current token)
+	 * @return the starting index of the token
 	 */
 	public int errorColumn() {
-		return errorColumn-1;
+		return errorColumn;
 	}
 
 	/**
@@ -628,10 +626,6 @@ public class Scanner implements AutoCloseable {
 	 */
 	public void setEndLine(int endLine){
 		this.endLine = endLine;
-	}
-
-	public int tokenStartOffset() {
-		return tokenStartOffset;
 	}
 
 	public int tokenEndLine(){
@@ -887,7 +881,7 @@ public class Scanner implements AutoCloseable {
 			return new Token( TokenType.EOF );
 		}
 
-		tokenStartOffset = currOffset;
+		errorColumn = currColumn;
 
 		boolean stopOneChar = false;
 		Token retval = null;
@@ -1303,7 +1297,6 @@ public class Scanner implements AutoCloseable {
 		if ( retval == null ) {
 			retval = new Token( TokenType.ERROR );
 		}
-		errorColumn = currColumn-retval.content.length();
 		return retval;
 	}
 
