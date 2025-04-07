@@ -1020,7 +1020,7 @@ public class OLParser extends AbstractParser {
 
 	private ExecutionInfo _parseExecutionInfo()
 		throws IOException, ParserException {
-		InternalParseResult< Constants.ExecutionMode > parseResult = parseInternals( () -> {
+		InternalParseResult< Constants.ExecutionMode > parseResult = parseInternals( true, () -> {
 			Constants.ExecutionMode mode = Constants.ExecutionMode.SEQUENTIAL;
 			setStartLine(); // remember line we started parsing execution info
 			nextToken();
@@ -1605,19 +1605,31 @@ public class OLParser extends AbstractParser {
 	/**
 	 * Parses the internals for the creation of a Node and creates an appropriate ParsingContext
 	 *
+	 * @param readsNextToken Whether the lambda progresses the parser to the next token e.g. uses eat()
 	 * @param internalsParser A lambda that parses the internals of a Node.
 	 * @param <I> Type for the internals required to create the Node in question.
 	 */
-	private < I > InternalParseResult< I > parseInternals( ParsingLambda< I > internalsParser )
+	private < I > InternalParseResult< I > parseInternals( boolean readsNextToken, ParsingLambda< I > internalsParser )
 		throws IOException, ParserException {
 		int startLine = scanner().line();
 		int startOffset = scanner().tokenStartOffset();
 
 		I internals = internalsParser.get();
-		TokenEnd lastTokenEnd = previousTokenEnd();
+		int endLine;
+		int endColumn;
+		if( readsNextToken ) {
+			TokenEnd lastTokenEnd = previousTokenEnd();
+			endLine = lastTokenEnd.tokenEndLine();
+			endColumn = lastTokenEnd.tokenEndOffset();
+		} else {
+			// if the scanner moved into a '\n', it has already incremented the line, meaning
+			endLine = scanner().tokenEndLine();
+			endColumn = scanner().tokenEndOffset();
+		}
+
 		ParsingContext finalContext =
-			new URIParsingContext( scanner().source(), startLine, lastTokenEnd.tokenEndLine(),
-				startOffset, lastTokenEnd.tokenEndOffset(),
+			new URIParsingContext( scanner().source(), startLine, endLine,
+				startOffset, endColumn,
 				getContext().enclosingCode() );
 		return new InternalParseResult<>( internals, finalContext );
 	}
