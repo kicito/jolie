@@ -628,20 +628,29 @@ public class Scanner implements AutoCloseable {
 		this.endLine = endLine;
 	}
 
+	/**
+	 * The 0-indexed line the last returned token ended on
+	 * @return Line the last returned token ended on
+	 */
 	public int tokenEndLine(){
 		return tokenEndLine;
 	}
 
+	/**
+	 * Returns the column the last returned token ended on +1 (for LSP specification compatibility)
+	 * @return Column the last returned token ended on +1
+	 */
 	public int tokenEndColumn() {
 		return tokenEndColumn;
 	}
 
 	/**
-	 * Saves the end line and column of a token, sets tokenEndColumn and tokenEndLine correctly if run before readChar()
+	 * Saves the end line and column of a token. Sets tokenEndColumn and tokenEndLine correctly if run before readChar()
 	 * moves the Scanner past the last character of the Token.
 	 */
 	private void recordTokenEnd() {
-		tokenEndColumn = currColumn;
+		// +1 to make the tokenEndColumn exclusive
+		tokenEndColumn = currColumn + 1;
 		tokenEndLine = line;
 	}
 
