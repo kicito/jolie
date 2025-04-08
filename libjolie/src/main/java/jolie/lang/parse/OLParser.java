@@ -1623,7 +1623,8 @@ public class OLParser extends AbstractParser {
 			endLine = lastTokenEnd.tokenEndLine();
 			endColumn = lastTokenEnd.tokenEndOffset();
 		} else {
-			// if the scanner moved into a '\n', it has already incremented the line, meaning
+			// in this case the last token is still currently in the parser, so the scanner's tokenEnd values
+			// are valid
 			endLine = scanner().tokenEndLine();
 			endColumn = scanner().tokenEndColumn();
 		}
@@ -1632,8 +1633,6 @@ public class OLParser extends AbstractParser {
 			.mapToObj( line -> scanner().getAllCodeLines()
 				.get( line ) )
 			.toList();
-
-
 
 		ParsingContext finalContext =
 			new URIParsingContext( scanner().source(), startLine, endLine,
