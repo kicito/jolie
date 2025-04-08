@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 //import jolie.lang.CodeCheckMessage;
 import jolie.lang.Constants;
 import jolie.lang.Constants.EmbeddedServiceType;
@@ -1627,10 +1628,17 @@ public class OLParser extends AbstractParser {
 			endColumn = scanner().tokenEndColumn();
 		}
 
+		List< String > codeLines = IntStream.rangeClosed( startLine, endLine )
+			.mapToObj( line -> scanner().getAllCodeLines()
+				.get( line ) )
+			.toList();
+
+
+
 		ParsingContext finalContext =
 			new URIParsingContext( scanner().source(), startLine, endLine,
 				startOffset, endColumn,
-				getContext().enclosingCode() );
+				codeLines );
 		return new InternalParseResult<>( internals, finalContext );
 	}
 
