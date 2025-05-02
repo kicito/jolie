@@ -31,6 +31,7 @@ import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import jolie.lang.parse.context.ParsingContext;
 import jolie.lang.parse.context.URIParsingContext;
+import jolie.lang.parse.util.SaveLastN;
 import jolie.lang.CodeCheckMessage;
 import jolie.lang.Keywords;
 
@@ -50,6 +51,18 @@ public abstract class AbstractParser {
 	private boolean backup = false;
 	private final List< Scanner.Token > backupTokens = new ArrayList<>();
 	private boolean metNewline = false;
+
+
+	/**
+	 *
+	 * @param tokenEndLine The line that a Token ends on.
+	 * @param tokenEndOffset The line Offset that a Token ends on.
+	 */
+	public record TokenEnd(int tokenEndLine, int tokenEndOffset) {
+	}
+
+	// private TokenEnd tokenEnd;
+	private final SaveLastN< TokenEnd > previousTokenEnd = new SaveLastN<>( 2 );
 
 	protected final String build( String... args ) {
 		stringBuilder.setLength( 0 );
@@ -85,6 +98,9 @@ public abstract class AbstractParser {
 		throws IOException {
 		if( tokens.isEmpty() ) {
 			token = scanner.getToken();
+			if( !token.is( Scanner.TokenType.NEWLINE ) ) {
+				previousTokenEnd.put( new TokenEnd( scanner.tokenEndLine(), scanner.tokenEndColumn() ) );
+			}
 		} else {
 			token = tokens.remove( 0 );
 		}
@@ -293,6 +309,16 @@ public abstract class AbstractParser {
 	 */
 	public final List< String > codeLine() {
 		return scanner.codeLine();
+	}
+
+	/**
+	 * Returns the Scanner offset and line of the end of the previously read token (excluding newline
+	 * tokens)
+	 *
+	 * @return The TokenEnd
+	 */
+	public final TokenEnd previousTokenEnd() {
+		return previousTokenEnd.get();
 	}
 
 	/**
