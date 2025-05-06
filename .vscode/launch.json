@@ -18,7 +18,8 @@
 				"${input:trace}",
 				"--responseTimeout",
 				"300000",
-				"${input:programName}"
+				"/home/nau/sdu/languageserver/launcher.ol",
+				"9743"
 			],
 			"windows": {
 				"args": [

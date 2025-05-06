@@ -240,11 +240,12 @@ public class JsonRpcProtocol extends SequentialCommProtocol implements HttpUtils
 		} else {
 			boolean isRR = channel().parentPort().getOperationTypeDescription( message.operationName(),
 				message.resourcePath() ) instanceof RequestResponseTypeDescription;
+
 			// if we are in LSP, we want to be sure the message to be
 			// a response to a request in order to send it with
 			// the fields "results" and "id"
 			// boolean check = isLsp ? isRR : true;
-			if( inInputPort && (isRR || !isLsp) ) {
+			if( inInputPort && (isRR || !isLsp) && !opInterface.containsOperation( originalOpName ) ) {
 				value.getChildren( "result" ).set( 0, message.value() );
 				Object jsonRpcId = jsonRpcIdMap.get( message.requestId() );
 				value.getFirstChild( "id" )
@@ -288,7 +289,7 @@ public class JsonRpcProtocol extends SequentialCommProtocol implements HttpUtils
 				}
 
 				if( !message.hasGenericRequestId() && !isLsp ) {
-					value.getFirstChild( "id" ).setValue( message.requestId() );
+				value.getFirstChild( "id" ).setValue( message.requestId() );
 				}
 			}
 		}
@@ -394,6 +395,8 @@ public class JsonRpcProtocol extends SequentialCommProtocol implements HttpUtils
 		HttpUtils.send( ostream, message, istream, inInputPort, channel(), this );
 	}
 
+	private Interface opInterface = null;
+
 	@Override
 	public CommMessage recv_internal( InputStream istream, OutputStream ostream )
 		throws IOException {
@@ -404,6 +407,7 @@ public class JsonRpcProtocol extends SequentialCommProtocol implements HttpUtils
 						getParameterFirstValue( Parameters.CLIENT_OUTPUTPORT ).strValue() );
 					if( op != null ) {
 						channelInterface.merge( op.getInterface() );
+						opInterface = op.getInterface().copy();
 					}
 				} catch( InvalidIdException ex ) {
 				}
