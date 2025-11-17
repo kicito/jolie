@@ -42,7 +42,7 @@ jobs:
         id: meta_rt
         uses: docker/metadata-action@v4
         with:
-          images: jolielang/jolie
+          images: kicito/jolie
           flavor: |
             latest=true
           tags: |
@@ -53,7 +53,7 @@ jobs:
         id: meta_alpine
         uses: docker/metadata-action@v4
         with:
-          images: jolielang/jolie
+          images: kicito/jolie
           flavor: |
             latest=false
           tags: |
@@ -64,7 +64,7 @@ jobs:
         id: meta_dev
         uses: docker/metadata-action@v4
         with:
-          images: jolielang/jolie
+          images: kicito/jolie
           flavor: |
             latest=false
           tags: |
