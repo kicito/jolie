@@ -91,6 +91,8 @@ public class CommandLineParser implements AutoCloseable {
 	private final Level logLevel;
 	private final String executionTarget;
 	private final Optional< Path > parametersFilepath;
+	private final boolean prometheusMetrics;
+	private final int prometheusPort;
 	private int cellId = 0;
 
 	/**
@@ -183,6 +185,9 @@ public class CommandLineParser implements AutoCloseable {
 						+ Integer.MAX_VALUE + ")" ) )
 			.append(
 				getOptionString( "--stackTraces", "Print stack traces (default: false)" ) )
+			.append(
+				getOptionString( "--prometheusMetrics",
+					"Enable Prometheus metrics collection and HTTP server (default port: 9400)" ) )
 			.append(
 				getOptionString( "-D<name>=<value>", "Set system property <name> to <value>" ) )
 			.toString();
@@ -278,6 +283,8 @@ public class CommandLineParser implements AutoCloseable {
 		boolean bStackTraces = false;
 		boolean bCheck = false;
 		boolean bTypeCheck = false; // Default for typecheck
+		boolean bPrometheusMetrics = false;
+		int pPort = 9400;
 		Level lLogLevel = Level.INFO;
 		String tMode = "console";
 		String tLevel = "all";
@@ -377,6 +384,28 @@ public class CommandLineParser implements AutoCloseable {
 			} else if( "--stackTraces".equals( argsList.get( i ) ) ) {
 				optionsList.add( argsList.get( i ) );
 				bStackTraces = true;
+			} else if( "--prometheusMetrics".equals( argsList.get( i ) ) ) {
+				optionsList.add( argsList.get( i ) );
+				bPrometheusMetrics = true;
+				pPort = 9400;
+				// // Check if port is specified
+				// if( i + 1 < argsList.size() && !argsList.get( i + 1 ).startsWith( "--" )
+				// && !argsList.get( i + 1 ).startsWith( "-" ) ) {
+				// try {
+				// int port = Integer.parseInt( argsList.get( i + 1 ) );
+				// if( port > 0 && port <= 65535 ) {
+				// pPort = port;
+				// i++;
+				// optionsList.add( argsList.get( i ) );
+				// } else {
+				// System.err.println(
+				// "Warning: Invalid port number " + port
+				// + " for --prometheusMetrics. Using default: 9400" );
+				// }
+				// } catch( NumberFormatException e ) {
+				// // Not a number, treat as next argument
+				// }
+				// }
 			} else if( "--check".equals( argsList.get( i ) ) ) {
 				optionsList.add( argsList.get( i ) );
 				bCheck = true;
@@ -534,6 +563,8 @@ public class CommandLineParser implements AutoCloseable {
 		printStackTraces = bStackTraces;
 		executionTarget = tService;
 		parametersFilepath = Optional.ofNullable( tParams );
+		prometheusMetrics = bPrometheusMetrics;
+		prometheusPort = pPort;
 
 		correlationAlgorithmType = CorrelationEngine.Type.fromString( csetAlgorithmName );
 		if( correlationAlgorithmType == null ) {
@@ -859,6 +890,24 @@ public class CommandLineParser implements AutoCloseable {
 			packagePaths,
 			executionTarget,
 			parametersFilepath );
+	}
+
+	/**
+	 * Returns whether Prometheus metrics collection is enabled.
+	 *
+	 * @return true if Prometheus metrics should be enabled, false otherwise
+	 */
+	public boolean prometheusMetricsEnabled() {
+		return prometheusMetrics;
+	}
+
+	/**
+	 * Returns the port number for the Prometheus HTTP metrics server.
+	 *
+	 * @return the port number (default: 9400)
+	 */
+	public int getPrometheusPort() {
+		return prometheusPort;
 	}
 
 	/**

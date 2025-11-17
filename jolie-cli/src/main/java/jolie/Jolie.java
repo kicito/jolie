@@ -28,8 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
-import io.prometheus.metrics.instrumentation.jvm.JvmMetrics;
-import io.prometheus.metrics.exporter.httpserver.HTTPServer;
 import jolie.cli.CommandLineException;
 import jolie.cli.CommandLineParser;
 import jolie.js.JsUtils;
@@ -68,16 +66,6 @@ public class Jolie {
 	 * @param args the command line arguments TODO Standardize the exit codes.
 	 */
 	public static void main( String[] args ) {
-		// Initialize Prometheus JVM metrics and HTTP server
-		JvmMetrics.builder().register();
-		try {
-			HTTPServer.builder()
-				.port( 9400 )
-				.buildAndStart();
-		} catch( Exception e ) {
-			System.err.println( "Warning: Could not start Prometheus metrics server on port 9400: " + e.getMessage() );
-		}
-
 		int exitCode = 0;
 		// TODO: remove this hack by extracting CommandLineParser here
 		boolean printStackTraces = Arrays.asList( args ).contains( "--stackTraces" );
