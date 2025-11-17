@@ -27,7 +27,6 @@ on:
 
 jobs:
   dockerhub:
-    if: github.repository == 'jolie/jolie'
     runs-on: ubuntu-latest
     strategy:
       matrix:
