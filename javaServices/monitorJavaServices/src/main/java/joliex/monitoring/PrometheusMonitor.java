@@ -63,9 +63,17 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 	private final Counter sessionsTotal;
 	private final Gauge sessionsActive;
 	private final Counter outgoingCallsTotal;
+	private final Counter outgoingRepliesTotal;
+	private final Histogram outgoingCallDuration;
+	private final Counter protocolMessagesTotal;
+	private final Histogram protocolMessageSize;
+	private final Histogram sessionDuration;
+	private final Counter operationFaultsByType;
 
 	// State tracking for duration calculations
 	private final Map< String, OperationStartInfo > operationStartTimes;
+	private final Map< String, OutgoingCallStartInfo > outgoingCallStartTimes;
+	private final Map< String, SessionStartInfo > sessionStartTimes;
 
 	// Holds start time and metadata for correlating operation start/end events
 	private static class OperationStartInfo {
@@ -77,6 +85,30 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 			this.startTimeNanos = startTimeNanos;
 			this.operationName = operationName;
 			this.type = type;
+		}
+	}
+
+	// Holds start time and metadata for correlating outgoing call/reply events
+	private static class OutgoingCallStartInfo {
+		final long startTimeNanos;
+		final String operationName;
+		final String outputPort;
+
+		OutgoingCallStartInfo( long startTimeNanos, String operationName, String outputPort ) {
+			this.startTimeNanos = startTimeNanos;
+			this.operationName = operationName;
+			this.outputPort = outputPort;
+		}
+	}
+
+	// Holds start time and metadata for correlating session start/end events
+	private static class SessionStartInfo {
+		final long startTimeNanos;
+		final String operationName;
+
+		SessionStartInfo( long startTimeNanos, String operationName ) {
+			this.startTimeNanos = startTimeNanos;
+			this.operationName = operationName;
 		}
 	}
 
@@ -120,8 +152,47 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 			.labelNames( "operation", "output_port", "status" )
 			.register( registry );
 
-		// Initialize state tracking map with bounded size
+		outgoingRepliesTotal = Counter.builder()
+			.name( "jolie_outgoing_replies_total" )
+			.help( "Total number of outgoing operation replies received" )
+			.labelNames( "operation", "output_port", "status" )
+			.register( registry );
+
+		outgoingCallDuration = Histogram.builder()
+			.name( "jolie_outgoing_call_duration_seconds" )
+			.help( "Outgoing operation call duration in seconds" )
+			.labelNames( "operation", "output_port", "status" )
+			.register( registry );
+
+		protocolMessagesTotal = Counter.builder()
+			.name( "jolie_protocol_messages_total" )
+			.help( "Total number of protocol-level messages" )
+			.labelNames( "protocol" )
+			.register( registry );
+
+		protocolMessageSize = Histogram.builder()
+			.name( "jolie_protocol_message_size_bytes" )
+			.help( "Protocol message body size in bytes" )
+			.labelNames( "protocol" )
+			.classicUpperBounds( 1024, 10240, 102400, 1048576 ) // 1KB, 10KB, 100KB, 1MB
+			.register( registry );
+
+		sessionDuration = Histogram.builder()
+			.name( "jolie_session_duration_seconds" )
+			.help( "Session duration in seconds" )
+			.labelNames( "operation" )
+			.register( registry );
+
+		operationFaultsByType = Counter.builder()
+			.name( "jolie_operation_faults_by_type_total" )
+			.help( "Total number of operation faults by fault type" )
+			.labelNames( "operation", "fault_type" )
+			.register( registry );
+
+		// Initialize state tracking maps with bounded size
 		operationStartTimes = new ConcurrentHashMap<>();
+		outgoingCallStartTimes = new ConcurrentHashMap<>();
+		sessionStartTimes = new ConcurrentHashMap<>();
 	}
 
 	@Override
@@ -147,16 +218,23 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 				handleOperationCall( data );
 				break;
 			case "OperationReply":
-				// Reply events are handled as part of correlation with Call events
-				// For now, we track calls at the OperationCall event
+				handleOperationReply( data );
+				break;
+			case "ProtocolMessage-http":
+				handleProtocolMessage( data, "http" );
+				break;
+			case "ProtocolMessage-soap":
+				handleProtocolMessage( data, "soap" );
 				break;
 			default:
 				// Ignore other event types
 				break;
 			}
 
-			// Cleanup old entries if map grows too large
-			if( operationStartTimes.size() > maxTrackedOperations ) {
+			// Cleanup old entries if any map grows too large
+			if( operationStartTimes.size() > maxTrackedOperations 
+				|| outgoingCallStartTimes.size() > maxTrackedOperations
+				|| sessionStartTimes.size() > maxTrackedOperations ) {
 				cleanupStaleEntries();
 			}
 		} catch( Exception ex ) {
@@ -194,6 +272,14 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		// Map status code to label
 		String status = mapStatusToLabel( statusCode );
 
+		// Track fault details if status is fault
+		if( statusCode == 1 && data.getFirstChild( "details" ).isDefined() ) {
+			String faultType = data.getFirstChild( "details" ).strValue();
+			if( faultType != null && !faultType.isEmpty() ) {
+				operationFaultsByType.labelValues( operationName, faultType ).inc();
+			}
+		}
+
 		// Determine operation type
 		// OperationEnded is only fired for RequestResponse operations
 		String type = "requestresponse";
@@ -214,6 +300,11 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 
 	private void handleSessionStarted( Value data ) {
 		String operationName = data.getFirstChild( "operationName" ).strValue();
+		String processId = data.getFirstChild( "processId" ).strValue();
+
+		// Store session start time for duration tracking
+		sessionStartTimes.put( processId, 
+			new SessionStartInfo( System.nanoTime(), operationName ) );
 
 		// Increment session counters
 		sessionsTotal.labelValues( operationName ).inc();
@@ -221,6 +312,15 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 	}
 
 	private void handleSessionEnded( Value data ) {
+		String processId = data.getFirstChild( "processId" ).strValue();
+
+		// Calculate session duration if we have start info
+		SessionStartInfo startInfo = sessionStartTimes.remove( processId );
+		if( startInfo != null ) {
+			double durationSeconds = (System.nanoTime() - startInfo.startTimeNanos) / 1_000_000_000.0;
+			sessionDuration.labelValues( startInfo.operationName ).observe( durationSeconds );
+		}
+
 		// Decrement active sessions
 		sessionsActive.dec();
 	}
@@ -228,13 +328,66 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 	private void handleOperationCall( Value data ) {
 		String operationName = data.getFirstChild( "operationName" ).strValue();
 		String outputPort = data.getFirstChild( "outputPort" ).strValue();
+		String messageId = data.getFirstChild( "messageId" ).strValue();
 		int statusCode = data.getFirstChild( "status" ).intValue();
 
 		// Map status code to label
 		String status = (statusCode == 0) ? "success" : "fault";
 
+		// Store call start time for duration tracking
+		outgoingCallStartTimes.put( messageId,
+			new OutgoingCallStartInfo( System.nanoTime(), operationName, outputPort ) );
+
 		// Increment outgoing call counter
 		outgoingCallsTotal.labelValues( operationName, outputPort, status ).inc();
+	}
+
+	private void handleOperationReply( Value data ) {
+		String operationName = data.getFirstChild( "operationName" ).strValue();
+		String outputPort = data.getFirstChild( "outputPort" ).strValue();
+		String messageId = data.getFirstChild( "messageId" ).strValue();
+		int statusCode = data.getFirstChild( "status" ).intValue();
+
+		// Map status code to label
+		String status = mapStatusToLabel( statusCode );
+
+		// Track fault details if status is fault
+		if( statusCode == 1 && data.getFirstChild( "details" ).isDefined() ) {
+			String faultType = data.getFirstChild( "details" ).strValue();
+			if( faultType != null && !faultType.isEmpty() ) {
+				operationFaultsByType.labelValues( operationName, faultType ).inc();
+			}
+		}
+
+		// Calculate call duration if we have start info
+		OutgoingCallStartInfo startInfo = outgoingCallStartTimes.remove( messageId );
+		if( startInfo != null ) {
+			double durationSeconds = (System.nanoTime() - startInfo.startTimeNanos) / 1_000_000_000.0;
+			outgoingCallDuration.labelValues( operationName, outputPort, status ).observe( durationSeconds );
+		}
+
+		// Increment reply counter
+		outgoingRepliesTotal.labelValues( operationName, outputPort, status ).inc();
+	}
+
+	private void handleProtocolMessage( Value data, String protocol ) {
+		// Increment protocol message counter
+		protocolMessagesTotal.labelValues( protocol ).inc();
+
+		// Track message size if body is available
+		if( data.getFirstChild( "data" ).isDefined() ) {
+			Value protocolData = data.getFirstChild( "data" );
+			if( protocolData.getFirstChild( "body" ).isDefined() ) {
+				String body = protocolData.getFirstChild( "body" ).strValue();
+				if( body != null ) {
+					int bodySize = body.getBytes().length;
+					// Only track messages up to 1MB
+					if( bodySize <= 1048576 ) {
+						protocolMessageSize.labelValues( protocol ).observe( bodySize );
+					}
+				}
+			}
+		}
 	}
 
 	private String buildCorrelationKey( String processId, String messageId ) {
@@ -264,6 +417,8 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		long fiveMinutesAgo = System.nanoTime() - (5L * 60 * 1_000_000_000);
 
 		operationStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
+		outgoingCallStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
+		sessionStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
 	}
 
 	/**
@@ -471,6 +626,8 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		response.getFirstChild( "trackProcessId" ).setValue( trackProcessId );
 		response.getFirstChild( "maxTrackedOps" ).setValue( maxTrackedOperations );
 		response.getFirstChild( "trackedOperations" ).setValue( operationStartTimes.size() );
+		response.getFirstChild( "trackedOutgoingCalls" ).setValue( outgoingCallStartTimes.size() );
+		response.getFirstChild( "trackedSessions" ).setValue( sessionStartTimes.size() );
 		return response;
 	}
 }

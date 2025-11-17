@@ -300,6 +300,10 @@ public class Interpreter {
 		return monitor != null;
 	}
 
+	public OutputPort monitor() {
+		return monitor;
+	}
+
 	/*
 	 * public long inputMessageTimeout() { return inputMessageTimeout; }
 	 */

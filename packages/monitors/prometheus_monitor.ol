@@ -20,7 +20,7 @@
  ***************************************************************************/
 
 from console import Console
-from runtime import Runtime
+from string_utils import StringUtils
 
 interface MonitorInterface {
 OneWay:
@@ -60,6 +60,10 @@ interface HttpInterface {
     RequestResponse: metrics(undefined)(string)
 }
 
+interface MonitorAddress {
+    RequestResponse: getMonitor(void)(undefined)
+}
+
 service PrometheusMonitor {
 
     execution { concurrent }
@@ -75,19 +79,27 @@ service PrometheusMonitor {
         Interfaces: HttpInterface
     }
 
+    inputPort mon {
+        Location: "local"
+        Interfaces: MonitorAddress
+    }
+
     embed Console as Console
     embed Monitor as Monitor
-    embed Runtime as Runtime
+    embed StringUtils as StringUtils
 
     init {
-        setMonitor@Runtime(Monitor)()
         println@Console("Prometheus Monitor started on port 9400")()
+        println@Console(valueToPrettyString@StringUtils( Monitor ))()
     }
 
     main {
         [ metrics()(response) {
             getMetrics@Monitor()(response);
             statusCode = 200
+        } ]
+        [ getMonitor()(response) {
+            response << Monitor
         } ]
     }
 }

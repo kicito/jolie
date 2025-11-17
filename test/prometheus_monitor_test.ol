@@ -2,6 +2,7 @@ from console import Console
 from time import Time 
 from monitors.prometheus_monitor import PrometheusMonitor
 
+from runtime import Runtime
 
 // Enable monitoring with the Prometheus monitor
 constants {
@@ -36,9 +37,10 @@ service TestService {
 
     embed Console as Console
     embed Time as Time
-    embed PrometheusMonitor
-
+    embed PrometheusMonitor as Mon
+    embed Runtime as Runtime
     init {
+        setMonitor@Runtime(getMonitor@Mon())()
         println@Console("Test service with Prometheus monitoring started")();
         println@Console("Service: http://localhost:8080")();
         println@Console("Metrics: http://localhost:9400/metrics")()
