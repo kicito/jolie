@@ -21,8 +21,7 @@
 				"${input:stackTraces}",
 				"--responseTimeout",
 				"300000",
-				"--prometheusMetrics",
-				"prometheus_monitor_test.ol"
+				"${input:programName}"
 			],
 			"windows": {
 				"args": [
