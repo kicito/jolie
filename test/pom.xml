@@ -68,6 +68,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<skip>${skipTests}</skip>
 					<environmentVariables>
 						<JOLIE_HOME>${jolie.home}</JOLIE_HOME>
 						<PATH>${test.pathenv}</PATH>

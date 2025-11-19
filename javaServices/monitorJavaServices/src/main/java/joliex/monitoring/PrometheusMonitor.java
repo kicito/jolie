@@ -232,7 +232,7 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 			}
 
 			// Cleanup old entries if any map grows too large
-			if( operationStartTimes.size() > maxTrackedOperations 
+			if( operationStartTimes.size() > maxTrackedOperations
 				|| outgoingCallStartTimes.size() > maxTrackedOperations
 				|| sessionStartTimes.size() > maxTrackedOperations ) {
 				cleanupStaleEntries();
@@ -303,7 +303,7 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		String processId = data.getFirstChild( "processId" ).strValue();
 
 		// Store session start time for duration tracking
-		sessionStartTimes.put( processId, 
+		sessionStartTimes.put( processId,
 			new SessionStartInfo( System.nanoTime(), operationName ) );
 
 		// Increment session counters
