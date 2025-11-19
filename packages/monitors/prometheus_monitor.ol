@@ -28,14 +28,14 @@ OneWay:
 }
 
 type PrometheusMonitorConfig: void {
-	.trackProcessId?: bool    // Include processId in correlation key (default: false)
-	.maxTrackedOps?: int      // Max number of operations to track (default: 10000)
+	trackProcessId?: bool    // Include processId in correlation key (default: false)
+	maxTrackedOps?: int      // Max number of operations to track (default: 10000)
 }
 
 type PrometheusMonitorConfigResponse: void {
-	.trackProcessId: bool
-	.maxTrackedOps: int
-	.trackedOperations: int   // Current number of tracked operations
+	trackProcessId: bool
+	maxTrackedOps: int
+	trackedOperations: int   // Current number of tracked operations
 }
 
 interface PrometheusMonitorInterface {
@@ -64,12 +64,16 @@ interface MonitorAddress {
     RequestResponse: getMonitor(void)(undefined)
 }
 
-service PrometheusMonitor {
+type MonitorServerParams {
+    location: string
+}
+
+service PrometheusMonitor(p: MonitorServerParams) {
 
     execution { concurrent }
 
     inputPort MetricsHttpPort {
-        Location: "socket://localhost:9400"
+        location: p.location
         Protocol: http {
             .format = "html";
             .contentType = "text/plain; version=0.0.4; charset=utf-8";
@@ -80,7 +84,7 @@ service PrometheusMonitor {
     }
 
     inputPort mon {
-        Location: "local"
+        location: "local"
         Interfaces: MonitorAddress
     }
 
@@ -89,8 +93,7 @@ service PrometheusMonitor {
     embed StringUtils as StringUtils
 
     init {
-        println@Console("Prometheus Monitor started on port 9400")()
-        println@Console(valueToPrettyString@StringUtils( Monitor ))()
+        println@Console("Prometheus Monitor started at " + p.location)()
     }
 
     main {
