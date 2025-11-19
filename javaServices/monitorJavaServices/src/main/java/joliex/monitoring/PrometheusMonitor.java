@@ -28,6 +28,7 @@ import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import jolie.monitoring.MonitoringEvent;
+import jolie.runtime.AndJarDeps;
 import jolie.runtime.Value;
 
 import java.io.ByteArrayOutputStream;
@@ -47,6 +48,14 @@ import com.sun.management.OperatingSystemMXBean;
  *
  * @author Jolie Team
  */
+@AndJarDeps( {
+	"prometheus-metrics-config.jar",
+	"prometheus-metrics-core.jar",
+	"prometheus-metrics-exposition-formats.jar", "prometheus-metrics-model.jar",
+	"prometheus-metrics-shaded-protobuf.jar", "prometheus-metrics-tracer-common.jar",
+	"prometheus-metrics-tracer-initializer.jar", "prometheus-metrics-tracer-otel-agent.jar",
+	"prometheus-metrics-tracer-otel.jar"
+} )
 public class PrometheusMonitor extends AbstractMonitorJavaService {
 
 	// Configuration

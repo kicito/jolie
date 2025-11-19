@@ -63,17 +63,20 @@ interface HttpInterface {
 interface MonitorAddress {
     RequestResponse: getMonitor(void)(undefined)
 }
-
+/**
 type MonitorServerParams {
     location: string
 }
-
+*/
+/**
 service PrometheusMonitor(p: MonitorServerParams) {
+*/
+service PrometheusMonitor() {
 
     execution { concurrent }
 
     inputPort MetricsHttpPort {
-        location: p.location
+        location: "socket://localhost:9400"
         Protocol: http {
             .format = "html";
             .contentType = "text/plain; version=0.0.4; charset=utf-8";
@@ -93,7 +96,7 @@ service PrometheusMonitor(p: MonitorServerParams) {
     embed StringUtils as StringUtils
 
     init {
-        println@Console("Prometheus Monitor started at " + p.location)()
+        println@Console("Prometheus Monitor started at " + "socket://localhost:9400")()
     }
 
     main {
