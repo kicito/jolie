@@ -61,4 +61,17 @@ RUN npm install n -g && \
 
 RUN npm install @jolie/jpm -g 
 
+# Fix Maven permissions for the jolie user
+RUN mkdir -p /home/jolie/.m2 && chown -R jolie:jolie /home/jolie/.m2
+# Set Maven to use user's home directory instead of root
+ENV M2_HOME=/usr/share/maven
+ENV MAVEN_CONFIG=/home/jolie/.m2
+ENV MAVEN_USER_HOME=/home/jolie/.m2
+
+# Fix JOLIE_HOME permissions for the jolie user
+RUN chown -R jolie:jolie /usr/lib/jolie
+
+# Clean up any root-owned Maven artifacts that might interfere
+RUN rm -rf /root/.m2 || true
+
 USER jolie
