@@ -26,6 +26,9 @@ import jolie.Interpreter;
 import jolie.JolieThreadPoolExecutor;
 import jolie.NativeJolieThread;
 import jolie.lang.Constants;
+import jolie.monitoring.events.InvalidOperationEvent;
+import jolie.monitoring.events.MessageHandledEvent;
+import jolie.monitoring.events.MessageReceivedEvent;
 import jolie.net.ext.CommChannelFactory;
 import jolie.net.ext.CommListenerFactory;
 import jolie.net.ext.CommProtocolFactory;
@@ -432,13 +435,28 @@ public class CommCore {
 
 		private void handleMessage( CommMessage message )
 			throws IOException {
+			// Fire monitoring event for incoming message
+			if( interpreter.isMonitoring() ) {
+				interpreter.fireMonitorEvent(
+					new MessageReceivedEvent(
+						message.operationName(),
+						port.name(),
+						Long.toString( message.requestId() ),
+						message.resourcePath(),
+						message.value(),
+						Long.toString( message.id() ) ) );
+			}
+
+			int handleStatus = MessageHandledEvent.SUCCESS;
 			try {
 				String[] ss = PATH_SPLIT_PATTERN.split( message.resourcePath() );
 				if( ss.length > 1 ) {
 					handleRedirectionInput( message, ss );
+					handleStatus = MessageHandledEvent.REDIRECTION;
 				} else {
 					if( port.canHandleInputOperationDirectly( message.operationName() ) ) {
 						handleDirectMessage( message );
+						handleStatus = MessageHandledEvent.SUCCESS;
 					} else {
 						AggregatedOperation operation = port.getAggregatedOperation( message.operationName() );
 						if( operation == null ) {
@@ -446,6 +464,19 @@ public class CommCore {
 								"Received a message for operation " + message.operationName() +
 									", not specified in the input port " + port.name()
 									+ " at the receiving service. Sending IOException to the caller." );
+
+							// Fire monitoring event for invalid operation error
+							if( interpreter.isMonitoring() ) {
+								interpreter.fireMonitorEvent(
+									new InvalidOperationEvent(
+										message.operationName(),
+										port.name(),
+										Long.toString( message.requestId() ),
+										message.resourcePath(),
+										message.value(),
+										Long.toString( message.id() ) ) );
+							}
+							handleStatus = MessageHandledEvent.INVALID_OPERATION;
 							try {
 								channel
 									.send( CommMessage.createFaultResponse( message, new FaultException( "IOException",
@@ -455,11 +486,25 @@ public class CommCore {
 							}
 						} else {
 							handleAggregatedInput( message, operation );
+							handleStatus = MessageHandledEvent.AGGREGATION;
 						}
 					}
 				}
 			} catch( URISyntaxException e ) {
 				interpreter.logSevere( e );
+				handleStatus = MessageHandledEvent.ERROR;
+			} finally {
+				// Fire monitoring event for message handling completion
+				if( interpreter.isMonitoring() ) {
+					interpreter.fireMonitorEvent(
+						new MessageHandledEvent(
+							message.operationName(),
+							port.name(),
+							Long.toString( message.requestId() ),
+							message.resourcePath(),
+							handleStatus,
+							Long.toString( message.id() ) ) );
+				}
 			}
 		}
 

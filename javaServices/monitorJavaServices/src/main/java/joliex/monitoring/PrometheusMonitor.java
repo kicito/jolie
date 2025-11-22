@@ -78,11 +78,16 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 	private final Histogram protocolMessageSize;
 	private final Histogram sessionDuration;
 	private final Counter operationFaultsByType;
+	private final Counter messagesReceivedTotal;
+	private final Counter messagesHandledTotal;
+	private final Histogram messageHandlingDuration;
+	private final Counter invalidOperationsTotal;
 
 	// State tracking for duration calculations
 	private final Map< String, OperationStartInfo > operationStartTimes;
 	private final Map< String, OutgoingCallStartInfo > outgoingCallStartTimes;
 	private final Map< String, SessionStartInfo > sessionStartTimes;
+	private final Map< String, MessageStartInfo > messageStartTimes;
 
 	// Holds start time and metadata for correlating operation start/end events
 	private static class OperationStartInfo {
@@ -118,6 +123,19 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		SessionStartInfo( long startTimeNanos, String operationName ) {
 			this.startTimeNanos = startTimeNanos;
 			this.operationName = operationName;
+		}
+	}
+
+	// Holds start time and metadata for correlating message received/handled events
+	private static class MessageStartInfo {
+		final long startTimeNanos;
+		final String operationName;
+		final String portName;
+
+		MessageStartInfo( long startTimeNanos, String operationName, String portName ) {
+			this.startTimeNanos = startTimeNanos;
+			this.operationName = operationName;
+			this.portName = portName;
 		}
 	}
 
@@ -198,10 +216,35 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 			.labelNames( "operation", "fault_type" )
 			.register( registry );
 
+		messagesReceivedTotal = Counter.builder()
+			.name( "jolie_messages_received_total" )
+			.help( "Total number of messages received at CommCore level" )
+			.labelNames( "operation", "port" )
+			.register( registry );
+
+		messagesHandledTotal = Counter.builder()
+			.name( "jolie_messages_handled_total" )
+			.help( "Total number of messages handled at CommCore level" )
+			.labelNames( "operation", "port", "status" )
+			.register( registry );
+
+		messageHandlingDuration = Histogram.builder()
+			.name( "jolie_message_handling_duration_seconds" )
+			.help( "Message handling duration in seconds at CommCore level" )
+			.labelNames( "operation", "port", "status" )
+			.register( registry );
+
+		invalidOperationsTotal = Counter.builder()
+			.name( "jolie_invalid_operations_total" )
+			.help( "Total number of invalid operation requests" )
+			.labelNames( "operation", "port" )
+			.register( registry );
+
 		// Initialize state tracking maps with bounded size
 		operationStartTimes = new ConcurrentHashMap<>();
 		outgoingCallStartTimes = new ConcurrentHashMap<>();
 		sessionStartTimes = new ConcurrentHashMap<>();
+		messageStartTimes = new ConcurrentHashMap<>();
 	}
 
 	@Override
@@ -235,6 +278,15 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 			case "ProtocolMessage-soap":
 				handleProtocolMessage( data, "soap" );
 				break;
+			case "MessageReceived":
+				handleMessageReceived( data );
+				break;
+			case "MessageHandled":
+				handleMessageHandled( data );
+				break;
+			case "InvalidOperation":
+				handleInvalidOperation( data );
+				break;
 			default:
 				// Ignore other event types
 				break;
@@ -243,7 +295,8 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 			// Cleanup old entries if any map grows too large
 			if( operationStartTimes.size() > maxTrackedOperations
 				|| outgoingCallStartTimes.size() > maxTrackedOperations
-				|| sessionStartTimes.size() > maxTrackedOperations ) {
+				|| sessionStartTimes.size() > maxTrackedOperations
+				|| messageStartTimes.size() > maxTrackedOperations ) {
 				cleanupStaleEntries();
 			}
 		} catch( Exception ex ) {
@@ -399,6 +452,47 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		}
 	}
 
+	private void handleMessageReceived( Value data ) {
+		String operationName = data.getFirstChild( "operationName" ).strValue();
+		String portName = data.getFirstChild( "processId" ).strValue(); // processId is port name in this context
+		String internalMessageId = data.getFirstChild( "internalMessageId" ).strValue();
+
+		// Store message start time for duration tracking
+		messageStartTimes.put( internalMessageId,
+			new MessageStartInfo( System.nanoTime(), operationName, portName ) );
+
+		// Increment messages received counter
+		messagesReceivedTotal.labelValues( operationName, portName ).inc();
+	}
+
+	private void handleMessageHandled( Value data ) {
+		String operationName = data.getFirstChild( "operationName" ).strValue();
+		String portName = data.getFirstChild( "portName" ).strValue();
+		String internalMessageId = data.getFirstChild( "internalMessageId" ).strValue();
+		int statusCode = data.getFirstChild( "status" ).intValue();
+
+		// Map status code to label
+		String status = mapMessageHandledStatusToLabel( statusCode );
+
+		// Calculate handling duration if we have start info
+		MessageStartInfo startInfo = messageStartTimes.remove( internalMessageId );
+		if( startInfo != null ) {
+			double durationSeconds = (System.nanoTime() - startInfo.startTimeNanos) / 1_000_000_000.0;
+			messageHandlingDuration.labelValues( operationName, portName, status ).observe( durationSeconds );
+		}
+
+		// Increment messages handled counter
+		messagesHandledTotal.labelValues( operationName, portName, status ).inc();
+	}
+
+	private void handleInvalidOperation( Value data ) {
+		String operationName = data.getFirstChild( "operationName" ).strValue();
+		String portName = data.getFirstChild( "portName" ).strValue();
+
+		// Increment invalid operations counter
+		invalidOperationsTotal.labelValues( operationName, portName ).inc();
+	}
+
 	private String buildCorrelationKey( String processId, String messageId ) {
 		if( trackProcessId ) {
 			return processId + ":" + messageId;
@@ -421,6 +515,25 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		}
 	}
 
+	private String mapMessageHandledStatusToLabel( int statusCode ) {
+		// Based on MessageHandledEvent constants:
+		// SUCCESS = 0, ERROR = 1, INVALID_OPERATION = 2, REDIRECTION = 3, AGGREGATION = 4
+		switch( statusCode ) {
+		case 0:
+			return "success";
+		case 1:
+			return "error";
+		case 2:
+			return "invalid_operation";
+		case 3:
+			return "redirection";
+		case 4:
+			return "aggregation";
+		default:
+			return "unknown";
+		}
+	}
+
 	private void cleanupStaleEntries() {
 		// Remove entries older than 5 minutes (likely stale/orphaned)
 		long fiveMinutesAgo = System.nanoTime() - (5L * 60 * 1_000_000_000);
@@ -428,6 +541,7 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		operationStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
 		outgoingCallStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
 		sessionStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
+		messageStartTimes.entrySet().removeIf( entry -> entry.getValue().startTimeNanos < fiveMinutesAgo );
 	}
 
 	/**
@@ -637,6 +751,7 @@ public class PrometheusMonitor extends AbstractMonitorJavaService {
 		response.getFirstChild( "trackedOperations" ).setValue( operationStartTimes.size() );
 		response.getFirstChild( "trackedOutgoingCalls" ).setValue( outgoingCallStartTimes.size() );
 		response.getFirstChild( "trackedSessions" ).setValue( sessionStartTimes.size() );
+		response.getFirstChild( "trackedMessages" ).setValue( messageStartTimes.size() );
 		return response;
 	}
 }
